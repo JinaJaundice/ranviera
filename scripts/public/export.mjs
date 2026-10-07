@@ -137,9 +137,17 @@ export function exportTree({ repo = REPO, out, denylist = [], allow = ALLOW, acc
   if (isInside(out, repo) || isInside(repo, out)) throw new Error(`The output folder ${out} must be outside the repository ${repo}, and the repository must be outside it.`);
   if (!isEmpty(out)) {
     if (!force) throw new Error(`${out} is not empty. Pass --force to move it to an archive folder beside it first.`);
+    // The earlier contents move to an archive folder beside the output, and the output folder itself stays, with its .git
+    // folder, because it is the working copy of the public repository: git then shows exactly what changed since the
+    // last push. Moving the contents, not the folder, also works while another program has the folder open. Nothing is
+    // committed or pushed here.
     const archive = `${out}.archive-${new Date().toISOString().replace(/[:.]/g, "-")}`;
-    renameSync(out, archive);
-    log(`Moved the earlier export to ${archive}.`);
+    mkdirSync(archive, { recursive: true });
+    for (const name of readdirSync(out)) {
+      if (name === ".git") continue;
+      renameSync(join(out, name), join(archive, name));
+    }
+    log(`Moved the earlier export to ${archive}${existsSync(join(out, ".git")) ? " and kept the .git folder of the public repository" : ""}.`);
   }
   mkdirSync(out, { recursive: true });
 

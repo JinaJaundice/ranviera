@@ -59,7 +59,7 @@ jobs:
           python-version: "3.14"
           cache: pip
       - run: npm ci
-      - run: pip install -r requirements.txt
+      - run: pip install -r requirements.txt pip-licenses
       - run: node --test scripts/public/check.test.mjs scripts/public/notices.test.mjs
       # the content check without a private deny list: secrets, user paths, e-mail addresses and file sizes
       - run: node scripts/public/check.mjs .
