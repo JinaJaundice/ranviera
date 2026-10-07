@@ -95,7 +95,7 @@ describe("placeLabels", () => {
         for (let j = i + 1; j < placed.length; j += 1) expect(overlaps(placed[i], placed[j])).toBe(false);
       }
     }
-  });
+  }, 20_000); // 6,000 placements take about 5 seconds on a shared CI runner, past the default limit of 5
 
   it("keeps a label out of the safe margins", () => {
     const [p] = placeLabels([{ key: "a", x: 70, y: 50, w: 60, h: 16, centred: true }], 800, 600, 2, { left: 60, top: 44, right: 8, bottom: 8 });
