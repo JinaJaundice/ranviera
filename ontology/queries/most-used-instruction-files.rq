@@ -1,0 +1,26 @@
+# Instruction files by rules held and tasks that read them first
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# This ranks each file by the number of rules it holds and the number of task types that read it first, both read
+# from the stated graph of graph.trig. Where the node carries cx:uses it is shown and sorts first.
+SELECT ?file ?label ?class (COALESCE(?ruleCount, 0) AS ?rules) (COALESCE(?taskCount, 0) AS ?tasks) ?uses
+WHERE {
+  VALUES ?class { cx:RuleFile cx:Skill cx:MapFile cx:ReferenceFile cx:GuideFile cx:OutputStyle }
+  ?file a ?class ;
+        rdfs:label ?label .
+  OPTIONAL {
+    SELECT ?file (COUNT(DISTINCT ?rule) AS ?ruleCount)
+    WHERE { GRAPH <https://cortex.local/graph/stated> { ?file cx:contains+ ?rule . ?rule a cx:Rule } }
+    GROUP BY ?file
+  }
+  OPTIONAL {
+    SELECT ?file (COUNT(DISTINCT ?task) AS ?taskCount)
+    WHERE { GRAPH <https://cortex.local/graph/stated> { ?task cx:readsFirst ?file } }
+    GROUP BY ?file
+  }
+  OPTIONAL { ?file cx:uses ?uses }
+}
+ORDER BY DESC(?uses) DESC(?tasks) DESC(?rules)

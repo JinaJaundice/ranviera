@@ -1,0 +1,204 @@
+{
+  "scheme": {
+    "id": "scheme:claude-code",
+    "label": "Claude Code terms",
+    "description": "The things every Claude Code set-up has, named as Claude Code's documentation names them."
+  },
+  "concepts": [
+    {
+      "id": "term:claude-md",
+      "prefLabel": "CLAUDE.md",
+      "altLabels": [
+        "CLAUDE.md file",
+        "memory file CLAUDE.md"
+      ],
+      "hiddenLabels": [],
+      "definition": "The Markdown file in which a person or a project gives Claude Code standing instructions. Claude Code reads it at the start of every session.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:rule-file",
+      "prefLabel": "rules",
+      "altLabels": [
+        "rule",
+        "rules file",
+        ".claude/rules"
+      ],
+      "hiddenLabels": [],
+      "definition": "A Markdown file in the rules folder of the Claude folder or a project. Claude Code loads it, optionally only when it opens a file that matches the paths listed in the file.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:skill",
+      "prefLabel": "skill",
+      "altLabels": [
+        "skills",
+        "SKILL.md"
+      ],
+      "hiddenLabels": [],
+      "definition": "A folder with a SKILL.md file that teaches Claude Code a task. Claude Code loads the skill when the task matches its description or when the person invokes it.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:agent",
+      "prefLabel": "subagent",
+      "altLabels": [
+        "subagents",
+        "agent"
+      ],
+      "hiddenLabels": [],
+      "definition": "A Markdown file in the agents folder that defines a specialised assistant with its own instructions, tools and model. Claude Code hands tasks to it and it works in its own context.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:hook",
+      "prefLabel": "hook",
+      "altLabels": [
+        "hooks"
+      ],
+      "hiddenLabels": [],
+      "definition": "A command that Claude Code runs at a set point in its work, such as before a tool runs or when a session ends. Hooks are set in settings.json.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:memory",
+      "prefLabel": "memory",
+      "altLabels": [
+        "auto memory",
+        "memory files"
+      ],
+      "hiddenLabels": [],
+      "definition": "The notes that Claude Code keeps between sessions in a memory folder of each project, indexed by MEMORY.md.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:settings",
+      "prefLabel": "settings",
+      "altLabels": [
+        "settings.json"
+      ],
+      "hiddenLabels": [],
+      "definition": "The JSON file in which Claude Code holds permissions, hooks, environment variables and other options.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:output-style",
+      "prefLabel": "output style",
+      "altLabels": [
+        "output styles"
+      ],
+      "hiddenLabels": [],
+      "definition": "A Markdown file that changes how Claude Code writes its replies, chosen by the person.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:slash-command",
+      "prefLabel": "slash command",
+      "altLabels": [
+        "slash commands",
+        "custom command"
+      ],
+      "hiddenLabels": [],
+      "definition": "A command that a person types after a slash to start a stored prompt or an action in Claude Code.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:mcp-server",
+      "prefLabel": "MCP server",
+      "altLabels": [
+        "MCP servers",
+        "Model Context Protocol server"
+      ],
+      "hiddenLabels": [],
+      "definition": "A program that gives Claude Code extra tools and data through the Model Context Protocol.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    },
+    {
+      "id": "term:task-type",
+      "prefLabel": "task type",
+      "altLabels": [
+        "task types"
+      ],
+      "hiddenLabels": [],
+      "definition": "A kind of work, such as writing code or reviewing code, that the app joins to the routes that start it and to the files to read first.",
+      "denotes": [],
+      "status": "ratified",
+      "ratified": "2026-10-06",
+      "severity": "info",
+      "case": "sensitive",
+      "source": "external Claude Code documentation, https://code.claude.com/docs",
+      "variant_counts": {},
+      "decided_by": "Starting vocabulary, which follows Claude Code's own documentation (6 October 2026)"
+    }
+  ]
+}

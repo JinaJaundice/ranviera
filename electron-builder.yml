@@ -1,0 +1,50 @@
+# The installers of Ranviera, the public product (docs/DISTRIBUTION.md, Packaging). The shell in desktop/ is small.
+# The server, the compiler, the web app and the ontology come from build/app, which scripts/build/*.mjs assemble,
+# and travel as extra resources, so that a person needs no Python, Node or Git.
+# The owner's own copy, Cortex, runs from the repository: its earlier installer file is packaging/archive/electron-builder.cortex.yml.
+appId: io.github.jinajaundice.ranviera
+productName: Ranviera
+copyright: Copyright 2026 the Ranviera authors
+electronVersion: 44.5.1
+directories:
+  app: desktop
+  output: release
+  buildResources: desktop
+files:
+  - main.cjs
+  - preload.cjs
+  - icon.png
+  - package.json
+  # the shell uses no packages of its own; without this line electron-builder collects the web app's dependencies
+  - "!**/node_modules/**"
+extraResources:
+  - from: build/app
+    to: ranviera
+asar: true
+npmRebuild: false
+afterPack: scripts/build/after-pack.cjs
+win:
+  target: nsis
+  icon: desktop/icon.png
+  artifactName: Ranviera-Setup-${version}.${ext}
+nsis:
+  oneClick: true
+  perMachine: false
+  allowElevation: false
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Ranviera
+  deleteAppDataOnUninstall: false
+  artifactName: Ranviera-Setup-${version}.${ext}
+mac:
+  target:
+    - target: dmg
+      arch: [arm64, x64]
+  category: public.app-category.developer-tools
+  icon: desktop/icon.png
+  artifactName: Ranviera-${version}-${arch}.${ext}
+linux:
+  target: AppImage
+  category: Development
+  icon: desktop/icon.png
+  artifactName: Ranviera-${version}-${arch}.${ext}

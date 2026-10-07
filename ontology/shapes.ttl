@@ -1,0 +1,381 @@
+@prefix cx: <https://cortex.local/ont#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix sh: <http://www.w3.org/ns/shacl#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# Version 0.3.0 of 6 October 2026. The SHACL shapes S01 to S09 and S11 to S26 of docs/ONTOLOGY.md (S10 was removed). Each shape and each property shape in it carries its check
+# identifier as cx:checkId, so that a result can be traced to the check by walking sh:sourceShape.
+# The path checks P01 to P08 and the checks that SHACL cannot express are made by kg/cortex_kg/validate.py.
+
+<https://cortex.local/shapes> a owl:Ontology ;
+    rdfs:label "Cortex shapes" ;
+    owl:versionIRI <https://cortex.local/shapes/0.3.0> ;
+    owl:versionInfo "0.3.0" ;
+    sh:declare [ sh:prefix "cx" ; sh:namespace "https://cortex.local/ont#"^^xsd:anyURI ] ,
+               [ sh:prefix "skos" ; sh:namespace "http://www.w3.org/2004/02/skos/core#"^^xsd:anyURI ] ,
+               [ sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] ,
+               [ sh:prefix "rdfs" ; sh:namespace "http://www.w3.org/2000/01/rdf-schema#"^^xsd:anyURI ] ,
+               [ sh:prefix "owl" ; sh:namespace "http://www.w3.org/2002/07/owl#"^^xsd:anyURI ] .
+
+# S01. Every node has 1 label, 1 family and 1 sensitivity from the 3 allowed values.
+# The shape targets every node of every class of cortex.ttl, so a node that has lost its family, its label or its sensitivity
+# is reported, and not only a node that still has a family. A subclass is reached through its parent class. The class
+# declarations of cortex.ttl carry cx:family too, so the shape lets an owl:Class pass.
+cx:S01Shape a sh:NodeShape ;
+    cx:checkId "S01" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:family ;
+    sh:targetClass cx:InstructionFile , cx:Section , cx:Rule , cx:Route , cx:TaskType , cx:PathScope ,
+        cx:Agent , cx:Hook , cx:Tool , cx:Gate , cx:FaultCheck , cx:ScheduledTask , cx:BuiltinTool , cx:LaunchConfig ,
+        cx:RecordStore , cx:MemoryFile , cx:BacklogSection , cx:OpenItem , cx:HistoryFile , cx:Decision ,
+        cx:Project , cx:App , cx:Deliverable , cx:Template , cx:Folder ,
+        cx:Organisation , cx:Person , cx:Instrument , cx:ConceptScheme , cx:Concept ;
+    sh:message "Every node must have 1 label, 1 family and 1 sensitivity from the 3 allowed values." ;
+    sh:or ( [ sh:class owl:Class ]
+            [ sh:property cx:S01Label , cx:S01Family , cx:S01Sensitivity ] ) .
+cx:S01Label a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
+    sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:message "Every node must have exactly 1 label." .
+cx:S01Family a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
+    sh:path cx:family ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:in ( "instruction" "machinery" "record" "work" "world" "language" ) ;
+    sh:message "Every node must have exactly 1 family from the 6 allowed values." .
+cx:S01Sensitivity a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
+    sh:path cx:sensitivity ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:in ( "public" "internal" "client-confidential" ) ;
+    sh:message "Every node must have exactly 1 sensitivity of public, internal or client-confidential." .
+
+# S02. Every rule has 1 non-empty text, 1 container and a modal from the allowed values.
+cx:S02Shape a sh:NodeShape ;
+    cx:checkId "S02" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Rule ;
+    sh:property cx:S02Text , cx:S02Container , cx:S02Modal .
+cx:S02Text a sh:PropertyShape ; cx:checkId "S02" ; sh:severity sh:Violation ;
+    sh:path cx:text ; sh:minCount 1 ; sh:maxCount 1 ; sh:pattern "\\S" ;
+    sh:message "Every rule must have exactly 1 text that is not empty." .
+cx:S02Container a sh:PropertyShape ; cx:checkId "S02" ; sh:severity sh:Violation ;
+    sh:path [ sh:inversePath cx:contains ] ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:message "Every rule must be contained in exactly 1 file or section." .
+cx:S02Modal a sh:PropertyShape ; cx:checkId "S02" ; sh:severity sh:Violation ;
+    sh:path cx:modal ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:in ( "must" "should" "may" "will" "imperative" "none" ) ;
+    sh:message "Every rule must have a modal of must, should, may, will, imperative or none." .
+
+# S03. Every agent runs on the model that the configuration names. It is a Python check in validate.py (check_s03),
+# because a shape cannot read the configuration, and the identifier S03 is kept.
+
+# S04. Every route has a pattern and triggers a task type.
+cx:S04Shape a sh:NodeShape ;
+    cx:checkId "S04" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Route ;
+    sh:property cx:S04Pattern , cx:S04Triggers .
+cx:S04Pattern a sh:PropertyShape ; cx:checkId "S04" ; sh:severity sh:Violation ;
+    sh:path cx:pattern ; sh:minCount 1 ;
+    sh:message "Every route must have at least 1 pattern." .
+cx:S04Triggers a sh:PropertyShape ; cx:checkId "S04" ; sh:severity sh:Violation ;
+    sh:path cx:triggers ; sh:minCount 1 ;
+    sh:message "Every route must trigger at least 1 task type." .
+
+# S05. Every task type reads at least 1 instruction file.
+cx:S05Shape a sh:NodeShape ;
+    cx:checkId "S05" ;
+    sh:severity sh:Warning ;
+    sh:targetClass cx:TaskType ;
+    sh:property cx:S05Reads .
+cx:S05Reads a sh:PropertyShape ; cx:checkId "S05" ; sh:severity sh:Warning ;
+    sh:path cx:readsFirst ; sh:minCount 1 ;
+    sh:message "Every task type should read at least 1 instruction file first." .
+
+# S06. Every hook invokes a tool.
+cx:S06Shape a sh:NodeShape ;
+    cx:checkId "S06" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Hook ;
+    sh:property cx:S06Invokes .
+cx:S06Invokes a sh:PropertyShape ; cx:checkId "S06" ; sh:severity sh:Violation ;
+    sh:path cx:invokes ; sh:minCount 1 ;
+    sh:message "Every hook must invoke at least 1 tool." .
+
+# S07. Every memory file has a type and a description and is in the index.
+cx:S07Shape a sh:NodeShape ;
+    cx:checkId "S07" ;
+    sh:severity sh:Warning ;
+    sh:targetClass cx:MemoryFile ;
+    sh:property cx:S07Type , cx:S07Description , cx:S07Indexed .
+cx:S07Type a sh:PropertyShape ; cx:checkId "S07" ; sh:severity sh:Warning ;
+    sh:path cx:memoryType ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:in ( "user" "feedback" "project" "reference" ) ;
+    sh:message "Every memory file should have a type of user, feedback, project or reference." .
+cx:S07Description a sh:PropertyShape ; cx:checkId "S07" ; sh:severity sh:Warning ;
+    sh:path cx:summary ; sh:minCount 1 ;
+    sh:message "Every memory file should have a description." .
+cx:S07Indexed a sh:PropertyShape ; cx:checkId "S07" ; sh:severity sh:Warning ;
+    sh:path [ sh:inversePath cx:indexes ] ; sh:minCount 1 ;
+    sh:message "Every memory file should be listed in the memory index." .
+
+# S08. Every project is documented in a memory file.
+cx:S08Shape a sh:NodeShape ;
+    cx:checkId "S08" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Project ;
+    sh:property cx:S08Memory .
+cx:S08Memory a sh:PropertyShape ; cx:checkId "S08" ; sh:severity sh:Violation ;
+    sh:path cx:documentedIn ;
+    sh:qualifiedValueShape [ sh:class cx:MemoryFile ] ; sh:qualifiedMinCount 1 ;
+    sh:message "Every project must be documented in a memory file." .
+
+# S09. Every concept has 1 preferred label, and no hidden label equals a preferred or an accepted label.
+cx:S09Shape a sh:NodeShape ;
+    cx:checkId "S09" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Concept ;
+    sh:property cx:S09Pref ;
+    sh:sparql cx:S09Clash .
+cx:S09Pref a sh:PropertyShape ; cx:checkId "S09" ; sh:severity sh:Violation ;
+    sh:path skos:prefLabel ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:message "Every concept must have exactly 1 preferred label." .
+cx:S09Clash a sh:SPARQLConstraint ; cx:checkId "S09" ; sh:severity sh:Violation ;
+    sh:message "No hidden label may equal a preferred or an accepted label." ;
+    sh:prefixes <https://cortex.local/shapes> ;
+    sh:select """
+        SELECT $this ?value WHERE {
+            $this skos:hiddenLabel ?value .
+            { ?other skos:prefLabel ?value } UNION { ?other skos:altLabel ?value }
+        }""" .
+
+# S10 was removed on 6 October 2026. Its job, a conflict between 2 active rules that no decision governs, belongs to the
+# reasoning rule R04 (ontology/rules/cortex.rls), which reads the status of both rules from the stated and ratified edges.
+# The identifier S10 is not reused.
+
+# S11. A rule with no stated date is reported for information.
+cx:S11Shape a sh:NodeShape ;
+    cx:checkId "S11" ;
+    sh:severity sh:Info ;
+    sh:targetClass cx:Rule ;
+    sh:property cx:S11Date .
+cx:S11Date a sh:PropertyShape ; cx:checkId "S11" ; sh:severity sh:Info ;
+    sh:path cx:givenOn ; sh:minCount 1 ;
+    sh:message "This rule states no date." .
+
+# S12. Every typed node carries the family of its class. S01 reaches only a node that already has a family, so these
+# shapes target each class and ask for the family itself. A subclass such as MapFile is reached through its parent.
+cx:S12InstructionShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:InstructionFile , cx:Section , cx:Rule , cx:Route , cx:TaskType , cx:PathScope ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "instruction" ;
+        sh:message "Every node must carry the instruction family of its class." ] .
+cx:S12MachineryShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Agent , cx:Hook , cx:Tool , cx:Gate , cx:FaultCheck , cx:ScheduledTask , cx:BuiltinTool , cx:LaunchConfig ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "machinery" ;
+        sh:message "Every node must carry the machinery family of its class." ] .
+cx:S12RecordShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:RecordStore , cx:MemoryFile , cx:BacklogSection , cx:OpenItem , cx:HistoryFile , cx:Decision ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "record" ;
+        sh:message "Every node must carry the record family of its class." ] .
+cx:S12WorkShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Project , cx:App , cx:Deliverable , cx:Template , cx:Folder ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "work" ;
+        sh:message "Every node must carry the work family of its class." ] .
+cx:S12WorldShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Organisation , cx:Person , cx:Instrument ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "world" ;
+        sh:message "Every node must carry the world family of its class." ] .
+cx:S12LanguageShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:ConceptScheme , cx:Concept ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "language" ;
+        sh:message "Every node must carry the language family of its class." ] .
+
+# S13 to S20. The target classes of the relations that the activation and the rules rely on. A SHACL constraint reports an
+# edge outside the model, where the domain and range of cortex.ttl would infer a class for the node and hide the error.
+
+# S13. A task type reads first an instruction file, or a memory file where tasktypes.json names one.
+cx:S13Shape a sh:NodeShape ;
+    cx:checkId "S13" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:readsFirst ;
+    sh:class cx:TaskType ;
+    sh:message "Only a task type reads a file first." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S13" ; sh:severity sh:Violation ;
+        sh:path cx:readsFirst ;
+        sh:or ( [ sh:class cx:InstructionFile ] [ sh:class cx:MemoryFile ] ) ;
+        sh:message "A task type must read first an instruction file or a memory file." ] .
+
+# S14. A task type is handled by an agent.
+cx:S14Shape a sh:NodeShape ;
+    cx:checkId "S14" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:handledBy ;
+    sh:class cx:TaskType ;
+    sh:message "Only a task type is handled by an agent." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S14" ; sh:severity sh:Violation ;
+        sh:path cx:handledBy ; sh:class cx:Agent ;
+        sh:message "A task type must be handled by an agent." ] .
+
+# S15. A task type or a rule is checked by a gate or a fault check.
+cx:S15Shape a sh:NodeShape ;
+    cx:checkId "S15" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:checkedBy ;
+    sh:or ( [ sh:class cx:TaskType ] [ sh:class cx:Rule ] ) ;
+    sh:message "Only a task type or a rule is checked by a gate or a fault check." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S15" ; sh:severity sh:Violation ;
+        sh:path cx:checkedBy ;
+        sh:or ( [ sh:class cx:Gate ] [ sh:class cx:FaultCheck ] ) ;
+        sh:message "A task type or a rule must be checked by a gate or a fault check." ] .
+
+# S16. A route triggers a task type.
+cx:S16Shape a sh:NodeShape ;
+    cx:checkId "S16" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:triggers ;
+    sh:class cx:Route ;
+    sh:message "Only a route triggers a task type." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S16" ; sh:severity sh:Violation ;
+        sh:path cx:triggers ; sh:class cx:TaskType ;
+        sh:message "A route must trigger a task type." ] .
+
+# S17. A project is documented in a memory file, a backlog section or a history file.
+cx:S17Shape a sh:NodeShape ;
+    cx:checkId "S17" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:documentedIn ;
+    sh:class cx:Project ;
+    sh:message "Only a project is documented in a record." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S17" ; sh:severity sh:Violation ;
+        sh:path cx:documentedIn ;
+        sh:or ( [ sh:class cx:MemoryFile ] [ sh:class cx:BacklogSection ] [ sh:class cx:HistoryFile ] ) ;
+        sh:message "A project must be documented in a memory file, a backlog section or a history file." ] .
+
+# S18. A deliverable and a backlog section belong to a project, and an open item belongs to a backlog section.
+cx:S18Shape a sh:NodeShape ;
+    cx:checkId "S18" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:belongsTo ;
+    sh:or (
+        [ sh:class cx:Deliverable ; sh:property [ sh:path cx:belongsTo ; sh:class cx:Project ] ]
+        [ sh:class cx:BacklogSection ; sh:property [ sh:path cx:belongsTo ; sh:class cx:Project ] ]
+        [ sh:class cx:OpenItem ; sh:property [ sh:path cx:belongsTo ; sh:class cx:BacklogSection ] ] ) ;
+    sh:message "A deliverable or a backlog section must belong to a project, and an open item to a backlog section." .
+
+# S19. A concept denotes a node of the set-up, and never a concept or a scheme.
+cx:S19Shape a sh:NodeShape ;
+    cx:checkId "S19" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:denotes ;
+    sh:class cx:Concept ;
+    sh:message "Only a concept denotes a node." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S19" ; sh:severity sh:Violation ;
+        sh:path cx:denotes ;
+        sh:not [ sh:or ( [ sh:class cx:Concept ] [ sh:class cx:ConceptScheme ] ) ] ;
+        sh:message "A concept must denote a node of the set-up and not another concept or a scheme." ] .
+
+# S20. A file holds sections or files, a section holds rules, an agent holds sections, a record store holds decisions
+# and a tool holds fault checks.
+cx:S20Shape a sh:NodeShape ;
+    cx:checkId "S20" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:contains ;
+    sh:or (
+        [ sh:class cx:InstructionFile ; sh:property [ sh:path cx:contains ; sh:or ( [ sh:class cx:Section ] [ sh:class cx:InstructionFile ] ) ] ]
+        [ sh:class cx:Section ; sh:property [ sh:path cx:contains ; sh:class cx:Rule ] ]
+        [ sh:class cx:Agent ; sh:property [ sh:path cx:contains ; sh:class cx:Section ] ]
+        [ sh:class cx:RecordStore ; sh:property [ sh:path cx:contains ; sh:class cx:Decision ] ]
+        [ sh:class cx:Tool ; sh:property [ sh:path cx:contains ; sh:class cx:FaultCheck ] ] ) ;
+    sh:message "A file must contain sections or files, a section rules, an agent sections, a record store decisions and a tool fault checks." .
+
+# S21. A decision governs a rule or a file.
+cx:S21Shape a sh:NodeShape ;
+    cx:checkId "S21" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:governs ;
+    sh:class cx:Decision ;
+    sh:message "Only a decision governs a rule or a file." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S21" ; sh:severity sh:Violation ;
+        sh:path cx:governs ;
+        sh:or ( [ sh:class cx:Rule ] [ sh:class cx:InstructionFile ] [ sh:class cx:MemoryFile ] ) ;
+        sh:message "A decision must govern a rule or a file." ] .
+
+# S22. Only a rule conflicts with a rule.
+cx:S22Shape a sh:NodeShape ;
+    cx:checkId "S22" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:conflictsWith ;
+    sh:class cx:Rule ;
+    sh:message "Only a rule conflicts with another rule." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S22" ; sh:severity sh:Violation ;
+        sh:path cx:conflictsWith ; sh:class cx:Rule ;
+        sh:message "A rule must conflict with another rule." ] .
+
+# S23. Every node that carries a family, a sensitivity, a text or a path has a class of cortex.ttl. A node with none of these
+# would otherwise pass every shape that targets a class, because no shape reaches it.
+cx:S23Shape a sh:NodeShape ;
+    cx:checkId "S23" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:family , cx:sensitivity , cx:text , cx:path ;
+    sh:message "Every node must have a class of the Cortex ontology." ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S23" ; sh:severity sh:Violation ;
+        sh:path rdf:type ;
+        sh:qualifiedValueShape [ sh:or ( [ sh:pattern "^https://cortex[.]local/ont#" ] [ sh:hasValue owl:Class ] ) ] ;
+        sh:qualifiedMinCount 1 ;
+        sh:message "Every node must have a class of the Cortex ontology." ] .
+
+# S24. Every decision states its date and governs at least 1 rule or file.
+cx:S24Shape a sh:NodeShape ;
+    cx:checkId "S24" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Decision ;
+    sh:property cx:S24Date , cx:S24Governs .
+cx:S24Date a sh:PropertyShape ; cx:checkId "S24" ; sh:severity sh:Violation ;
+    sh:path cx:date ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:message "Every decision must state exactly 1 date." .
+cx:S24Governs a sh:PropertyShape ; cx:checkId "S24" ; sh:severity sh:Warning ;
+    sh:path cx:governs ; sh:minCount 1 ;
+    sh:message "Every decision should govern at least 1 rule or file." .
+
+# S25. Every concept is in 1 scheme and has a definition.
+cx:S25Shape a sh:NodeShape ;
+    cx:checkId "S25" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Concept ;
+    sh:property cx:S25Scheme , cx:S25Definition .
+cx:S25Scheme a sh:PropertyShape ; cx:checkId "S25" ; sh:severity sh:Violation ;
+    sh:path cx:inScheme ; sh:minCount 1 ; sh:maxCount 1 ; sh:class cx:ConceptScheme ;
+    sh:message "Every concept must be in exactly 1 scheme." .
+cx:S25Definition a sh:PropertyShape ; cx:checkId "S25" ; sh:severity sh:Violation ;
+    sh:path skos:definition ; sh:minCount 1 ;
+    sh:message "Every concept must have a definition." .
+
+# S26. Every open item belongs to 1 backlog section and has its text.
+cx:S26Shape a sh:NodeShape ;
+    cx:checkId "S26" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:OpenItem ;
+    sh:property cx:S26Section , cx:S26Text .
+cx:S26Section a sh:PropertyShape ; cx:checkId "S26" ; sh:severity sh:Violation ;
+    sh:path cx:belongsTo ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:message "Every open item must belong to exactly 1 backlog section." .
+cx:S26Text a sh:PropertyShape ; cx:checkId "S26" ; sh:severity sh:Violation ;
+    sh:path cx:text ; sh:minCount 1 ; sh:maxCount 1 ;
+    sh:message "Every open item must have exactly 1 text." .

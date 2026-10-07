@@ -1,0 +1,19 @@
+# Decisions and what they govern
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# governs is read from the stated and ratified graphs of graph.trig, so a proposed link is not counted.
+SELECT ?decision ?decisionLabel ?date ?governed ?governedLabel
+WHERE {
+  ?decision a cx:Decision ;
+            rdfs:label ?decisionLabel .
+  OPTIONAL { ?decision cx:date ?date }
+  OPTIONAL {
+    VALUES ?g { <https://cortex.local/graph/stated> <https://cortex.local/graph/ratified> }
+    GRAPH ?g { ?decision cx:governs ?governed }
+    ?governed rdfs:label ?governedLabel
+  }
+}
+ORDER BY ?date ?decision

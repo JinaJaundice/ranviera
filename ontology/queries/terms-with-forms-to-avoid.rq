@@ -1,0 +1,16 @@
+# Terms and the forms to avoid for each
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# A hidden label is a form that must not be used. The preferred label is the form to use instead.
+SELECT ?term ?preferred (GROUP_CONCAT(DISTINCT ?avoid; separator=", ") AS ?forms) ?severity
+WHERE {
+  ?term a cx:Concept ;
+        skos:prefLabel ?preferred ;
+        skos:hiddenLabel ?avoid .
+  OPTIONAL { ?term cx:severity ?severity }
+}
+GROUP BY ?term ?preferred ?severity
+ORDER BY ?preferred

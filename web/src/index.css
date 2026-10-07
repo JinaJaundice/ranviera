@@ -1,0 +1,216 @@
+@import "tailwindcss";
+
+/*
+ * Cortex design tokens. Every colour in the app is one of these tokens (house rule of 26 July 2026). The dark
+ * theme is the default, and the light theme overrides the same --color-* tokens only. Glow, gradients and motion
+ * are used inside the graph canvas only, where they encode activation.
+ *
+ * Type ladder (11px floor): caption 11, small 12, body 13, ui 14, lead 16, title 20, display 28.
+ * Radius is capped at 6px.
+ */
+@theme static {
+  --font-sans: "Inter Variable", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Space Grotesk Variable", "Inter Variable", ui-sans-serif, sans-serif;
+  --font-mono: "JetBrains Mono Variable", ui-monospace, monospace;
+
+  --text-caption: 11px;
+  --text-caption--line-height: 16px;
+  --text-small: 12px;
+  --text-small--line-height: 18px;
+  --text-body: 13px;
+  --text-body--line-height: 20px;
+  --text-ui: 14px;
+  --text-ui--line-height: 20px;
+  --text-lead: 16px;
+  --text-lead--line-height: 24px;
+  --text-title: 20px;
+  --text-title--line-height: 28px;
+  --text-display: 28px;
+  --text-display--line-height: 34px;
+
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+
+  /* surfaces */
+  --color-void: #04060b;
+  --color-surface: #0a0f1a;
+  --color-raised: #101726;
+  --color-sunken: #070b13;
+  --color-overlay: #0a0f1a;
+  /* hairlines */
+  --color-rule: #1b2436;
+  --color-rule-strong: #2a3650;
+  /* ink */
+  --color-ink: #e8ecf4;
+  --color-ink-soft: #a3adc2;
+  --color-ink-faint: #7a859c;
+  /* the one accent */
+  --color-signal: #6ee7ff;
+  --color-signal-soft: #0f2a33;
+  --color-on-signal: #04131a;
+  /* status */
+  --color-pass: #6ee7ff;
+  --color-hold: #f5b942;
+  --color-block: #fb6f86;
+  --color-pass-soft: #0f2a33;
+  --color-hold-soft: #2e2410;
+  --color-block-soft: #321219;
+  /* graph families: data encoding inside the graph canvas and its legend only */
+  --color-fam-instruction: #6ee7ff;
+  --color-fam-machinery: #c9a6ff;
+  --color-fam-record: #8fb3ff;
+  --color-fam-work: #8be9b0;
+  --color-fam-world: #ffb38a;
+  --color-fam-language: #f2f5fa;
+  /* brain regions: data encoding inside the brain view and its legend only, distinct under deuteranopia and protanopia (palette.test.ts) */
+  --color-region-prefrontal: #0a82ff;
+  --color-region-language: #fedcd0;
+  --color-region-occipital: #ceb0fe;
+  --color-region-motor: #dcf520;
+  --color-region-parietal: #30c582;
+  --color-region-memory: #db2fb2;
+  --color-region-basal: #ed353b;
+  --color-region-thalamus: #e29e05;
+  --color-region-cerebellum: #b3f1f9;
+  --color-region-brainstem: #8a8a8a;
+  /* neurons of the brain view: the same colour as the region token, so that a neuron, caption dot, legend dot and trail dot agree (colours.test.ts) */
+  --color-neuron-prefrontal: #0a82ff;
+  --color-neuron-language: #fedcd0;
+  --color-neuron-occipital: #ceb0fe;
+  --color-neuron-motor: #dcf520;
+  --color-neuron-parietal: #30c582;
+  --color-neuron-memory: #db2fb2;
+  --color-neuron-basal: #ed353b;
+  --color-neuron-thalamus: #e29e05;
+  --color-neuron-cerebellum: #b3f1f9;
+  --color-neuron-brainstem: #8a8a8a;
+}
+
+:root[data-theme="light"] {
+  --color-void: #eef1f6;
+  --color-surface: #ffffff;
+  --color-raised: #f7f8fb;
+  --color-sunken: #eef1f6;
+  --color-overlay: #ffffff;
+  --color-rule: #e1e5ec;
+  --color-rule-strong: #c9d0dc;
+  --color-ink: #0d1220;
+  --color-ink-soft: #46516a;
+  --color-ink-faint: #6b7690;
+  --color-signal: #0a6f94;
+  --color-signal-soft: #e1f3fa;
+  --color-on-signal: #ffffff;
+  --color-pass: #0a6f94;
+  --color-hold: #a86a00;
+  --color-block: #c2183a;
+  --color-pass-soft: #e1f3fa;
+  --color-hold-soft: #fbf0dc;
+  --color-block-soft: #fbe3e8;
+  --color-fam-instruction: #0a7fa8;
+  --color-fam-machinery: #7a4fd6;
+  --color-fam-record: #2f5fd0;
+  --color-fam-work: #1f8a52;
+  --color-fam-world: #c4581f;
+  --color-fam-language: #1a2233;
+  /* brain regions: data encoding inside the brain view and its legend only */
+  --color-region-prefrontal: #3481fe;
+  --color-region-language: #c9a9a0;
+  --color-region-occipital: #8a26be;
+  --color-region-motor: #9bba05;
+  --color-region-parietal: #0f9467;
+  --color-region-memory: #fd4ca8;
+  --color-region-basal: #b80a36;
+  --color-region-thalamus: #a77407;
+  --color-region-cerebellum: #23bcd2;
+  --color-region-brainstem: #646464;
+  /* neurons of the brain view: the same colour as the region token */
+  --color-neuron-prefrontal: #3481fe;
+  --color-neuron-language: #c9a9a0;
+  --color-neuron-occipital: #8a26be;
+  --color-neuron-motor: #9bba05;
+  --color-neuron-parietal: #0f9467;
+  --color-neuron-memory: #fd4ca8;
+  --color-neuron-basal: #b80a36;
+  --color-neuron-thalamus: #a77407;
+  --color-neuron-cerebellum: #23bcd2;
+  --color-neuron-brainstem: #646464;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    margin: 0;
+    background: var(--color-void);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  ::selection {
+    background: var(--color-signal-soft);
+    color: var(--color-ink);
+  }
+  :focus-visible {
+    outline: 2px solid var(--color-signal);
+    outline-offset: 1px;
+  }
+}
+
+@layer components {
+  .val,
+  .num {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+  .addr {
+    font-family: var(--font-mono);
+    font-size: var(--text-small);
+    color: var(--color-ink-soft);
+    word-break: break-all;
+  }
+  .hairline {
+    border-color: var(--color-rule);
+  }
+}
+
+/* Labels drawn over the graph canvas for its landmark nodes (web/src/graph/engine.ts). */
+@layer components {
+  .cx-node-label {
+    font-family: var(--font-sans);
+    font-size: var(--text-caption);
+    line-height: var(--text-caption--line-height);
+    color: var(--color-ink-soft);
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+    transition: color 300ms ease, opacity 300ms ease;
+  }
+  .cx-node-label[data-glow="on"] {
+    color: var(--color-signal);
+  }
+}
+
+/* The desktop app (desktop/main.cjs): the top bar is the window's title bar, so it can be dragged, its controls stay
+   clickable, and its right end leaves room for the Windows minimise, maximise and close buttons. */
+@layer components {
+  :root[data-shell="desktop"] .cx-topbar {
+    -webkit-app-region: drag;
+    padding-right: 148px !important; /* beats the px-3 utility on the header */
+    /* the status items on the right keep their full width; the search narrows and the graph summary shortens */
+    grid-template-columns: minmax(0, 1fr) minmax(200px, 360px) auto !important;
+  }
+  :root[data-shell="desktop"] .cx-topbar button,
+  :root[data-shell="desktop"] .cx-topbar a,
+  :root[data-shell="desktop"] .cx-topbar input,
+  :root[data-shell="desktop"] .cx-topbar [role="menu"] {
+    -webkit-app-region: no-drag;
+  }
+}
+

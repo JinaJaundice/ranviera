@@ -1,0 +1,17 @@
+# Reference and guide files that no task type reads first
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# A file counts as routed when a task reads it first, or when a file that a task reads first contains it. Both relations
+# are read from the stated graph of graph.trig.
+SELECT ?file ?label ?class
+WHERE {
+  VALUES ?class { cx:ReferenceFile cx:GuideFile }
+  ?file a ?class ;
+        rdfs:label ?label .
+  FILTER NOT EXISTS { GRAPH <https://cortex.local/graph/stated> { ?task cx:readsFirst ?file } }
+  FILTER NOT EXISTS { GRAPH <https://cortex.local/graph/stated> { ?task2 cx:readsFirst ?parent . ?parent cx:contains+ ?file } }
+}
+ORDER BY ?class ?label

@@ -1,0 +1,419 @@
+{
+  "version": 1,
+  "source": {
+    "url": "https://cdn.humanatlas.io/digital-objects/ref-organ/brain-male/v1.4/assets/3d-allen-m-brain.glb",
+    "sha256": "c97d7d0b9ff0baebbdec5566fa7b08d789195ef965e0bd04cf743a8d683882db",
+    "bytes": 11982812,
+    "title": "3D Reference Organ for Brain, Male v1.4",
+    "derivedFrom": "Ding et al. 2016, Comprehensive Cellular-Resolution Atlas of the Adult Human Brain, Journal of Comparative Neurology 524(16):3127-3481 (Allen Human Brain Atlas)."
+  },
+  "licence": {
+    "name": "Creative Commons Attribution 4.0 International (CC BY 4.0)",
+    "url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "citation": "Browne, Kristen, and Heidi Schlehlein. 2024. 3D Reference Organ for Brain, Male v1.4. https://doi.org/10.48539/HBM538.NKCT.649",
+  "changes": "Cortex simplified the meshes, grouped them into regions, re-centred and rescaled them, mirrored them to true handedness (the X axis is negated so that the left hemisphere lies at positive X), and recoloured them.",
+  "coordinates": {
+    "note": "Y up, anterior +Z, true handedness: meshes named _L at positive X (the source has them at negative X and Cortex mirrored it). The drawn brain is centred on the origin and spans the stated number of units in its largest dimension.",
+    "span": 200,
+    "sourceScale": 1197.3215,
+    "sourceCentreMetres": [
+      -0.00009,
+      0.829764,
+      -0.001155
+    ]
+  },
+  "points": {
+    "file": "brain-points.bin",
+    "format": "Float32 little-endian, groups of 6: x y z nx ny nz",
+    "stride": 24,
+    "count": 50000,
+    "offsetUnit": "points"
+  },
+  "triangles": 159158,
+  "regions": [
+    {
+      "id": "prefrontal",
+      "hemisphere": "L",
+      "triangles": 17760,
+      "sourceTriangles": 53042,
+      "centroid": [
+        20.184,
+        36.559,
+        47.47
+      ],
+      "labelAnchor": [
+        31.49,
+        57.035,
+        74.058
+      ],
+      "pointOffset": 0,
+      "pointCount": 3301,
+      "byteOffset": 0
+    },
+    {
+      "id": "prefrontal",
+      "hemisphere": "R",
+      "triangles": 19964,
+      "sourceTriangles": 61112,
+      "centroid": [
+        -30.993,
+        33.724,
+        44.849
+      ],
+      "labelAnchor": [
+        -50.291,
+        54.722,
+        72.774
+      ],
+      "pointOffset": 3301,
+      "pointCount": 3699,
+      "byteOffset": 79224
+    },
+    {
+      "id": "language",
+      "hemisphere": "L",
+      "triangles": 5018,
+      "sourceTriangles": 15348,
+      "centroid": [
+        56.524,
+        11.048,
+        17.306
+      ],
+      "labelAnchor": [
+        76.134,
+        14.881,
+        23.31
+      ],
+      "pointOffset": 7000,
+      "pointCount": 7000,
+      "byteOffset": 168000
+    },
+    {
+      "id": "occipital",
+      "hemisphere": "L",
+      "triangles": 9222,
+      "sourceTriangles": 27526,
+      "centroid": [
+        27.891,
+        -16.218,
+        -69.676
+      ],
+      "labelAnchor": [
+        39.355,
+        -22.884,
+        -98.315
+      ],
+      "pointOffset": 14000,
+      "pointCount": 3494,
+      "byteOffset": 336000
+    },
+    {
+      "id": "occipital",
+      "hemisphere": "R",
+      "triangles": 9260,
+      "sourceTriangles": 27526,
+      "centroid": [
+        -23.41,
+        -17.548,
+        -71.699
+      ],
+      "labelAnchor": [
+        -32.93,
+        -24.683,
+        -100.856
+      ],
+      "pointOffset": 17494,
+      "pointCount": 3506,
+      "byteOffset": 419856
+    },
+    {
+      "id": "motor",
+      "hemisphere": "L",
+      "triangles": 4250,
+      "sourceTriangles": 14164,
+      "centroid": [
+        36.721,
+        52.695,
+        -8.511
+      ],
+      "labelAnchor": [
+        53.637,
+        76.971,
+        -12.432
+      ],
+      "pointOffset": 21000,
+      "pointCount": 3493,
+      "byteOffset": 504000
+    },
+    {
+      "id": "motor",
+      "hemisphere": "R",
+      "triangles": 4250,
+      "sourceTriangles": 14164,
+      "centroid": [
+        -40.578,
+        50.692,
+        -11.56
+      ],
+      "labelAnchor": [
+        -58.774,
+        73.424,
+        -16.744
+      ],
+      "pointOffset": 24493,
+      "pointCount": 3507,
+      "byteOffset": 587832
+    },
+    {
+      "id": "parietal",
+      "hemisphere": "L",
+      "triangles": 13632,
+      "sourceTriangles": 41962,
+      "centroid": [
+        39.24,
+        35.494,
+        -43.638
+      ],
+      "labelAnchor": [
+        58.7,
+        53.096,
+        -65.28
+      ],
+      "pointOffset": 28000,
+      "pointCount": 3506,
+      "byteOffset": 672000
+    },
+    {
+      "id": "parietal",
+      "hemisphere": "R",
+      "triangles": 13744,
+      "sourceTriangles": 41962,
+      "centroid": [
+        -39.432,
+        33.455,
+        -46.741
+      ],
+      "labelAnchor": [
+        -58.698,
+        49.801,
+        -69.578
+      ],
+      "pointOffset": 31506,
+      "pointCount": 3494,
+      "byteOffset": 756144
+    },
+    {
+      "id": "memory",
+      "hemisphere": "L",
+      "triangles": 10302,
+      "sourceTriangles": 32640,
+      "centroid": [
+        48.572,
+        -23.523,
+        1.228
+      ],
+      "labelAnchor": [
+        79.736,
+        -38.615,
+        2.015
+      ],
+      "pointOffset": 35000,
+      "pointCount": 3174,
+      "byteOffset": 840000
+    },
+    {
+      "id": "memory",
+      "hemisphere": "R",
+      "triangles": 13198,
+      "sourceTriangles": 39918,
+      "centroid": [
+        -52.041,
+        -21.008,
+        -3.494
+      ],
+      "labelAnchor": [
+        -86.016,
+        -34.724,
+        -5.775
+      ],
+      "pointOffset": 38174,
+      "pointCount": 3826,
+      "byteOffset": 916176
+    },
+    {
+      "id": "basal",
+      "hemisphere": "L",
+      "triangles": 2630,
+      "sourceTriangles": 8768,
+      "centroid": [
+        19.875,
+        6.923,
+        17.687
+      ],
+      "labelAnchor": [
+        67.799,
+        23.616,
+        60.335
+      ],
+      "pointOffset": 42000,
+      "pointCount": 1001,
+      "byteOffset": 1008000
+    },
+    {
+      "id": "basal",
+      "hemisphere": "R",
+      "triangles": 2630,
+      "sourceTriangles": 8768,
+      "centroid": [
+        -23.503,
+        5.798,
+        15.977
+      ],
+      "labelAnchor": [
+        -76.307,
+        18.826,
+        51.872
+      ],
+      "pointOffset": 43001,
+      "pointCount": 999,
+      "byteOffset": 1032024
+    },
+    {
+      "id": "thalamus",
+      "hemisphere": "L",
+      "triangles": 3844,
+      "sourceTriangles": 12008,
+      "centroid": [
+        12.377,
+        3.965,
+        -2.878
+      ],
+      "labelAnchor": [
+        84.841,
+        27.18,
+        -19.73
+      ],
+      "pointOffset": 44000,
+      "pointCount": 1009,
+      "byteOffset": 1056000
+    },
+    {
+      "id": "thalamus",
+      "hemisphere": "R",
+      "triangles": 3832,
+      "sourceTriangles": 12008,
+      "centroid": [
+        -14.266,
+        3.274,
+        -3.929
+      ],
+      "labelAnchor": [
+        -86.897,
+        19.944,
+        -23.933
+      ],
+      "pointOffset": 45009,
+      "pointCount": 991,
+      "byteOffset": 1080216
+    },
+    {
+      "id": "cerebellum",
+      "hemisphere": "L",
+      "triangles": 7048,
+      "sourceTriangles": 20737,
+      "centroid": [
+        26.303,
+        -55.009,
+        -35.816
+      ],
+      "labelAnchor": [
+        40.286,
+        -84.253,
+        -54.856
+      ],
+      "pointOffset": 46000,
+      "pointCount": 1000,
+      "byteOffset": 1104000
+    },
+    {
+      "id": "cerebellum",
+      "hemisphere": "R",
+      "triangles": 6988,
+      "sourceTriangles": 20737,
+      "centroid": [
+        -22.487,
+        -56.274,
+        -37.74
+      ],
+      "labelAnchor": [
+        -34.353,
+        -85.968,
+        -57.654
+      ],
+      "pointOffset": 47000,
+      "pointCount": 1000,
+      "byteOffset": 1128000
+    },
+    {
+      "id": "brainstem",
+      "hemisphere": "L",
+      "triangles": 2372,
+      "sourceTriangles": 4624,
+      "centroid": [
+        8.702,
+        -37.967,
+        -3.587
+      ],
+      "labelAnchor": [
+        20.128,
+        -87.822,
+        -8.297
+      ],
+      "pointOffset": 48000,
+      "pointCount": 992,
+      "byteOffset": 1152000
+    },
+    {
+      "id": "brainstem",
+      "hemisphere": "R",
+      "triangles": 2340,
+      "sourceTriangles": 4624,
+      "centroid": [
+        -8.383,
+        -38.41,
+        -4.261
+      ],
+      "labelAnchor": [
+        -18.901,
+        -86.608,
+        -9.608
+      ],
+      "pointOffset": 48992,
+      "pointCount": 1008,
+      "byteOffset": 1175808
+    },
+    {
+      "id": "shell",
+      "hemisphere": "L",
+      "triangles": 3446,
+      "sourceTriangles": 8298,
+      "centroid": null,
+      "labelAnchor": null,
+      "pointOffset": 0,
+      "pointCount": 0,
+      "byteOffset": 0
+    },
+    {
+      "id": "shell",
+      "hemisphere": "R",
+      "triangles": 3428,
+      "sourceTriangles": 8298,
+      "centroid": null,
+      "labelAnchor": null,
+      "pointOffset": 0,
+      "pointCount": 0,
+      "byteOffset": 0
+    }
+  ]
+}

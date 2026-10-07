@@ -1,0 +1,19 @@
+# Hooks and the tools they invoke
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# invokes is read from the stated and ratified graphs of graph.trig, so a proposed link is not counted.
+SELECT ?hook ?event ?matcher ?tool ?toolLabel
+WHERE {
+  ?hook a cx:Hook .
+  OPTIONAL { ?hook cx:event ?event }
+  OPTIONAL { ?hook cx:matcher ?matcher }
+  OPTIONAL {
+    VALUES ?g { <https://cortex.local/graph/stated> <https://cortex.local/graph/ratified> }
+    GRAPH ?g { ?hook cx:invokes ?tool }
+    ?tool rdfs:label ?toolLabel
+  }
+}
+ORDER BY ?event ?hook

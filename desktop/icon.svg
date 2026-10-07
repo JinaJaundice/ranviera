@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024" role="img" aria-label="Ranviera">
+  <defs>
+    <radialGradient id="soma" cx="45%" cy="40%" r="65%">
+      <stop offset="0" stop-color="#bdf5ff"/>
+      <stop offset="1" stop-color="#6ee7ff"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" rx="200" fill="#0a0f1a"/>
+  <g stroke="#6ee7ff" stroke-linecap="round" fill="none"><path d="M171.5 852.5 L838.3 185.7" stroke-width="30"/><path d="M838.3 185.7 L862.3 104.1" stroke-width="16"/><path d="M838.3 185.7 L898.4 125.6" stroke-width="16"/><path d="M838.3 185.7 L919.9 161.7" stroke-width="16"/></g>
+  <g stroke="url(#soma)" stroke-linecap="round" fill="none"><path d="M203.3 820.7 L263.5 760.5" stroke-width="84"/><path d="M342.6 681.4 L402.8 621.2" stroke-width="84"/><path d="M481.9 542.1 L542.1 481.9" stroke-width="84"/><path d="M621.2 402.8 L681.4 342.6" stroke-width="84"/><path d="M760.5 263.5 L820.7 203.3" stroke-width="84"/></g>
+  <g fill="#ffffff"><circle cx="303.0" cy="721.0" r="22"/><circle cx="442.3" cy="581.7" r="22"/><circle cx="581.7" cy="442.3" r="22"/><circle cx="721.0" cy="303.0" r="22"/><circle cx="862.3" cy="104.1" r="24"/><circle cx="898.4" cy="125.6" r="24"/><circle cx="919.9" cy="161.7" r="24"/></g>
+  <circle cx="171.5" cy="852.5" r="62" fill="#6ee7ff"/>
+  <circle cx="171.5" cy="852.5" r="24" fill="#0a0f1a" opacity="0.55"/>

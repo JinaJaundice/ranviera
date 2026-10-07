@@ -1,0 +1,30 @@
+# Rules in force for the deck task
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# A rule applies to a task type when the inferred relation cx:appliesToTask (the inferred graph of graph.trig) says so, or,
+# where the rules have not been run, when the task reads first a file that contains the rule (the stated graph). A rule
+# that is superseded or retired, or that a stated or ratified supersedes edge replaces, is left out.
+SELECT DISTINCT ?rule ?text ?section
+WHERE {
+  {
+    GRAPH <https://cortex.local/graph/inferred> { ?rule cx:appliesToTask <https://cortex.local/id/task/deck> }
+  }
+  UNION
+  {
+    GRAPH <https://cortex.local/graph/stated> {
+      <https://cortex.local/id/task/deck> cx:readsFirst ?read .
+      ?read cx:contains* ?holder .
+      ?holder cx:contains ?rule .
+    }
+    ?rule a cx:Rule .
+  }
+  ?rule cx:text ?text .
+  FILTER NOT EXISTS { ?rule cx:status ?st . FILTER (?st IN ("superseded", "retired")) }
+  FILTER NOT EXISTS { VALUES ?g { <https://cortex.local/graph/stated> <https://cortex.local/graph/ratified> }
+                      GRAPH ?g { ?newer cx:supersedes ?rule } }
+  OPTIONAL { GRAPH <https://cortex.local/graph/stated> { ?section cx:contains ?rule . ?section a cx:Section } }
+}
+ORDER BY ?section ?rule

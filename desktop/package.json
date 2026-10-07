@@ -1,0 +1,10 @@
+{
+  "name": "ranviera-desktop",
+  "productName": "Ranviera",
+  "version": "0.1.0",
+  "description": "Ranviera shows your Claude Code set-up as a knowledge graph and a brain view",
+  "author": "the Ranviera authors",
+  "license": "Apache-2.0",
+  "main": "main.cjs",
+  "private": true
+}

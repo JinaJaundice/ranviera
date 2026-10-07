@@ -1,0 +1,20 @@
+# Agents and the task types that use them
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# handledBy is read from the stated and ratified graphs of graph.trig, so a proposed link is not counted.
+SELECT ?agent ?agentLabel ?model (GROUP_CONCAT(DISTINCT ?taskLabel; separator=", ") AS ?tasks)
+WHERE {
+  ?agent a cx:Agent ;
+         rdfs:label ?agentLabel .
+  OPTIONAL { ?agent cx:model ?model }
+  OPTIONAL {
+    VALUES ?g { <https://cortex.local/graph/stated> <https://cortex.local/graph/ratified> }
+    GRAPH ?g { ?task cx:handledBy ?agent }
+    ?task rdfs:label ?taskLabel
+  }
+}
+GROUP BY ?agent ?agentLabel ?model
+ORDER BY ?agentLabel

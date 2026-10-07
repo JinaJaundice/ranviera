@@ -1,0 +1,22 @@
+# dependencies and builds
+node_modules/
+dist/
+build/
+release/
+*.tsbuildinfo
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+test-results/
+playwright-report/
+
+# machine-local configuration and runtime data (the data folder defaults to ~/.claude/ranviera)
+cortex.config.json
+data/
+
+# the source model of the brain view is downloaded into a cache and is not committed
+scripts/brain/.cache/
+
+# shots taken by the smoke test
+shots/

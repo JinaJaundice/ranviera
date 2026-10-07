@@ -1,0 +1,10 @@
+Brain model notice
+
+Citation: Browne, Kristen, and Heidi Schlehlein. 2024. 3D Reference Organ for Brain, Male v1.4. https://doi.org/10.48539/HBM538.NKCT.649
+Source: https://cdn.humanatlas.io/digital-objects/ref-organ/brain-male/v1.4/assets/3d-allen-m-brain.glb
+Source SHA-256: c97d7d0b9ff0baebbdec5566fa7b08d789195ef965e0bd04cf743a8d683882db
+Derived from: Ding et al. 2016, Comprehensive Cellular-Resolution Atlas of the Adult Human Brain, Journal of Comparative Neurology 524(16):3127-3481 (Allen Human Brain Atlas).
+Licence: Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+Changes: Cortex simplified the meshes, grouped them into regions, re-centred and rescaled them, mirrored them to true handedness (the X axis is negated so that the left hemisphere lies at positive X), and recoloured them.
+
+The files brain.glb, brain-points.bin and brain-regions.json in this folder are adapted material under that licence.

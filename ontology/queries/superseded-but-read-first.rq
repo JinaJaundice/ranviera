@@ -1,0 +1,29 @@
+# Superseded rules and files that a task still reads first
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# readsFirst and contains are read from the stated graph of graph.trig. A rule that sits in a section whose heading names
+# superseded, archived or retired rules is kept on purpose as a record of what was replaced, so it is not listed.
+SELECT DISTINCT ?task ?file ?superseded ?label
+WHERE {
+  ?task a cx:TaskType .
+  GRAPH <https://cortex.local/graph/stated> { ?task cx:readsFirst ?file }
+  {
+    ?file cx:status "superseded" .
+    BIND (?file AS ?superseded)
+  }
+  UNION
+  {
+    GRAPH <https://cortex.local/graph/stated> { ?file cx:contains+ ?superseded }
+    ?superseded cx:status "superseded" .
+  }
+  ?superseded rdfs:label ?label .
+  FILTER NOT EXISTS {
+    GRAPH <https://cortex.local/graph/stated> { ?archive cx:contains ?superseded }
+    ?archive a cx:Section ; rdfs:label ?heading .
+    FILTER REGEX(?heading, "^(superseded|archived?|retired)\\b", "i")
+  }
+}
+ORDER BY ?task ?file ?superseded

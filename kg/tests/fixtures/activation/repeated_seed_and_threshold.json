@@ -1,0 +1,88 @@
+{
+  "name": "repeated_seed_and_threshold",
+  "graph": {
+    "edges": [
+      {
+        "s": "a:1",
+        "r": "mentions",
+        "t": "b:1"
+      },
+      {
+        "s": "b:1",
+        "r": "mentions",
+        "t": "c:1"
+      },
+      {
+        "s": "a:1",
+        "r": "mentions",
+        "t": "c:1"
+      }
+    ]
+  },
+  "weights": {
+    "triggers": {
+      "weight": 0.95,
+      "reverse_weight": 0.5
+    },
+    "handledBy": {
+      "weight": 0.8,
+      "reverse_weight": 0.4
+    },
+    "readsFirst": {
+      "weight": 0.85,
+      "reverse_weight": 0.4
+    },
+    "contains": {
+      "weight": 0.6,
+      "reverse_weight": 0.35
+    },
+    "checkedBy": {
+      "weight": 0.7,
+      "reverse_weight": 0.5
+    },
+    "mentions": {
+      "weight": 0.3,
+      "reverse_weight": 0.15
+    }
+  },
+  "params": {
+    "decay": 0.6,
+    "max_hops": 2,
+    "threshold": 0.05,
+    "fan_exponent": 0.5
+  },
+  "fired": [
+    [
+      "a:1",
+      0.4
+    ],
+    [
+      "a:1",
+      1.0
+    ],
+    [
+      "c:1",
+      0.1
+    ]
+  ],
+  "expected": [
+    {
+      "id": "a:1",
+      "a": 1.0,
+      "hop": 0,
+      "via": null
+    },
+    {
+      "id": "b:1",
+      "a": 0.12727922061357852,
+      "hop": 1,
+      "via": "a:1"
+    },
+    {
+      "id": "c:1",
+      "a": 0.12727922061357852,
+      "hop": 1,
+      "via": "a:1"
+    }
+  ]
+}

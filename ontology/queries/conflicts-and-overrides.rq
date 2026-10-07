@@ -1,0 +1,32 @@
+# Conflicting rules in force and which one overrides which
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+# The text is optional, because a guide file that conflicts with another has no text and its pair must not be dropped.
+# A conflict counts when it is stated or ratified and neither rule is superseded or retired. cx:overrides comes from the
+# inferred graph, so it is present only after the rules have been run (rule R03, later date wins).
+SELECT ?ruleA ?textA ?dateA ?ruleB ?textB ?dateB ?overrides
+WHERE {
+  VALUES ?g { <https://cortex.local/graph/stated> <https://cortex.local/graph/ratified> }
+  GRAPH ?g { ?ruleA cx:conflictsWith ?ruleB }
+  FILTER NOT EXISTS { ?ruleA cx:status ?sa . FILTER (?sa IN ("superseded", "retired")) }
+  FILTER NOT EXISTS { ?ruleB cx:status ?sb . FILTER (?sb IN ("superseded", "retired")) }
+  FILTER NOT EXISTS { VALUES ?g2 { <https://cortex.local/graph/stated> <https://cortex.local/graph/ratified> }
+                      GRAPH ?g2 { ?newerA cx:supersedes ?ruleA } }
+  FILTER NOT EXISTS { VALUES ?g3 { <https://cortex.local/graph/stated> <https://cortex.local/graph/ratified> }
+                      GRAPH ?g3 { ?newerB cx:supersedes ?ruleB } }
+  OPTIONAL { ?ruleA cx:text ?textA }
+  OPTIONAL { ?ruleB cx:text ?textB }
+  OPTIONAL { ?ruleA cx:givenOn ?dateA }
+  OPTIONAL { ?ruleB cx:givenOn ?dateB }
+  OPTIONAL {
+    GRAPH <https://cortex.local/graph/inferred> {
+      { ?ruleA cx:overrides ?ruleB . BIND (?ruleA AS ?overrides) }
+      UNION
+      { ?ruleB cx:overrides ?ruleA . BIND (?ruleB AS ?overrides) }
+    }
+  }
+}
+ORDER BY ?ruleA ?ruleB

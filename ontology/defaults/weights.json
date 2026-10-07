@@ -1,0 +1,226 @@
+{
+  "relations": [
+    {
+      "id": "contains",
+      "label": "contains",
+      "inverse_label": "is contained in",
+      "weight": 0.6,
+      "reverse_weight": 0.35
+    },
+    {
+      "id": "triggers",
+      "label": "triggers",
+      "inverse_label": "is triggered by",
+      "weight": 0.95,
+      "reverse_weight": 0.5
+    },
+    {
+      "id": "readsFirst",
+      "label": "reads first",
+      "inverse_label": "is read first by",
+      "weight": 0.85,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "handledBy",
+      "label": "is handled by",
+      "inverse_label": "handles",
+      "weight": 0.8,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "checkedBy",
+      "label": "is checked by",
+      "inverse_label": "checks",
+      "weight": 0.7,
+      "reverse_weight": 0.5
+    },
+    {
+      "id": "appliesTo",
+      "label": "applies to",
+      "inverse_label": "is applied by",
+      "weight": 0.5,
+      "reverse_weight": 0.5
+    },
+    {
+      "id": "loads",
+      "label": "loads",
+      "inverse_label": "is loaded by",
+      "weight": 0.7,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "invokes",
+      "label": "invokes",
+      "inverse_label": "is invoked by",
+      "weight": 0.8,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "enforces",
+      "label": "enforces",
+      "inverse_label": "is enforced by",
+      "weight": 0.5,
+      "reverse_weight": 0.6
+    },
+    {
+      "id": "restates",
+      "label": "restates",
+      "inverse_label": "is restated by",
+      "weight": 0.6,
+      "reverse_weight": 0.6
+    },
+    {
+      "id": "supersedes",
+      "label": "supersedes",
+      "inverse_label": "is superseded by",
+      "weight": 0.2,
+      "reverse_weight": 0.2
+    },
+    {
+      "id": "conflictsWith",
+      "label": "conflicts with",
+      "inverse_label": "conflicts with",
+      "weight": 0.4,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "governs",
+      "label": "governs",
+      "inverse_label": "is governed by",
+      "weight": 0.4,
+      "reverse_weight": 0.5
+    },
+    {
+      "id": "refersTo",
+      "label": "refers to",
+      "inverse_label": "is referred to by",
+      "weight": 0.35,
+      "reverse_weight": 0.15
+    },
+    {
+      "id": "mentions",
+      "label": "mentions",
+      "inverse_label": "is mentioned in",
+      "weight": 0.3,
+      "reverse_weight": 0.15
+    },
+    {
+      "id": "documentedIn",
+      "label": "is documented in",
+      "inverse_label": "documents",
+      "weight": 0.6,
+      "reverse_weight": 0.7
+    },
+    {
+      "id": "belongsTo",
+      "label": "belongs to",
+      "inverse_label": "has",
+      "weight": 0.4,
+      "reverse_weight": 0.5
+    },
+    {
+      "id": "deliveredTo",
+      "label": "is delivered to",
+      "inverse_label": "receives",
+      "weight": 0.3,
+      "reverse_weight": 0.2
+    },
+    {
+      "id": "builtWith",
+      "label": "is built with",
+      "inverse_label": "is used to build",
+      "weight": 0.5,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "dependsOn",
+      "label": "depends on",
+      "inverse_label": "is depended on by",
+      "weight": 0.3,
+      "reverse_weight": 0.2
+    },
+    {
+      "id": "locatedAt",
+      "label": "is located at",
+      "inverse_label": "holds",
+      "weight": 0.3,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "usesTemplate",
+      "label": "uses template",
+      "inverse_label": "is the template of",
+      "weight": 0.6,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "ownedBy",
+      "label": "is owned by",
+      "inverse_label": "owns",
+      "weight": 0.2,
+      "reverse_weight": 0.1
+    },
+    {
+      "id": "linksTo",
+      "label": "links to",
+      "inverse_label": "is linked from",
+      "weight": 0.35,
+      "reverse_weight": 0.35
+    },
+    {
+      "id": "indexes",
+      "label": "indexes",
+      "inverse_label": "is indexed by",
+      "weight": 0.2,
+      "reverse_weight": 0.2
+    },
+    {
+      "id": "launches",
+      "label": "launches",
+      "inverse_label": "is launched by",
+      "weight": 0.4,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "denotes",
+      "label": "denotes",
+      "inverse_label": "is denoted by",
+      "weight": 0.6,
+      "reverse_weight": 0.6
+    },
+    {
+      "id": "inScheme",
+      "label": "is in scheme",
+      "inverse_label": "contains concept",
+      "weight": 0.1,
+      "reverse_weight": 0.05
+    },
+    {
+      "id": "overrides",
+      "label": "overrides",
+      "inverse_label": "is overridden by",
+      "weight": 0.5,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "supersedesChain",
+      "label": "supersedes through a chain",
+      "inverse_label": "is superseded through a chain by",
+      "weight": 0.2,
+      "reverse_weight": 0.2
+    }
+  ],
+  "activation": {
+    "decay": 0.6,
+    "max_hops": 2,
+    "threshold": 0.05,
+    "fan_exponent": 0.5,
+    "base_level_d": 0.5,
+    "min_age_days": 0.01
+  },
+  "note_inferred": "appliesToTask is inferred (rule R05) but has no weight on purpose: its 1,100 or so edges stay in inferred.json and inferred.ttl for queries, because the path from a task through its files and sections already carries activation (6 October 2026).",
+  "unweighted": [
+    "appliesToTask"
+  ]
+}

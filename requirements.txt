@@ -1,0 +1,6 @@
+rdflib>=7.6
+pyshacl>=0.40
+pytest>=9
+# optional: the rule engine for the reasoning step; without it the build records finding B03 and carries on
+nemo_python==0.10.1
+pyrage>=1.4  # age encryption for the vault (kg/cortex_kg/vault.py)

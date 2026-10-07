@@ -1,0 +1,28 @@
+# The Windows installer for the Cortex desktop shell (desktop/). The shell holds no Cortex code of its own: it runs the
+# server from the repository, so the installer needs rebuilding only when desktop/ changes.
+appId: local.cortex.desktop
+productName: Cortex
+electronVersion: 44.5.1
+directories:
+  app: desktop
+  output: release
+  buildResources: desktop
+files:
+  - main.cjs
+  - preload.cjs
+  - icon.png
+  - package.json
+  # the shell uses no packages of its own; without this line electron-builder collects the web app's dependencies
+  - "!**/node_modules/**"
+asar: true
+npmRebuild: false
+win:
+  target: nsis
+  icon: desktop/icon.png
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Cortex
+  artifactName: Cortex-Setup-${version}.${ext}

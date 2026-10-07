@@ -1,0 +1,75 @@
+{
+  "name": "chain",
+  "graph": {
+    "edges": [
+      {
+        "s": "route:decks",
+        "r": "triggers",
+        "t": "task:deck"
+      },
+      {
+        "s": "task:deck",
+        "r": "handledBy",
+        "t": "agent:checker"
+      }
+    ]
+  },
+  "weights": {
+    "triggers": {
+      "weight": 0.95,
+      "reverse_weight": 0.5
+    },
+    "handledBy": {
+      "weight": 0.8,
+      "reverse_weight": 0.4
+    },
+    "readsFirst": {
+      "weight": 0.85,
+      "reverse_weight": 0.4
+    },
+    "contains": {
+      "weight": 0.6,
+      "reverse_weight": 0.35
+    },
+    "checkedBy": {
+      "weight": 0.7,
+      "reverse_weight": 0.5
+    },
+    "mentions": {
+      "weight": 0.3,
+      "reverse_weight": 0.15
+    }
+  },
+  "params": {
+    "decay": 0.6,
+    "max_hops": 2,
+    "threshold": 0.05,
+    "fan_exponent": 0.5
+  },
+  "fired": [
+    [
+      "route:decks",
+      1.0
+    ]
+  ],
+  "expected": [
+    {
+      "id": "route:decks",
+      "a": 1.0,
+      "hop": 0,
+      "via": null
+    },
+    {
+      "id": "task:deck",
+      "a": 0.57,
+      "hop": 1,
+      "via": "route:decks"
+    },
+    {
+      "id": "agent:checker",
+      "a": 0.19346441533263936,
+      "hop": 2,
+      "via": "task:deck"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+{
+  "product": "ranviera",
+  "claude_home": "~/.claude",
+  "projects_root": null,
+  "memory_dir": "auto",
+  "data_dir": "~/.claude/ranviera",
+  "port": 5182,
+  "include_sensitivity": ["public", "internal", "client-confidential"],
+  "log_prompt_snippets": false,
+  "update_check": false
+}

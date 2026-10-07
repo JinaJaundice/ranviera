@@ -1,0 +1,617 @@
+@prefix cx: <https://cortex.local/ont#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+# The Cortex ontology (OWL 2 DL, version 0.2.0 of 6 October 2026). The classes and relations follow docs/ONTOLOGY.md, which is
+# changed first. The change log is in docs/ONTOLOGY.md. kg/tests/test_ontology.py checks the file against the OWL 2 DL
+# restrictions that apply to it.
+# Instances are written as cxi:<prefix>/<slug> and are built by the compiler, so none is declared here.
+
+<https://cortex.local/ont> a owl:Ontology ;
+    rdfs:label "Cortex ontology" ;
+    rdfs:comment "The classes, relations and properties of the Cortex knowledge graph of the Claude Code set-up." ;
+    owl:versionIRI <https://cortex.local/ont/0.2.0> ;
+    owl:versionInfo "0.2.0" .
+
+cx:inverseLabel a owl:AnnotationProperty ;
+    rdfs:label "inverse label" ;
+    rdfs:comment "The words that read a relation backwards, such as 'is contained in' for contains." .
+
+# SKOS terms that this ontology uses are declared here so that every entity has one declared kind.
+skos:Concept a owl:Class .
+skos:ConceptScheme a owl:Class .
+skos:inScheme a owl:ObjectProperty .
+skos:prefLabel a owl:AnnotationProperty .
+skos:altLabel a owl:AnnotationProperty .
+skos:hiddenLabel a owl:AnnotationProperty .
+skos:definition a owl:AnnotationProperty .
+
+# ---- Classes ----
+
+cx:InstructionFile a owl:Class ;
+    rdfs:label "InstructionFile" ;
+    rdfs:comment "A file of instructions to Claude, such as a map file, a rule file, an output style, a skill, a reference or a guide." ;
+    cx:family "instruction" .
+
+cx:MapFile a owl:Class ;
+    rdfs:label "MapFile" ;
+    rdfs:comment "A CLAUDE.md file (claudemd:global for ~/.claude/CLAUDE.md, claudemd:app-<folder> for an app)." ;
+    rdfs:subClassOf cx:InstructionFile ;
+    cx:family "instruction" .
+
+cx:RuleFile a owl:Class ;
+    rdfs:label "RuleFile" ;
+    rdfs:comment "A file in ~/.claude/rules/." ;
+    rdfs:subClassOf cx:InstructionFile ;
+    cx:family "instruction" .
+
+cx:OutputStyle a owl:Class ;
+    rdfs:label "OutputStyle" ;
+    rdfs:comment "A file in ~/.claude/output-styles/." ;
+    rdfs:subClassOf cx:InstructionFile ;
+    cx:family "instruction" .
+
+cx:Skill a owl:Class ;
+    rdfs:label "Skill" ;
+    rdfs:comment "A skill folder, with its SKILL.md as its path." ;
+    rdfs:subClassOf cx:InstructionFile ;
+    cx:family "instruction" .
+
+cx:ReferenceFile a owl:Class ;
+    rdfs:label "ReferenceFile" ;
+    rdfs:comment "A file in the references/ folder of a skill." ;
+    rdfs:subClassOf cx:InstructionFile ;
+    cx:family "instruction" .
+
+cx:GuideFile a owl:Class ;
+    rdfs:label "GuideFile" ;
+    rdfs:comment "Any other .md file in a skill, such as guide:fca-register." ;
+    rdfs:subClassOf cx:InstructionFile ;
+    cx:family "instruction" .
+
+cx:Section a owl:Class ;
+    rdfs:label "Section" ;
+    rdfs:comment "A heading in an instruction file, as section:<file-key>-<heading-slug>." ;
+    cx:family "instruction" .
+
+cx:Rule a owl:Class ;
+    rdfs:label "Rule" ;
+    rdfs:comment "One atomic rule, as rule:<file-key>-<nnn>, with its identifier kept by the rule ledger." ;
+    cx:family "instruction" .
+
+cx:Route a owl:Class ;
+    rdfs:label "Route" ;
+    rdfs:comment "One entry in tools/register/routes.json." ;
+    cx:family "instruction" .
+
+cx:TaskType a owl:Class ;
+    rdfs:label "TaskType" ;
+    rdfs:comment "A kind of task, from ontology/tasktypes.json." ;
+    cx:family "instruction" .
+
+cx:PathScope a owl:Class ;
+    rdfs:label "PathScope" ;
+    rdfs:comment "A path glob from a rule file's frontmatter." ;
+    cx:family "instruction" .
+
+cx:Agent a owl:Class ;
+    rdfs:label "Agent" ;
+    rdfs:comment "A file in ~/.claude/agents/." ;
+    cx:family "machinery" .
+
+cx:Hook a owl:Class ;
+    rdfs:label "Hook" ;
+    rdfs:comment "One command in the hooks block of settings.json, as hook:<event>-<script-stem>." ;
+    cx:family "machinery" .
+
+cx:Tool a owl:Class ;
+    rdfs:label "Tool" ;
+    rdfs:comment "A script, with props.scope of harness, build or app." ;
+    cx:family "machinery" .
+
+cx:Gate a owl:Class ;
+    rdfs:label "Gate" ;
+    rdfs:comment "A named check run before work is handed over, from the task types file." ;
+    cx:family "machinery" .
+
+cx:FaultCheck a owl:Class ;
+    rdfs:label "FaultCheck" ;
+    rdfs:comment "One fault the register hook or guard checks, keyed by its label." ;
+    cx:family "machinery" .
+
+cx:ScheduledTask a owl:Class ;
+    rdfs:label "ScheduledTask" ;
+    rdfs:comment "A folder in ~/.claude/scheduled-tasks/." ;
+    cx:family "machinery" .
+
+cx:BuiltinTool a owl:Class ;
+    rdfs:label "BuiltinTool" ;
+    rdfs:comment "A Claude Code tool such as Read, Edit or Bash." ;
+    cx:family "machinery" .
+
+cx:LaunchConfig a owl:Class ;
+    rdfs:label "LaunchConfig" ;
+    rdfs:comment "One entry in Projects/.claude/launch.json." ;
+    cx:family "machinery" .
+
+cx:RecordStore a owl:Class ;
+    rdfs:label "RecordStore" ;
+    rdfs:comment "A single store such as record:memory-index, record:backlog, record:register-log." ;
+    cx:family "record" .
+
+cx:MemoryFile a owl:Class ;
+    rdfs:label "MemoryFile" ;
+    rdfs:comment "A file in the memory folder." ;
+    cx:family "record" .
+
+cx:BacklogSection a owl:Class ;
+    rdfs:label "BacklogSection" ;
+    rdfs:comment "One project section of Projects/BACKLOG.md." ;
+    cx:family "record" .
+
+cx:OpenItem a owl:Class ;
+    rdfs:label "OpenItem" ;
+    rdfs:comment "One open item in a backlog section." ;
+    cx:family "record" .
+
+cx:HistoryFile a owl:Class ;
+    rdfs:label "HistoryFile" ;
+    rdfs:comment "A file in Projects/docs/history/." ;
+    cx:family "record" .
+
+cx:Decision a owl:Class ;
+    rdfs:label "Decision" ;
+    rdfs:comment "A numbered decision, as decision:<yyyy-mm-dd>-<n>." ;
+    cx:family "record" .
+
+cx:Project a owl:Class ;
+    rdfs:label "Project" ;
+    rdfs:comment "A project with a memory file." ;
+    cx:family "work" .
+
+cx:App a owl:Class ;
+    rdfs:label "App" ;
+    rdfs:comment "A folder in Projects/apps/." ;
+    cx:family "work" .
+
+cx:Deliverable a owl:Class ;
+    rdfs:label "Deliverable" ;
+    rdfs:comment "A current file in Projects/deliverables/." ;
+    cx:family "work" .
+
+cx:Template a owl:Class ;
+    rdfs:label "Template" ;
+    rdfs:comment "A file in Projects/_shared/." ;
+    cx:family "work" .
+
+cx:Folder a owl:Class ;
+    rdfs:label "Folder" ;
+    rdfs:comment "A folder that the set-up names." ;
+    cx:family "work" .
+
+cx:Organisation a owl:Class ;
+    rdfs:label "Organisation" ;
+    rdfs:comment "An organisation, such as org:ey." ;
+    cx:family "world" .
+
+cx:Client a owl:Class ;
+    rdfs:label "Client" ;
+    rdfs:comment "A client organisation, such as client:acme-bank." ;
+    rdfs:subClassOf cx:Organisation ;
+    cx:family "world" .
+
+cx:Person a owl:Class ;
+    rdfs:label "Person" ;
+    rdfs:comment "A named person (client-confidential unless EY staff)." ;
+    cx:family "world" .
+
+cx:Instrument a owl:Class ;
+    rdfs:label "Instrument" ;
+    rdfs:comment "A law, regulation or piece of guidance, such as instrument:fg26-6." ;
+    cx:family "world" .
+
+cx:ConceptScheme a owl:Class ;
+    rdfs:label "ConceptScheme" ;
+    rdfs:comment "A vocabulary scheme." ;
+    rdfs:subClassOf skos:ConceptScheme ;
+    cx:family "language" .
+
+cx:Concept a owl:Class ;
+    rdfs:label "Concept" ;
+    rdfs:comment "One concept in a scheme." ;
+    rdfs:subClassOf skos:Concept ;
+    cx:family "language" .
+
+# ---- Disjointness ----
+# A node has 1 class, so the classes are pairwise disjoint. InstructionFile is left out because its 6 subclasses are its
+# members, and Client is left out because it is a subclass of Organisation.
+
+[] a owl:AllDisjointClasses ;
+    owl:members ( cx:MapFile cx:RuleFile cx:OutputStyle cx:Skill cx:ReferenceFile cx:GuideFile cx:Section cx:Rule cx:Route cx:TaskType cx:PathScope cx:Agent cx:Hook cx:Tool cx:Gate cx:FaultCheck cx:ScheduledTask cx:BuiltinTool cx:LaunchConfig cx:RecordStore cx:MemoryFile cx:BacklogSection cx:OpenItem cx:HistoryFile cx:Decision cx:Project cx:App cx:Deliverable cx:Template cx:Folder cx:Organisation cx:Person cx:Instrument cx:ConceptScheme cx:Concept cx:Finding ) .
+
+# ---- Relations ----
+# Domains and ranges are inference axioms in OWL, not checks: a reasoner that meets an edge outside them concludes that the
+# node has the class, so each one below is the union of the classes that the compiled graph really holds (6 October 2026).
+# ontology/shapes.ttl checks the same targets as SHACL constraints, which report an edge that falls outside them.
+
+cx:contains a owl:ObjectProperty ;
+    rdfs:label "contains" ;
+    cx:inverseLabel "is contained in" ;
+    rdfs:comment "A file holds its sections and a skill its files, a section holds its rules, an agent body holds its sections, a record store holds its decisions and a tool holds its fault checks." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:InstructionFile cx:Section cx:Agent cx:RecordStore cx:Tool ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:InstructionFile cx:Section cx:Rule cx:Decision cx:FaultCheck ) ] .
+
+cx:triggers a owl:ObjectProperty ;
+    rdfs:label "triggers" ;
+    cx:inverseLabel "is triggered by" ;
+    rdfs:domain cx:Route ;
+    rdfs:range cx:TaskType .
+
+cx:readsFirst a owl:ObjectProperty ;
+    rdfs:label "reads first" ;
+    cx:inverseLabel "is read first by" ;
+    rdfs:comment "A task type reads an instruction file first, or a memory file where tasktypes.json names one." ;
+    rdfs:domain cx:TaskType ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:InstructionFile cx:MemoryFile ) ] .
+
+cx:handledBy a owl:ObjectProperty ;
+    rdfs:label "is handled by" ;
+    cx:inverseLabel "handles" ;
+    rdfs:domain cx:TaskType ;
+    rdfs:range cx:Agent .
+
+cx:checkedBy a owl:ObjectProperty ;
+    rdfs:label "is checked by" ;
+    cx:inverseLabel "checks" ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:TaskType cx:Rule ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:Gate cx:FaultCheck ) ] .
+
+cx:appliesTo a owl:ObjectProperty ;
+    rdfs:label "applies to" ;
+    cx:inverseLabel "is applied by" ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:RuleFile cx:Rule ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:PathScope cx:TaskType ) ] .
+
+cx:loads a owl:ObjectProperty ;
+    rdfs:label "loads" ;
+    cx:inverseLabel "is loaded by" ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Hook cx:Agent cx:Skill ) ] .
+
+cx:invokes a owl:ObjectProperty ;
+    rdfs:label "invokes" ;
+    cx:inverseLabel "is invoked by" ;
+    rdfs:comment "A hook runs a tool, and a gate runs the tool that performs its check." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Hook cx:Gate ) ] ;
+    rdfs:range cx:Tool .
+
+cx:enforces a owl:ObjectProperty ;
+    rdfs:label "enforces" ;
+    cx:inverseLabel "is enforced by" ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Gate cx:FaultCheck cx:Tool ) ] ;
+    rdfs:range cx:Rule .
+
+cx:restates a owl:ObjectProperty ;
+    rdfs:label "restates" ;
+    cx:inverseLabel "is restated by" ;
+    rdfs:domain cx:Rule ;
+    rdfs:range cx:Rule .
+
+cx:supersedes a owl:ObjectProperty , owl:AsymmetricProperty ;
+    rdfs:label "supersedes" ;
+    cx:inverseLabel "is superseded by" ;
+    rdfs:comment "A node replaces an earlier node of the same kind, and no node replaces itself or the node that replaces it." ;
+    rdfs:subPropertyOf cx:supersedesChain .
+
+cx:conflictsWith a owl:ObjectProperty , owl:SymmetricProperty ;
+    rdfs:label "conflicts with" ;
+    cx:inverseLabel "conflicts with" ;
+    rdfs:domain cx:Rule ;
+    rdfs:range cx:Rule .
+
+cx:governs a owl:ObjectProperty ;
+    rdfs:label "governs" ;
+    cx:inverseLabel "is governed by" ;
+    rdfs:domain cx:Decision ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:Rule cx:InstructionFile cx:MemoryFile ) ] .
+
+cx:refersTo a owl:ObjectProperty ;
+    rdfs:label "refers to" ;
+    cx:inverseLabel "is referred to by" .
+
+cx:mentions a owl:ObjectProperty ;
+    rdfs:label "mentions" ;
+    cx:inverseLabel "is mentioned in" .
+
+cx:documentedIn a owl:ObjectProperty ;
+    rdfs:label "is documented in" ;
+    cx:inverseLabel "documents" ;
+    rdfs:domain cx:Project ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:MemoryFile cx:BacklogSection cx:HistoryFile ) ] .
+
+cx:belongsTo a owl:ObjectProperty ;
+    rdfs:label "belongs to" ;
+    cx:inverseLabel "has" ;
+    rdfs:comment "A deliverable and a backlog section belong to a project, and an open item belongs to its backlog section." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Deliverable cx:OpenItem cx:BacklogSection ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:Project cx:BacklogSection ) ] .
+
+cx:deliveredTo a owl:ObjectProperty ;
+    rdfs:label "is delivered to" ;
+    cx:inverseLabel "receives" ;
+    rdfs:comment "The recipient is an organisation, and a client where the organisation pays for the work." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Project cx:Deliverable ) ] ;
+    rdfs:range cx:Organisation .
+
+cx:builtWith a owl:ObjectProperty ;
+    rdfs:label "is built with" ;
+    cx:inverseLabel "is used to build" ;
+    rdfs:domain cx:Project ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:App cx:Tool cx:Template ) ] .
+
+cx:dependsOn a owl:ObjectProperty ;
+    rdfs:label "depends on" ;
+    cx:inverseLabel "is depended on by" ;
+    rdfs:domain cx:Project ;
+    rdfs:range cx:Project .
+
+cx:locatedAt a owl:ObjectProperty ;
+    rdfs:label "is located at" ;
+    cx:inverseLabel "holds" ;
+    rdfs:range cx:Folder .
+
+cx:usesTemplate a owl:ObjectProperty ;
+    rdfs:label "uses template" ;
+    cx:inverseLabel "is the template of" ;
+    rdfs:range cx:Template .
+
+cx:ownedBy a owl:ObjectProperty ;
+    rdfs:label "is owned by" ;
+    cx:inverseLabel "owns" ;
+    rdfs:domain cx:OpenItem ;
+    rdfs:range cx:Person .
+
+cx:linksTo a owl:ObjectProperty ;
+    rdfs:label "links to" ;
+    cx:inverseLabel "is linked from" ;
+    rdfs:domain cx:MemoryFile ;
+    rdfs:range cx:MemoryFile .
+
+cx:indexes a owl:ObjectProperty ;
+    rdfs:label "indexes" ;
+    cx:inverseLabel "is indexed by" ;
+    rdfs:domain cx:RecordStore ;
+    rdfs:range cx:MemoryFile .
+
+cx:launches a owl:ObjectProperty ;
+    rdfs:label "launches" ;
+    cx:inverseLabel "is launched by" ;
+    rdfs:domain cx:LaunchConfig ;
+    rdfs:range cx:App .
+
+cx:denotes a owl:ObjectProperty ;
+    rdfs:label "denotes" ;
+    cx:inverseLabel "is denoted by" ;
+    rdfs:comment "A concept names a node of the set-up. The node is never a concept or a scheme." ;
+    rdfs:domain cx:Concept .
+
+cx:inScheme a owl:ObjectProperty ;
+    rdfs:label "is in scheme" ;
+    cx:inverseLabel "contains concept" ;
+    rdfs:domain cx:Concept ;
+    rdfs:range cx:ConceptScheme ;
+    rdfs:subPropertyOf skos:inScheme .
+
+# ---- Properties of a node ----
+# A property that holds 1 value at most is functional, which the compiled graph confirms (docs/ONTOLOGY.md).
+
+cx:path a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "path" ;
+    rdfs:comment "The absolute path of the file or folder that a node stands for." ;
+    rdfs:range xsd:string .
+
+cx:summary a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "summary" ;
+    rdfs:comment "One sentence that says what the node is." ;
+    rdfs:range xsd:string .
+
+cx:date a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "date" ;
+    rdfs:comment "The date that the node states or is dated." ;
+    rdfs:range xsd:date .
+
+cx:status a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "status" ;
+    rdfs:comment "The state of the node: active, maintained, parked, blocked, superseded, archived or retired." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "active" "maintained" "parked" "blocked" "superseded" "archived" "retired" ) ] .
+
+cx:sensitivity a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "sensitivity" ;
+    rdfs:comment "The sensitivity of the node: public, internal or client-confidential." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "public" "internal" "client-confidential" ) ] .
+
+cx:family a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "family" ;
+    rdfs:comment "The family of a class, which sets the colour of its nodes in the graph. A class declaration carries it, and so does each node of the class." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "instruction" "machinery" "record" "work" "world" "language" ) ] .
+
+cx:evidence a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "evidence" ;
+    rdfs:comment "The file and line that the node was read from." ;
+    rdfs:range xsd:string .
+
+cx:text a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "text" ;
+    rdfs:comment "The text of a rule or of an open item." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:OpenItem ) ] ;
+    rdfs:range xsd:string .
+
+cx:modal a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "modal" ;
+    rdfs:comment "The modal verb of a rule: must, should, may, will, imperative or none." ;
+    rdfs:domain cx:Rule ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "must" "should" "may" "will" "imperative" "none" ) ] .
+
+cx:givenOn a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "givenOn" ;
+    rdfs:comment "The date that a rule states for itself." ;
+    rdfs:domain cx:Rule ;
+    rdfs:range xsd:date .
+
+cx:fingerprint a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "fingerprint" ;
+    rdfs:comment "The hash of the normalised text of a rule." ;
+    rdfs:domain cx:Rule ;
+    rdfs:range xsd:string .
+
+cx:section a owl:DatatypeProperty ;
+    rdfs:label "section" ;
+    rdfs:comment "The heading that a rule is written under." ;
+    rdfs:domain cx:Rule ;
+    rdfs:range xsd:string .
+
+cx:model a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "model" ;
+    rdfs:comment "The model that an agent runs on." ;
+    rdfs:domain cx:Agent ;
+    rdfs:range xsd:string .
+
+cx:effort a owl:DatatypeProperty ;
+    rdfs:label "effort" ;
+    rdfs:comment "The effort level that an agent runs at." ;
+    rdfs:domain cx:Agent ;
+    rdfs:range xsd:string .
+
+cx:tools a owl:DatatypeProperty ;
+    rdfs:label "tools" ;
+    rdfs:comment "A tool that an agent may use." ;
+    rdfs:domain cx:Agent ;
+    rdfs:range xsd:string .
+
+cx:event a owl:DatatypeProperty ;
+    rdfs:label "event" ;
+    rdfs:comment "The Claude Code event that a hook is registered on." ;
+    rdfs:domain cx:Hook ;
+    rdfs:range xsd:string .
+
+cx:matcher a owl:DatatypeProperty ;
+    rdfs:label "matcher" ;
+    rdfs:comment "The matcher of a hook." ;
+    rdfs:domain cx:Hook ;
+    rdfs:range xsd:string .
+
+cx:command a owl:DatatypeProperty ;
+    rdfs:label "command" ;
+    rdfs:comment "The command that a hook, a gate or a launch configuration runs." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Hook cx:Gate cx:LaunchConfig ) ] ;
+    rdfs:range xsd:string .
+
+cx:async a owl:DatatypeProperty ;
+    rdfs:label "async" ;
+    rdfs:comment "Whether a hook runs asynchronously." ;
+    rdfs:domain cx:Hook ;
+    rdfs:range xsd:boolean .
+
+cx:pattern a owl:DatatypeProperty ;
+    rdfs:label "pattern" ;
+    rdfs:comment "A regular expression that a route matches against a prompt." ;
+    rdfs:domain cx:Route ;
+    rdfs:range xsd:string .
+
+cx:memoryType a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "memoryType" ;
+    rdfs:comment "The type of a memory file: user, feedback, project or reference." ;
+    rdfs:domain cx:MemoryFile ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "user" "feedback" "project" "reference" ) ] .
+
+cx:bytes a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "bytes" ;
+    rdfs:comment "The size of a file in bytes." ;
+    rdfs:range xsd:integer .
+
+cx:indexed a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "indexed" ;
+    rdfs:comment "Whether the memory index lists the memory file." ;
+    rdfs:domain cx:MemoryFile ;
+    rdfs:range xsd:boolean .
+
+cx:termStatus a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "termStatus" ;
+    rdfs:comment "The status of a concept: ratified or proposed." ;
+    rdfs:domain cx:Concept ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "ratified" "proposed" ) ] .
+
+cx:severity a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "severity" ;
+    rdfs:comment "The severity of a concept: warn or fail. A finding carries cx:findingSeverity." ;
+    rdfs:domain cx:Concept ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "warn" "fail" ) ] .
+
+cx:uses a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "uses" ;
+    rdfs:comment "The number of recorded uses of a node." ;
+    rdfs:range xsd:integer .
+
+cx:lastUsed a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "lastUsed" ;
+    rdfs:comment "The time of the last recorded use of a node." ;
+    rdfs:range xsd:dateTime .
+
+cx:baseLevel a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "baseLevel" ;
+    rdfs:comment "The base-level activation of a node, as ln of the summed ages of its uses to the power of minus 0.5." ;
+    rdfs:range xsd:decimal .
+
+cx:checkId a owl:DatatypeProperty ;
+    rdfs:label "checkId" ;
+    rdfs:comment "The identifier of a validation check, such as S03. A shape and a finding each carry it." ;
+    rdfs:range xsd:string .
+
+# ---- Findings ----
+# The build writes each finding to the inferred graph of graph.trig as a cx:Finding (docs/CONTRACTS.md).
+
+cx:Finding a owl:Class ;
+    rdfs:label "Finding" ;
+    rdfs:comment "One result of a validation check or of a reasoning rule, with its check, severity, message and node." .
+
+cx:findingSeverity a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "findingSeverity" ;
+    rdfs:comment "The severity of a finding: violation, warning or info." ;
+    rdfs:domain cx:Finding ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "violation" "warning" "info" ) ] .
+
+cx:message a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "message" ;
+    rdfs:comment "The text of a finding." ;
+    rdfs:domain cx:Finding ;
+    rdfs:range xsd:string .
+
+cx:onNode a owl:ObjectProperty ;
+    rdfs:label "on node" ;
+    cx:inverseLabel "has the finding" ;
+    rdfs:comment "The node that a finding concerns." ;
+    rdfs:domain cx:Finding .
+
+# ---- Relations inferred by the rules in ontology/rules/cortex.rls (docs/REASONING.md, 6 October 2026) ----
+
+cx:overrides a owl:ObjectProperty , owl:AsymmetricProperty ;
+    rdfs:label "overrides" ;
+    cx:inverseLabel "is overridden by" ;
+    rdfs:comment "Inferred by rule R03: of 2 conflicting rules that both state a date, the later one applies." ;
+    rdfs:subPropertyOf cx:conflictsWith ;
+    rdfs:domain cx:Rule ;
+    rdfs:range cx:Rule .
+
+cx:supersedesChain a owl:ObjectProperty , owl:TransitiveProperty ;
+    rdfs:label "supersedes through a chain" ;
+    cx:inverseLabel "is superseded through a chain by" ;
+    rdfs:comment "Inferred by rule R02: the transitive closure of supersedes." .
+
+cx:appliesToTask a owl:ObjectProperty ;
+    rdfs:label "applies to task" ;
+    cx:inverseLabel "has the rule" ;
+    rdfs:comment "Inferred by rule R05: a rule applies to a task type that reads first the file holding it." ;
+    rdfs:domain cx:Rule ;
+    rdfs:range cx:TaskType .

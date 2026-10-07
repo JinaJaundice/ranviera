@@ -1,0 +1,116 @@
+{
+  "v": 1,
+  "updated": "2026-10-06",
+  "source": "docs/DISTRIBUTION.md, the starting task types",
+  "note": "The 8 starting task types carry plain route patterns and no files read first. The person's own CLAUDE.md adds files read first where it holds a table that names a task and a file, and the person can edit task types in the app.",
+  "task_types": [
+    {
+      "id": "task:code",
+      "label": "Writing code",
+      "routes": [],
+      "route_patterns": [
+        "\\b(write|implement|add|build|create)\\b.*\\b(function|feature|class|module|script|endpoint|component)\\b",
+        "\\bnew feature\\b"
+      ],
+      "table_row": "Writing code",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    },
+    {
+      "id": "task:review",
+      "label": "Reviewing code",
+      "routes": [],
+      "route_patterns": [
+        "\\bcode review\\b",
+        "\\breview\\b.*\\b(code|diff|pull request|PR|changes)\\b"
+      ],
+      "table_row": "Reviewing code",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    },
+    {
+      "id": "task:debug",
+      "label": "Debugging",
+      "routes": [],
+      "route_patterns": [
+        "\\b(debug|bug|stack trace|traceback|exception|failing test|not working|broken)\\b",
+        "\\bfix\\b.*\\b(error|bug|crash)\\b"
+      ],
+      "table_row": "Debugging",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    },
+    {
+      "id": "task:research",
+      "label": "Research",
+      "routes": [],
+      "route_patterns": [
+        "\\bresearch\\b",
+        "\\b(look up|investigate|compare|find out)\\b",
+        "\\bliterature\\b"
+      ],
+      "table_row": "Research",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    },
+    {
+      "id": "task:document",
+      "label": "Writing a document",
+      "routes": [],
+      "route_patterns": [
+        "\\b(write|draft)\\b.*\\b(document|report|memo|email|article|readme|proposal)\\b",
+        "\\bdocumentation\\b"
+      ],
+      "table_row": "Writing a document",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    },
+    {
+      "id": "task:slides",
+      "label": "Making slides",
+      "routes": [],
+      "route_patterns": [
+        "\\bslides?\\b",
+        "\\bdecks?\\b",
+        "\\bpresentation\\b"
+      ],
+      "table_row": "Making slides",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    },
+    {
+      "id": "task:data",
+      "label": "Analysing data",
+      "routes": [],
+      "route_patterns": [
+        "\\b(analy[sz]e|analysis)\\b.*\\b(data|dataset|csv|spreadsheet)\\b",
+        "\\b(csv|spreadsheet|dataset|chart|statistics)\\b"
+      ],
+      "table_row": "Analysing data",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    },
+    {
+      "id": "task:plan",
+      "label": "Planning",
+      "routes": [],
+      "route_patterns": [
+        "\\bplan\\b",
+        "\\b(roadmap|design|architecture|outline)\\b",
+        "\\bbreak down\\b"
+      ],
+      "table_row": "Planning",
+      "reads_first": [],
+      "agents": [],
+      "gates": []
+    }
+  ],
+  "gates": []
+}

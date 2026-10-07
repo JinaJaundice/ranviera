@@ -1,0 +1,86 @@
+{
+  "name": "three_hops_allowed",
+  "graph": {
+    "edges": [
+      {
+        "s": "n:1",
+        "r": "triggers",
+        "t": "n:2"
+      },
+      {
+        "s": "n:2",
+        "r": "triggers",
+        "t": "n:3"
+      },
+      {
+        "s": "n:3",
+        "r": "triggers",
+        "t": "n:4"
+      }
+    ]
+  },
+  "weights": {
+    "triggers": {
+      "weight": 0.95,
+      "reverse_weight": 0.5
+    },
+    "handledBy": {
+      "weight": 0.8,
+      "reverse_weight": 0.4
+    },
+    "readsFirst": {
+      "weight": 0.85,
+      "reverse_weight": 0.4
+    },
+    "contains": {
+      "weight": 0.6,
+      "reverse_weight": 0.35
+    },
+    "checkedBy": {
+      "weight": 0.7,
+      "reverse_weight": 0.5
+    },
+    "mentions": {
+      "weight": 0.3,
+      "reverse_weight": 0.15
+    }
+  },
+  "params": {
+    "decay": 0.6,
+    "max_hops": 3,
+    "threshold": 0.01,
+    "fan_exponent": 0.5
+  },
+  "fired": [
+    [
+      "n:1",
+      1.0
+    ]
+  ],
+  "expected": [
+    {
+      "id": "n:1",
+      "a": 1.0,
+      "hop": 0,
+      "via": null
+    },
+    {
+      "id": "n:2",
+      "a": 0.57,
+      "hop": 1,
+      "via": "n:1"
+    },
+    {
+      "id": "n:3",
+      "a": 0.22973899320750926,
+      "hop": 2,
+      "via": "n:2"
+    },
+    {
+      "id": "n:4",
+      "a": 0.09259649999999997,
+      "hop": 3,
+      "via": "n:3"
+    }
+  ]
+}

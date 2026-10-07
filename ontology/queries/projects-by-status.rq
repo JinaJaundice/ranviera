@@ -1,0 +1,14 @@
+# Projects by status
+PREFIX cx: <https://cortex.local/ont#>
+PREFIX cxi: <https://cortex.local/id/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
+
+SELECT ?status ?project ?label ?summary
+WHERE {
+  ?project a cx:Project ;
+           rdfs:label ?label .
+  OPTIONAL { ?project cx:status ?status }
+  OPTIONAL { ?project cx:summary ?summary }
+}
+ORDER BY ?status ?label

@@ -1,0 +1,31 @@
+# The owner's own installer: the same shell as the public product, shown as Ranviera, which runs the server, the compiler
+# and the web app from the repository on this computer (ranvieraMode "repo"). A git pull or the automatic sync updates it
+# with no new installer, so it needs rebuilding only when desktop/ changes. Build it with npm run dist:owner.
+appId: io.github.jinajaundice.ranviera.owner
+productName: Ranviera
+electronVersion: 44.5.1
+extraMetadata:
+  ranvieraMode: repo
+directories:
+  app: desktop
+  output: release/owner
+  buildResources: desktop
+files:
+  - main.cjs
+  - preload.cjs
+  - icon.png
+  - package.json
+  # the shell uses no packages of its own; without this line electron-builder collects the web app's dependencies
+  - "!**/node_modules/**"
+asar: true
+npmRebuild: false
+win:
+  target: nsis
+  icon: desktop/icon.png
+nsis:
+  oneClick: true
+  perMachine: false
+  createDesktopShortcut: always
+  createStartMenuShortcut: true
+  shortcutName: Ranviera
+  artifactName: Ranviera-Owner-Setup-${version}.${ext}

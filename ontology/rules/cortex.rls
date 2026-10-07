@@ -1,0 +1,94 @@
+% Cortex rules in the syntax of Nemo. docs/REASONING.md lists them.
+%
+% The facts come from kg/cortex_kg/reason.py: node(Id, Class), edge(S, R, T), status(Id, Status), day(Id, YYYYMMDD),
+% stated_day(Id, YYYYMMDD) for a date the node gives in brackets, sensitivity(Id, Level), uses(Id, N), idle(Id, Days)
+% and observed(Days), the days from the first recorded event to today. The edge facts hold only edges of provenance
+% stated, computed or ratified. A header line "%% <id> | <kind> | <message>" names the rule
+% and every statement after it, up to the next header, belongs to that rule and must derive an output. Statements
+% before the first header are helpers, and the run names them H01, H02 and so on. The outputs are inferred(S, Relation, T), violation(Id, Node), warning(Id, Node)
+% and info(Id, Node).
+
+@output inferred.
+@output violation.
+@output warning.
+@output info.
+
+% ---------------------------------------------------------------- helpers
+
+inactive(?X) :- status(?X, "superseded") .
+inactive(?X) :- status(?X, "retired") .
+inactive(?X) :- status(?X, "archived") .
+active(?X) :- node(?X, "Rule"), ~inactive(?X) .
+
+% a decision that governs both rules of a conflicting pair is taken to settle it
+decided(?A, ?B) :- conflict(?A, ?B), edge(?D, "governs", ?A), edge(?D, "governs", ?B), node(?D, "Decision") .
+
+contains_t(?A, ?B) :- edge(?A, "contains", ?B) .
+contains_t(?A, ?C) :- contains_t(?A, ?B), edge(?B, "contains", ?C) .
+
+read_first(?F) :- edge(?T, "readsFirst", ?F), node(?T, "TaskType") .
+read_first(?F) :- contains_t(?P, ?F), read_first(?P) .
+
+routed(?F) :- read_first(?F) .
+routed(?F) :- edge(?F, "appliesTo", ?S), node(?S, "PathScope") .
+routed(?F) :- edge(?F, "appliesTo", ?S), node(?S, "TaskType") .
+routed(?F) :- edge(?S, "triggers", ?T), edge(?T, "readsFirst", ?F), node(?S, "Route") .
+
+% pointed(?T) holds for a file that a rule file or a map file cites directly.
+pointed(?T) :- node(?C, "RuleFile"), edge(?C, "refersTo", ?T) .
+pointed(?T) :- node(?C, "MapFile"), edge(?C, "refersTo", ?T) .
+
+% a conflict is symmetric, and only a date that a node gives in brackets orders the pair
+conflict(?A, ?B) :- edge(?A, "conflictsWith", ?B) .
+conflict(?A, ?B) :- edge(?B, "conflictsWith", ?A) .
+overrides(?A, ?B) :- conflict(?A, ?B), stated_day(?A, ?X), stated_day(?B, ?Y), ?X > ?Y .
+
+supersedes_t(?A, ?B) :- edge(?A, "supersedes", ?B) .
+supersedes_t(?A, ?C) :- supersedes_t(?A, ?B), edge(?B, "supersedes", ?C) .
+
+mentioned(?N) :- edge(?C, "denotes", ?N), edge(?F, "mentions", ?C) .
+mentioned(?N) :- edge(?F, "refersTo", ?N) .
+
+% ---------------------------------------------------------------- rules
+
+%% R01 | inference | A rule that restates another rule is restated by it in return, so the link is recorded in both directions.
+inferred(?B, "restates", ?A) :- edge(?A, "restates", ?B), ~edge(?B, "restates", ?A) .
+
+%% R02 | inference | A rule that supersedes a rule that supersedes a third rule also supersedes the third rule through the chain.
+inferred(?A, "supersedesChain", ?C) :- supersedes_t(?A, ?C), ~edge(?A, "supersedes", ?C), ?A != ?C .
+
+%% R03 | inference | Where 2 rules conflict and both give a date in brackets, the later rule overrides the earlier one, in line with the precedence rule in the global map.
+inferred(?A, "overrides", ?B) :- overrides(?A, ?B) .
+
+%% R04 | violation | Two active rules conflict and neither a later date given in brackets nor a decision that governs both rules settles which of them applies.
+violation("R04", ?A) :- conflict(?A, ?B), active(?A), active(?B), ~overrides(?A, ?B), ~overrides(?B, ?A), ~decided(?A, ?B) .
+
+%% R05 | inference | An active rule applies to a task type where the task type reads first the file that holds the rule, directly or through a section.
+inferred(?R, "appliesToTask", ?T) :- edge(?T, "readsFirst", ?F), node(?T, "TaskType"), contains_t(?F, ?R), active(?R) .
+
+%% R06 | warning | A reference or guide file is not routed, because no task type reads it first and no rule file or map file points to it.
+warning("R06", ?F) :- node(?F, "ReferenceFile"), ~routed(?F), ~pointed(?F) .
+warning("R06", ?F) :- node(?F, "GuideFile"), ~routed(?F), ~pointed(?F) .
+
+%% R07 | warning | Two rules that restate each other give different dates in brackets, so the older copy may be out of date.
+warning("R07", ?A) :- edge(?A, "restates", ?B), stated_day(?A, ?X), stated_day(?B, ?Y), ?X < ?Y .
+
+%% R08 | violation | A rule supersedes itself through a chain of superseding rules.
+violation("R08", ?A) :- supersedes_t(?A, ?A) .
+
+%% R09 | warning | An active rule is superseded by another active rule but is not marked as superseded, so the older rule may still be applied.
+warning("R09", ?R) :- edge(?N, "supersedes", ?R), active(?N), active(?R) .
+
+%% R10 | warning | An active project has had no recorded use for more than 30 days.
+warning("R10", ?P) :- node(?P, "Project"), status(?P, "active"), idle(?P, ?D), ?D > 30 .
+
+%% R11 | info | A ratified term denotes a node that no file mentions or cites.
+info("R11", ?C) :- node(?C, "Concept"), status(?C, "ratified"), edge(?C, "denotes", ?N), ~mentioned(?N) .
+
+%% R12 | warning | An instruction file that no route, task type or path scope reaches has had no recorded use.
+warning("R12", ?F) :- node(?F, "RuleFile"), ~routed(?F), uses(?F, 0) .
+warning("R12", ?F) :- node(?F, "ReferenceFile"), ~routed(?F), uses(?F, 0) .
+warning("R12", ?F) :- node(?F, "GuideFile"), ~routed(?F), uses(?F, 0) .
+
+%% R13 | warning | An active project has no recorded use although the event store covers more than 30 days.
+warning("R13", ?P) :- node(?P, "Project"), status(?P, "active"), uses(?P, 0), observed(?D), ?D > 30 .

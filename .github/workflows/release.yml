@@ -1,0 +1,106 @@
+name: release
+
+# The workflow runs when a tag of the form v* is pushed. It builds the installers on Windows, macOS and Linux, writes
+# SHA256SUMS.txt, creates a build attestation for each installer and creates a draft release that the maintainer
+# publishes by hand.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: npm ci
+      - run: pip install -r requirements.txt
+      - run: python -m pytest kg/tests -q
+      - run: npx tsc -b --noEmit
+      - run: npx eslint .
+      - run: npx vitest run
+      - run: node --test scripts/public/check.test.mjs scripts/public/notices.test.mjs
+      - run: node scripts/public/check.mjs .
+      - run: node scripts/public/notices.mjs --check
+
+  build:
+    needs: checks
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Runner labels read in https://github.com/actions/runner-images/blob/main/README.md on 6 October 2026:
+          # windows-latest is x64, macos-15 is arm64 and macos-15-intel is x64.
+          # https://docs.github.com/en/actions/reference/runners/github-hosted-runners (read on 6 October 2026) lists macos-15-intel
+          # (Intel) as a standard runner that is free and unlimited on public repositories. Replace it when macOS 15 is retired.
+          - { os: windows-latest, name: windows-x64, dist: "dist:win", arch: "--x64" }
+          - { os: macos-15, name: macos-arm64, dist: "dist:mac", arch: "--arm64" }
+          - { os: macos-15-intel, name: macos-x64, dist: "dist:mac", arch: "--x64" }
+          - { os: ubuntu-latest, name: linux-x64, dist: "dist:linux", arch: "--x64" }
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: npm ci
+      - run: pip install -r requirements.txt pyinstaller
+      - run: python -m pytest kg/tests -q
+      - run: npx vitest run
+      - run: npx vite build
+      # build:app assembles build/app: the web app, the server bundled by esbuild and the compiler built with PyInstaller on
+      # each operating system. The dist script of the matrix then packages it with electron-builder.yml.
+      - run: npm run build:app
+      - run: npm run ${{ matrix.dist }} -- ${{ matrix.arch }} --publish never
+      - uses: actions/upload-artifact@v4
+        with:
+          name: installer-${{ matrix.name }}
+          path: |
+            release/*.exe
+            release/*.dmg
+            release/*.AppImage
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: installer-*
+          path: installers
+          merge-multiple: true
+      - name: Write SHA256SUMS.txt
+        working-directory: installers
+        run: sha256sum * > SHA256SUMS.txt
+      # The latest release of actions/attest-build-provenance was v4.2.2 on 6 October 2026 (api.github.com/repos/actions/attest-build-provenance/releases/latest).
+      - uses: actions/attest-build-provenance@v4
+        with:
+          subject-path: |
+            installers/*.exe
+            installers/*.dmg
+            installers/*.AppImage
+      - name: Create a draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release create "$GITHUB_REF_NAME" installers/* --repo "$GITHUB_REPOSITORY" --draft --title "$GITHUB_REF_NAME" --generate-notes

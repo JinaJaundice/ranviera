@@ -1,0 +1,10 @@
+{
+  "name": "Cortex",
+  "short_name": "Cortex",
+  "description": "A knowledge graph and agent workspace for a Claude Code set-up",
+  "display": "standalone",
+  "start_url": "/",
+  "background_color": "#04060b",
+  "theme_color": "#04060b",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }]
+}

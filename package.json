@@ -1,0 +1,71 @@
+{
+  "name": "ranviera",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Reads a person's Claude Code set-up into a knowledge graph, checks it against an ontology and shows it as a brain, on their own computer.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/JinaJaundice/ranviera.git"
+  },
+  "homepage": "https://github.com/JinaJaundice/ranviera",
+  "bugs": {
+    "url": "https://github.com/JinaJaundice/ranviera/issues"
+  },
+  "scripts": {
+    "dev": "tsx server/src/main.ts --dev",
+    "start": "tsx server/src/main.ts",
+    "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --noEmit",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "graph": "python cortex.py build && python cortex.py check",
+    "smoke": "node scripts/smoke.mjs",
+    "desktop": "electron desktop",
+    "desktop:dist": "electron-builder --config electron-builder.yml --win",
+    "build:app": "node scripts/build/assemble.mjs && node scripts/build/server.mjs && node scripts/build/kg.mjs",
+    "dist:win": "electron-builder --config electron-builder.yml --win",
+    "dist:mac": "electron-builder --config electron-builder.yml --mac",
+    "dist:linux": "electron-builder --config electron-builder.yml --linux",
+    "dist:owner": "electron-builder --config packaging/electron-builder.owner.yml --win"
+  },
+  "dependencies": {
+    "@fontsource-variable/inter": "^5.3.0",
+    "@fontsource-variable/jetbrains-mono": "^5.3.0",
+    "@fontsource-variable/space-grotesk": "^5.3.0",
+    "3d-force-graph": "^1.80.1",
+    "fuse.js": "^7.5.0",
+    "lucide-react": "^1.52.0",
+    "oxigraph": "^0.5.11",
+    "react": "^19.2.5",
+    "react-dom": "^19.2.5",
+    "three": "^0.186.1"
+  },
+  "devDependencies": {
+    "@electron/fuses": "^2.1.3",
+    "@eslint/js": "^10.0.1",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.12.2",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@types/three": "^0.186.0",
+    "@vitejs/plugin-react": "^6.1.2",
+    "electron": "^44.5.1",
+    "electron-builder": "^26.15.3",
+    "esbuild": "^0.28.2",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "license-checker-rseidelsohn": "^5.0.1",
+    "playwright": "^1.63.0",
+    "tailwindcss": "^4.3.3",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.2",
+    "typescript-eslint": "^8.71.1",
+    "vite": "^8.3.2",
+    "vitest": "^4.1.8"
+  }
+}

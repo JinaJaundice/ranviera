@@ -1,0 +1,36 @@
+Ranviera
+Copyright 2026 the Ranviera authors
+
+This product is licensed under the Apache License, Version 2.0. The full text is in the file LICENSE. The licences of the
+other software that the product contains are in THIRD_PARTY_NOTICES.md.
+
+Ranviera is an independent open-source project. It is not affiliated with, endorsed by or sponsored by Anthropic. It runs
+the Claude Code tool that you install and sign in to yourself, and your use of Claude Code is governed by your own
+agreement with Anthropic.
+
+Brain model
+
+The brain view draws a model that is adapted from the 3D Reference Organ for Brain, Male, version 1.4, of the HuBMAP
+Human Reference Atlas.
+
+Citation: Browne, Kristen, and Heidi Schlehlein. 2024. 3D Reference Organ for Brain, Male v1.4.
+https://doi.org/10.48539/HBM538.NKCT.649
+Source: https://cdn.humanatlas.io/digital-objects/ref-organ/brain-male/v1.4/assets/3d-allen-m-brain.glb
+Derived from: Ding et al. 2016, Comprehensive Cellular-Resolution Atlas of the Adult Human Brain, Journal of Comparative
+Neurology 524(16):3127-3481 (Allen Human Brain Atlas).
+Licence: Creative Commons Attribution 4.0 International (CC BY 4.0), https://creativecommons.org/licenses/by/4.0/
+Changes: Ranviera simplified the meshes, grouped them into regions, re-centred and rescaled them, mirrored them to true
+handedness (the X axis is negated so that the left hemisphere lies at positive X), and recoloured them.
+
+The files brain.glb, brain-points.bin and brain-regions.json in web/public/brain are adapted material under that licence.
+The licence of the model applies to those files and not to the rest of the product.
+
+Fonts
+
+The web app bundles three fonts through the packages @fontsource-variable/inter, @fontsource-variable/jetbrains-mono and
+@fontsource-variable/space-grotesk. Each is licensed under the SIL Open Font License, Version 1.1, which is reproduced in
+THIRD_PARTY_NOTICES.md.
+
+Inter: Copyright 2016 The Inter Project Authors (https://github.com/rsms/inter)
+JetBrains Mono: Copyright 2020 The JetBrains Mono Project Authors (https://github.com/JetBrains/JetBrainsMono)
+Space Grotesk: Copyright 2020 The Space Grotesk Project Authors (https://github.com/floriankarsten/space-grotesk)

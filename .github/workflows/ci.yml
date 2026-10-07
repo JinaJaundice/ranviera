@@ -1,0 +1,67 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  python:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m pytest kg/tests -q
+      # a first build on an empty Claude folder must give a graph from the starting content and no violation
+      - name: Build on an empty Claude folder
+        run: |
+          mkdir -p "$RUNNER_TEMP/claude" "$RUNNER_TEMP/data"
+          python - <<'PY'
+          import json, os
+          t = os.environ["RUNNER_TEMP"]
+          cfg = {"product": "ranviera", "claude_home": f"{t}/claude", "projects_root": None, "memory_dir": "auto",
+                 "data_dir": f"{t}/data", "port": 5182, "log_prompt_snippets": False}
+          open(f"{t}/ranviera.ci.json", "w").write(json.dumps(cfg, indent=2))
+          PY
+          CORTEX_CONFIG="$RUNNER_TEMP/ranviera.ci.json" python cortex.py build
+          CORTEX_CONFIG="$RUNNER_TEMP/ranviera.ci.json" python cortex.py check --ci --strict
+
+  web:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npx tsc -b --noEmit
+      - run: npx eslint .
+      - run: npx vitest run
+      - run: npx vite build
+
+  public:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+          cache: pip
+      - run: npm ci
+      - run: pip install -r requirements.txt
+      - run: node --test scripts/public/check.test.mjs scripts/public/notices.test.mjs
+      # the content check without a private deny list: secrets, user paths, e-mail addresses and file sizes
+      - run: node scripts/public/check.mjs .
+      # the licences of the packages must be on the allow list of docs/OPERATIONS.md
+      - run: node scripts/public/notices.mjs --check
