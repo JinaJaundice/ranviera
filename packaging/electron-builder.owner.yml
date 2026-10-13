@@ -28,4 +28,6 @@ nsis:
   createDesktopShortcut: always
   createStartMenuShortcut: true
   shortcutName: Ranviera
+  # a second shortcut, Ranviera demonstrator, that starts the shell with --demo (13 October 2026)
+  include: packaging/owner-installer.nsh
   artifactName: Ranviera-Owner-Setup-${version}.${ext}

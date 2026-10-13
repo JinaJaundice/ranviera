@@ -13,7 +13,7 @@
 // The environment variable RANVIERA_SELFTEST names a folder. The app then photographs its own window after the first
 // screen has loaded, checks that /api/status refuses a request without the token, writes selftest.json there and quits.
 const { app, BrowserWindow, dialog, ipcMain, session, shell, utilityProcess } = require("electron");
-const { spawn, execFile } = require("node:child_process");
+const { spawn, spawnSync, execFile } = require("node:child_process");
 const crypto = require("node:crypto");
 const fs = require("node:fs");
 const http = require("node:http");
@@ -33,7 +33,10 @@ const MODE = process.env.RANVIERA_MODE || SHIPPED_MODE || (app.isPackaged ? "bun
 const PACKAGED = MODE === "bundled" || process.env.RANVIERA_FORCE_PACKAGED === "1";
 const SELFTEST = process.env.RANVIERA_SELFTEST ? path.resolve(process.env.RANVIERA_SELFTEST) : null;
 const NAME = "Ranviera";
-const DEV_PORT = 5182;
+// The demonstrator (13 October 2026): with --demo the owner's copy opens the synthetic Northgate Synthetic Bank in a window of
+// its own, beside the owner's own set-up, with its own lock, data folder and port. The first start builds the demonstrator.
+const DEMO = !PACKAGED && (process.argv.includes("--demo") || process.env.RANVIERA_DEMO === "1");
+const DEV_PORT = DEMO ? 5183 : 5182;
 
 // the origin of the app: fixed in development and the free port of the bundled server when packaged
 let origin = `http://localhost:${DEV_PORT}`;
@@ -49,6 +52,8 @@ if (!app.isPackaged) {
 } else if (SELFTEST) {
   app.setPath("userData", path.join(SELFTEST, "userData"));
 }
+// the demonstrator keeps its own user data, so that it holds a lock of its own and runs beside the owner's window
+if (DEMO && !SELFTEST) app.setPath("userData", path.join(app.getPath("appData"), "Ranviera Demonstrator"));
 
 // In a self-test the steps are logged to selftest.log, which helps when the app ends without a result.
 function trace(message) {
@@ -319,9 +324,57 @@ function ensureBuilt(repo) {
   });
 }
 
+// The first Python 3 on this computer. The command python may be the Microsoft Store stub, which prints an install message,
+// so the Python install manager's own interpreter is tried first (the same order as scripts/demo/start.mjs).
+function findPython() {
+  const candidates = [process.env.CORTEX_PYTHON];
+  if (process.platform === "win32" && process.env.LOCALAPPDATA) candidates.push(path.join(process.env.LOCALAPPDATA, "Python", "bin", "python.exe"));
+  candidates.push("python3", "python", "py");
+  for (const c of candidates.filter(Boolean)) {
+    const r = spawnSync(c, ["--version"], { encoding: "utf8", windowsHide: true });
+    if (r.status === 0 && /^Python 3\./.test(`${r.stdout}${r.stderr}`.trim())) return c;
+  }
+  return null;
+}
+
+// The folder of the demonstrator: inside the user data of the demonstrator window, so a self-test keeps it in its own folder.
+function demoDir() {
+  return path.join(app.getPath("userData"), "northgate");
+}
+
+// A small window that says the demonstrator is being built, shown only on the first start.
+function buildingWindow() {
+  const w = new BrowserWindow({ width: 520, height: 180, resizable: false, frame: true, title: "Ranviera demonstrator", backgroundColor: "#04060b", icon: path.join(__dirname, "icon.png") });
+  const html = "<body style='margin:0;font:14px Segoe UI,sans-serif;background:#04060b;color:#e6e9f0;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center;padding:0 32px'>" +
+    "<p>Building the synthetic Northgate Synthetic Bank demonstrator. This takes about 2 minutes the first time.</p></body>";
+  w.removeMenu();
+  void w.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(html)}`);
+  return w;
+}
+
+// Builds the demonstrator once with python cortex.py demo build, and returns the configuration file it wrote.
+async function ensureDemo(repo, python) {
+  const out = demoDir();
+  const config = path.join(out, "ranviera.config.json");
+  if (fs.existsSync(config)) return config;
+  fs.mkdirSync(path.dirname(out), { recursive: true });
+  const notice = SELFTEST ? null : buildingWindow();
+  const log = openLog(path.join(app.getPath("userData"), "demonstrator-build.log"));
+  const code = await new Promise((resolve) => {
+    const child = spawn(python, [path.join(repo, "cortex.py"), "demo", "build", "--seed", "7", "--out", out], { cwd: repo, windowsHide: true, stdio: ["ignore", log, log] });
+    child.on("exit", (c) => resolve(c));
+    child.on("error", () => resolve(-1));
+  });
+  closeLog();
+  if (notice && !notice.isDestroyed()) notice.close();
+  if (code !== 0 || !fs.existsSync(config)) throw new Error(`The demonstrator could not be built (exit ${code}). See ${path.join(app.getPath("userData"), "demonstrator-build.log")}.`);
+  return config;
+}
+
 async function startRepoServer(repo) {
   if (await listening()) return;
   await ensureBuilt(repo);
+  if (DEMO) return startDemoServer(repo);
   const data = dataDir();
   fs.mkdirSync(data, { recursive: true });
   const log = openLog(path.join(data, "server.log"));
@@ -332,6 +385,27 @@ async function startRepoServer(repo) {
     await new Promise((r) => setTimeout(r, 500));
   }
   throw new Error("The Cortex server did not start within 30 seconds. See ~/.claude/cortex/server.log.");
+}
+
+// The server of the demonstrator: the repository's server on the demonstrator's configuration and port.
+async function startDemoServer(repo) {
+  const python = findPython();
+  if (!python) throw new Error("Python 3 was not found, so the demonstrator cannot be built. Install Python 3 or set CORTEX_PYTHON.");
+  const config = await ensureDemo(repo, python);
+  const fwd = (p) => p.split(path.sep).join("/");
+  const log = openLog(path.join(app.getPath("userData"), "server.log"));
+  const tsx = path.join(repo, "node_modules", "tsx", "dist", "cli.mjs");
+  server = spawn(process.execPath, [tsx, path.join(repo, "server", "src", "main.ts")], {
+    cwd: repo,
+    windowsHide: true,
+    stdio: ["ignore", log, log],
+    env: { ...process.env, ELECTRON_RUN_AS_NODE: "1", CORTEX_CONFIG: fwd(config), CORTEX_PORT: String(DEV_PORT), CORTEX_KG_CMD: JSON.stringify([fwd(python), fwd(path.join(repo, "cortex.py"))]) },
+  });
+  for (let i = 0; i < 60; i += 1) {
+    if (await listening()) return;
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  throw new Error(`The demonstrator server did not start within 30 seconds. See ${path.join(app.getPath("userData"), "server.log")}.`);
 }
 
 function stopServer() {
@@ -463,7 +537,7 @@ async function selfTest() {
 
 // Without the lock the shell has already asked to quit, so it starts no server and opens no window.
 if (HOLDS_LOCK) void app.whenReady().then(async () => {
-  app.setAppUserModelId(PACKAGED ? "io.github.jinajaundice.ranviera" : "io.github.jinajaundice.ranviera.owner");
+  app.setAppUserModelId(PACKAGED ? "io.github.jinajaundice.ranviera" : DEMO ? "io.github.jinajaundice.ranviera.demo" : "io.github.jinajaundice.ranviera.owner");
   try {
     if (PACKAGED) {
       const data = dataDir();
