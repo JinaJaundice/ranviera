@@ -386,3 +386,17 @@ def test_a_legacy_placeholder_in_the_profile_ledger_is_rekeyed_by_an_export(cfg)
     (led / "rules.json").write_text(json.dumps({"text": f"margin {legacy}"}), encoding="utf-8")
     sync.export(cfg)
     assert legacy not in (led / "rules.json").read_text(encoding="utf-8")
+
+
+def test_the_skills_the_claude_app_syncs_from_claude_ai_are_left_out_of_the_mirror(cfg):
+    # The Claude desktop app writes the claude.ai skills into skills/synced/. One of Anthropic's skills holds an example
+    # header that the secret scan refuses, which stopped every sync from 8 October 2026.
+    d = cfg.claude_home / "skills" / "synced" / "bucket" / "mcp-builder"
+    d.mkdir(parents=True)
+    (d / "SKILL.md").write_text('headers = {"Authorization": "Bearer abcdefghij123456"}\n', encoding="utf-8")
+    (cfg.claude_home / "skills" / "synced" / ".bucket-x").write_text("", encoding="utf-8")
+    assert "synced" not in sync.skill_names(cfg.claude_home)
+    assert not any(r.startswith("skills/synced/") for r in sync.managed_files(cfg.claude_home))
+    sync.export(cfg)
+    assert not (cfg.harness_dir / "skills" / "synced").exists()
+    assert sync.doctor(cfg)["missing_in_mirror"] == []

@@ -26,12 +26,17 @@ from .config import Config
 
 MAX_BYTES = 2 * 1024 * 1024
 SKILLS_DIR = "skills"
+# The Claude desktop app writes the skills of the person's claude.ai account into skills/synced/ and rewrites them on
+# each machine, so they are not part of the person's own set-up. They hold third-party text, and since 8 October 2026
+# an example header in one of them stopped every sync at the secret scan.
+APP_SKILL_DIRS = {"synced"}
 
 
 def skill_names(root: Path) -> list[str]:
     """The skill folders under <root>/skills, so that any person's set-up is mirrored, not a fixed list."""
     d = root / SKILLS_DIR
-    return sorted(p.name for p in d.iterdir() if p.is_dir() and p.name not in SKIP_DIRS) if d.is_dir() else []
+    return sorted(p.name for p in d.iterdir()
+                  if p.is_dir() and p.name not in SKIP_DIRS and p.name not in APP_SKILL_DIRS) if d.is_dir() else []
 LINK_DIRS = ["rules", "agents", "output-styles"]
 SETTINGS_KEEP = ["outputStyle", "env", "hooks", "autoMemoryDirectory", "extraKnownMarketplaces",
                  "skipWorkflowUsageWarning", "agentPushNotifEnabled"]
