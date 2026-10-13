@@ -16,6 +16,8 @@ import { Segmented } from "../../components/Segmented";
 import { Inspector } from "./Inspector";
 import { RegionHot, RegionLegend } from "./RegionLegend";
 import { Replay } from "./Replay";
+import { openRunPath } from "../../graph/runPath";
+import { windowStore } from "../../shell/windows";
 
 const FIELD = "h-8 w-full min-w-0 rounded-md border border-rule-strong bg-sunken px-2 text-body text-ink placeholder:text-ink-faint";
 
@@ -115,6 +117,32 @@ export function GraphApp({ params }: AppProps) {
     if (node) focusNode(node);
   }, [node]);
 
+  // A recorded agent run arrives as params.trace (the run id). Its path is drawn once the graph has loaded, and the Oversight window
+  // is minimised so that the brain is in view (docs/BRAIN.md, "Agent runs").
+  const run = params?.trace;
+  const [failed, setFailed] = useState<{ run: string; message: string } | null>(null);
+  const traceError = failed && failed.run === run ? failed.message : "";
+  const loaded = graph !== null;
+  useEffect(() => {
+    if (!run || !loaded) return;
+    let live = true;
+    openRunPath(run).then(
+      () => {
+        // the Graph window stays mounted but minimised, so that only the thought trail panel stands over the brain
+        if (live) {
+          windowStore.minimise("oversight");
+          windowStore.minimise("graph");
+        }
+      },
+      (e: unknown) => {
+        if (live) setFailed({ run, message: e instanceof Error ? e.message : "The run could not be loaded." });
+      },
+    );
+    return () => {
+      live = false;
+    };
+  }, [run, loaded]);
+
   return (
     <div className="grid h-full min-h-0 grid-cols-[minmax(0,300px)_minmax(0,1fr)] bg-surface text-ink">
       <div className="min-h-0 min-w-0 overflow-y-auto border-r border-rule">
@@ -195,7 +223,7 @@ export function GraphApp({ params }: AppProps) {
           <Inspector key={selected} id={selected} />
         ) : (
           <Empty>
-            {error
+            {traceError ? `The run could not be shown in the brain. ${traceError}` : error
               ? `The graph could not load. ${error}`
               : graph
                 ? "Select a node in the graph or search for one to see its properties, relations and use."

@@ -1,7 +1,7 @@
 // A small typed event bus. The graph canvas listens here directly, so a firing does not re-render React.
 import type { Activation, CortexEvent, MissionLine, MissionState } from "@shared/types";
 import type { RegionId } from "@shared/brain";
-import type { TrailStep } from "../graph/brain/types";
+import type { TracePath, TrailStep } from "../graph/brain/types";
 
 export interface BusEvents {
   /** a real event from the server, with the spread already computed */
@@ -22,6 +22,10 @@ export interface BusEvents {
   step: { step: TrailStep };
   /** a region caption was clicked on the canvas, so the Graph window lists its hottest nodes */
   region: { id: RegionId };
+  /** a window asks the thought trail to show a path, eg the Graph window with a recorded agent run (docs/BRAIN.md, 13 October 2026) */
+  "path-open": { path: TracePath };
+  /** the scene reports the head of the path, so that the scrubber follows it */
+  "path-progress": { id: string; n: number; fraction: number; playing: boolean };
 }
 
 type Handler<T> = (payload: T) => void;

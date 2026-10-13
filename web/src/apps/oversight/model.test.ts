@@ -93,6 +93,7 @@ describe("words for a reader", () => {
     expect(outcomeWord("request-information")).toBe("Information requested");
     expect(outcomeWord("close")).toBe("Closed");
     expect(relationWord("implementsClause")).toBe("implements the clause");
+    expect(relationWord("expressedIn")).toBe("is expressed in the provision");
   });
   it("words a finding without relation names", () => {
     expect(plainMessage("has no ratified chain of satisfies, realises and implementsClause edges")).toBe("has no ratified chain of satisfies, realises and implements the clause links");

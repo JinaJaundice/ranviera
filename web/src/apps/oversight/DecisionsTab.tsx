@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { ChevronDown, ChevronRight, FileDown } from "lucide-react";
+import { Brain, ChevronDown, ChevronRight, FileDown } from "lucide-react";
 import type { ChainLink, DecisionTrace, InstrRef, RunSummary } from "@shared/types";
 import { Button } from "../../components/Button";
 import { Chip } from "../../components/Chip";
@@ -7,6 +7,7 @@ import { Empty } from "../../components/Empty";
 import { NodeChip } from "../../components/NodeChip";
 import { StatusDot } from "../../components/StatusDot";
 import { api } from "../../lib/api";
+import { windowStore } from "../../shell/windows";
 import { useLoad } from "./load";
 import { LIMITS_NOTE, agentName, contextNotes, evidenceUpTo, longDate, nodeTypeWord, outcomeWord, personName, plural, relationWord, shortHash, statusWord, when, type ContextNote } from "./model";
 import { usePeople } from "./people";
@@ -394,7 +395,10 @@ function TraceView({ trace, onExport }: { trace: Trace; onExport: (run: string) 
       <div className="min-w-0 rounded-md border border-rule-strong p-3">
         <div className="flex min-w-0 items-start justify-between gap-2">
           <h3 className="text-ui font-medium text-ink">Decision</h3>
-          <Button variant="secondary" className="h-6 shrink-0 px-2 text-small" icon={<FileDown size={14} aria-hidden="true" />} onClick={() => onExport(trace.run)}>Export the evidence pack</Button>
+          <div className="flex shrink-0 flex-wrap justify-end gap-1.5">
+            <Button variant="secondary" className="h-6 shrink-0 px-2 text-small" icon={<Brain size={14} aria-hidden="true" />} onClick={() => windowStore.open("graph", { trace: trace.run })}>Trace this decision in the brain</Button>
+            <Button variant="secondary" className="h-6 shrink-0 px-2 text-small" icon={<FileDown size={14} aria-hidden="true" />} onClick={() => onExport(trace.run)}>Export the evidence pack</Button>
+          </div>
         </div>
         {trace.decision ? (
           <p className="text-lead text-ink">

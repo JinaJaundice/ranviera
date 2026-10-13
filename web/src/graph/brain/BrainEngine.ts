@@ -43,20 +43,26 @@ import { REGIONS, REGION_IDS, clusterOf, regionOf, type RegionId } from "@shared
 import { token } from "../../lib/theme";
 import { GlowTracker, HALF_LIFE_MS, PREVIEW_HALF_LIFE_MS, orbitSpeed } from "../animate";
 import { filterEdges, filterNodes, nodeRadius, type Vec3 } from "../layout";
-import { heatOfNode, readPalette, restingBrightness, shade, type Palette, type Rgb } from "../palette";
+import { heatOfNode, parseCssColor, readPalette, restingBrightness, shade, type Palette, type Rgb } from "../palette";
 import { regionAnchors, type Anchor } from "./anchors";
 import { loadBrainAsset, type BrainAsset } from "./asset";
 import { EXPAND_ZOOM, expandKey, expandOffsets, type RegionCentre } from "./expand";
 import { curvePoint, curveSegments } from "./curves";
 import { convexHull, keepOutBoxes, layoutCallouts, layoutFocusCallout, type CalloutRequest, type PlacedCallout, type Pt } from "./callouts";
-import { calloutRegions, FOCUS_FADE, FOCUS_SHRINK, glowOf, regionTint, STEP_LABELS_MAX } from "./look";
+import { badgeInk, calloutRegions, FOCUS_FADE, PATH_HOVER_PLATES_MAX, HOP_PLATES_MAX, FOCUS_SHRINK, glowOf, PATH_BLOOM_MOVING, PATH_CALLOUT_VISITED, PATH_EASE_MS, PATH_END_EPS, PATH_FRAME_MARGIN, pathCalloutRegions, regionTint, STEP_LABELS_MAX } from "./look";
 import { leaderEnd, placeLabels, type LabelRequest } from "./labelplace";
 import { fitFocusFrame } from "./focusframe";
 import { labelLevel, MAX_CLUSTER_LABELS, MAX_FOCUS_CLUSTER_LABELS, pickClusters } from "./lod";
 import { placeNodes, type Placed } from "./placement";
 import { MAX_NODE_LABELS, PULSE_MS, labelOrder, leadRegion, planStep, type Entry } from "./schedule";
 import { FX_FRAGMENT, FX_VERTEX, NODE_FRAGMENT, NODE_VERTEX, SURFACE_FRAGMENT, SURFACE_VERTEX } from "./shaders";
-import type { BrainCommand, BrainHooks, BrainView, CanvasEngine, RegionEntry, TrailStep } from "./types";
+import { anchorRegion, buildPath, orderPlatePicks, plateSentence, headArc, headRegion, hopLine, livePlatePicks, markerSpots, platePicks, pointAt, progressOf, routeRuns, stepOfProgress, volumeOf, type PathGeometry, type PathSub, type V3 } from "./path";
+import { PathBadges, type MarkerSpot } from "./pathBadges";
+import { fitPathCamera } from "./pathfit";
+import { PathLayer, type PathColours } from "./pathLayer";
+import { stepMs } from "./trail";
+import { bus } from "../../lib/bus";
+import type { BrainCommand, BrainHooks, BrainView, CanvasEngine, RegionEntry, TracePath, TrailStep } from "./types";
 
 interface BNode {
   i: number;
@@ -259,6 +265,31 @@ export class BrainEngine implements CanvasEngine {
   private markers: Points;
   private stepLabels: { ids: string[]; until: number; region: RegionId | null } = { ids: [], until: 0, region: null };
 
+  // the traced path (docs/BRAIN.md, 13 October 2026)
+  private pathLayer: PathLayer;
+  private pathBadges: PathBadges;
+  private pathData: TracePath | null = null;
+  private pathGeo: PathGeometry | null = null;
+  private pathMarkers: MarkerSpot[] = [];
+  private prevData: TracePath | null = null;
+  private pathShowPrev = false;
+  /** the step number plus the fraction of the step; 0 is before the first step and the number of steps plus 1 is the end */
+  private pathProgress = 0;
+  private pathAnim: { n: number; t0: number; ms: number } | null = null;
+  private pathHeld = 0;
+  private pathPlaying = true;
+  private pathSpeed = 1;
+  private pathFollow = true;
+  private pathSelected: number | null = null;
+  private pathWhole = false;
+  private pathVisited = new Set<RegionId>();
+  private pathVisitedArc = -2;
+  private pathHead: RegionId | null = null;
+  private pathHover: number | null = null;
+  private pathMoving = false;
+  private pathSent = { at: 0, key: "" };
+  private pathInk = new Map<RegionId, "void" | "ink">();
+
   // interaction
   private selected: string | null = null;
   private hovered: string | null = null;
@@ -385,6 +416,16 @@ export class BrainEngine implements CanvasEngine {
     this.markers.renderOrder = 5;
     this.markers.geometry.setDrawRange(0, 0);
     this.scene.add(this.markers);
+
+    this.pathLayer = new PathLayer(this.pathColours(), this.renderer.getPixelRatio());
+    this.scene.add(this.pathLayer.group);
+    this.pathBadges = new PathBadges(this.overlay, {
+      pick: (n) => window.dispatchEvent(new CustomEvent("cortex:path-pick", { detail: { n } })),
+      hover: (n) => {
+        this.pathHover = n;
+      },
+    });
+    this.readInk();
 
     container.addEventListener("pointermove", this.onPointerMove);
     container.addEventListener("pointerleave", this.onPointerLeave);
@@ -616,6 +657,7 @@ export class BrainEngine implements CanvasEngine {
     this.buildClusters();
     this.rebuildLinks();
     this.updateMarkers();
+    this.rebuildPath();
     const ratio = (1 + EXPAND_ZOOM * this.expand) / (1 + EXPAND_ZOOM * prev);
     if (this.tween) {
       this.tween.dist0 *= ratio;
@@ -633,6 +675,8 @@ export class BrainEngine implements CanvasEngine {
     this.paintAll();
     this.rebuildLinks();
     this.updateMarkers();
+    this.pathLayer.setColours(this.pathColours());
+    this.readInk();
   }
 
   private leftInset = 0;
@@ -678,6 +722,7 @@ export class BrainEngine implements CanvasEngine {
     this.pxPerUnit = px;
     this.nodeMat.uniforms.uRatio.value = this.renderer.getPixelRatio();
     this.fxMat.uniforms.uPx.value = px;
+    this.pathLayer.setResolution(w, h, this.renderer.getPixelRatio());
   }
 
   // ------------------------------------------------------------------- data
@@ -764,6 +809,7 @@ export class BrainEngine implements CanvasEngine {
     this.paintAll();
     this.rebuildLinks();
     this.updateMarkers();
+    this.rebuildPath();
   }
 
   private regions = new Map<string, RegionId>();
@@ -941,10 +987,18 @@ export class BrainEngine implements CanvasEngine {
 
   /** Play one step of the thought trail: its nodes light in order of their hop, with their labels. */
   playStep(step: TrailStep): void {
-    this.run(step.activation, step.mode === "predicted");
+    // with a path on screen the head turns the camera when it enters another region, so the step does not
+    this.run(step.activation, step.mode === "predicted", !this.pathGeo);
+    const g = this.pathGeo;
+    if (g && step.n >= 1 && step.n <= g.steps) {
+      this.pathSelected = null;
+      this.pathProgress = step.n;
+      this.pathAnim = { n: step.n, t0: performance.now(), ms: stepMs(step) / this.pathSpeed };
+      this.pathHeld = 0;
+    }
   }
 
-  private run(activation: Activation[], predicted: boolean): void {
+  private run(activation: Activation[], predicted: boolean, turn = true): void {
     if (this.disposed || document.hidden || !this.nodes.length) return;
     const known = activation.filter((a) => this.byId.has(a.id));
     if (!known.length) return;
@@ -956,7 +1010,7 @@ export class BrainEngine implements CanvasEngine {
     this.stepLabels = { ids: labelOrder(known), until: now + span + STEP_LABEL_MS, region };
     this.stepSet = new Set(known.map((a) => a.id));
     this.paintAll();
-    if (region && !reduced) this.turnTo(region);
+    if (region && !reduced && turn) this.turnTo(region);
   }
 
   private spawn(e: Pending, now: number): void {
@@ -1118,6 +1172,301 @@ export class BrainEngine implements CanvasEngine {
     if (lines === this.dashed && n) lines.computeLineDistances();
   }
 
+  // --------------------------------------------------------------- the traced path
+
+  private pathColours(): PathColours {
+    return {
+      regions: this.palette.regions,
+      void: this.palette.void,
+      faint: parseCssColor(token("--color-ink-faint")),
+      block: parseCssColor(token("--color-block")),
+      hold: parseCssColor(token("--color-hold")),
+      dark: this.palette.dark,
+    };
+  }
+
+  /** The colour of the number on the badge of each region: the background colour or the text colour, whichever reads better. */
+  private readInk(): void {
+    for (const r of REGION_IDS) this.pathInk.set(r, badgeInk(this.palette.regions[r], this.palette.void, this.palette.ink));
+  }
+
+  private pathLookup = (id: string): { pos: V3; region: RegionId } | undefined => {
+    const b = this.byId.get(id);
+    return b ? { pos: { x: b.x, y: b.y, z: b.z }, region: b.region } : undefined;
+  };
+
+  private pathAnchor = (kind: string): { pos: V3; region: RegionId } | undefined => {
+    const r = anchorRegion(kind);
+    const a = r && this.asset ? this.nearestAnchor(r) : null;
+    return r && a ? { pos: { x: a.centre.x, y: a.centre.y, z: a.centre.z }, region: r } : undefined;
+  };
+
+  /**
+   * Draw a path, or none. A path with a new id starts again from before its first step. The same path with more steps keeps the
+   * head where it is, which is how a live prompt grows. With reduced motion the whole path is drawn at once.
+   */
+  setPath(path: TracePath | null, opts: { previous?: TracePath | null; progress?: number; frame?: boolean } = {}): void {
+    const fresh = !path || !this.pathData || path.id !== this.pathData.id;
+    this.pathData = path;
+    if (opts.previous !== undefined) this.prevData = opts.previous;
+    if (fresh) {
+      this.pathSelected = null;
+      this.pathWhole = false;
+      this.pathAnim = null;
+      this.pathHead = null;
+      this.pathVisitedArc = -2;
+      this.pathVisited.clear();
+      this.pathProgress = 0;
+    }
+    if (opts.progress !== undefined) {
+      this.pathProgress = opts.progress;
+      this.pathAnim = null;
+    }
+    if (path && reducedMotion()) this.pathProgress = path.steps.length + 1;
+    this.rebuildPath();
+    if (opts.frame) this.framePath();
+  }
+
+  private rebuildPath(): void {
+    const p = this.pathData;
+    if (!p || !this.nodes.length) {
+      this.pathGeo = null;
+      this.pathMarkers = [];
+      this.pathLayer.setGeometry(null);
+      this.pathLayer.setPrevious(null);
+      this.pathBadges.clear();
+      return;
+    }
+    const g = buildPath(p.steps, this.pathLookup, { anchor: this.pathAnchor, volume: this.pathVolume() });
+    this.pathGeo = g;
+    this.pathLayer.setGeometry(g, p.source === "plan");
+    // a finding stands on the waypoint of the step that carries it (docs/BRAIN.md, "Findings on the path")
+    this.pathMarkers = markerSpots(p.steps, (n) => g.waypoints[n - 1]?.pos);
+    this.pathVisitedArc = -2;
+    const prev = this.pathShowPrev ? this.prevData : null;
+    this.pathLayer.setPrevious(prev && prev.steps.length ? buildPath(prev.steps, this.pathLookup, { anchor: this.pathAnchor, volume: this.pathVolume() }) : null);
+  }
+
+  /** The half extents of the box of the nodes on screen, which no curve of a path leaves. */
+  private pathVolume(): V3 {
+    return volumeOf(this.nodes.map((b) => ({ x: b.x, y: b.y, z: b.z })), 40);
+  }
+
+  /** The previous path is drawn dimmed beside the current one, or not at all. */
+  setPathPrevious(on: boolean): void {
+    this.pathShowPrev = on;
+    const prev = on ? this.prevData : null;
+    this.pathLayer.setPrevious(prev && prev.steps.length && this.nodes.length ? buildPath(prev.steps, this.pathLookup, { anchor: this.pathAnchor, volume: this.pathVolume() }) : null);
+  }
+
+  setPathFollow(on: boolean): void {
+    this.pathFollow = on;
+    if (on) this.pathWhole = false;
+  }
+
+  setPathPlaying(playing: boolean, speed?: number): void {
+    const was = this.pathPlaying;
+    this.pathPlaying = playing;
+    if (speed) this.pathSpeed = speed;
+    if (this.pathAnim) {
+      const now = performance.now();
+      if (was && !playing) this.pathHeld = now - this.pathAnim.t0;
+      else if (!was && playing) this.pathAnim.t0 = now - this.pathHeld;
+    }
+  }
+
+  /** Move the head to a step and a fraction of it, and highlight the step when it is selected. The head parks there. */
+  seekPath(n: number, fraction: number, select = false): void {
+    const g = this.pathGeo;
+    if (!g) return;
+    const step = Math.min(g.steps, Math.max(1, Math.round(n)));
+    this.pathAnim = null;
+    this.pathProgress = reducedMotion() && !select ? g.steps + 1 : progressOf(step, fraction);
+    this.pathSelected = select ? step : null;
+    if (select) {
+      this.pathWhole = false;
+      this.easeToStep(step);
+    }
+  }
+
+  /** The head, the progress and the selected step now, for the panel. */
+  pathState(): { n: number; fraction: number; selected: number | null } {
+    const g = this.pathGeo;
+    const s = g ? stepOfProgress(g, this.pathProgress) : { n: 0, fraction: 0 };
+    return { ...s, selected: this.pathSelected };
+  }
+
+  private vec(p: V3): Vector3 {
+    return new Vector3(p.x, p.y, p.z);
+  }
+
+  /** The direction from the centre of the brain to the middle of some points, tipped up a little as a focus is, or the present direction. */
+  private dirOf(pts: Vector3[]): Vector3 {
+    const c = new Vector3();
+    for (const p of pts) c.add(p);
+    c.divideScalar(Math.max(1, pts.length));
+    if (c.length() < 12) return this.camera.position.clone().sub(this.controls.target).normalize();
+    return c.normalize().add(new Vector3(0, 0.25, 0)).normalize();
+  }
+
+  /** Ease the camera to the nodes of one step (docs/BRAIN.md, "The thought trail panel and the line"). */
+  private easeToStep(n: number): void {
+    const g = this.pathGeo;
+    if (!g || reducedMotion()) return;
+    const pts: Vector3[] = [this.vec(g.waypoints[n - 1].pos)];
+    for (const k of g.knots) if (k.step === n) pts.push(this.vec(k.pos));
+    for (const b of g.branches) if (b.step === n) pts.push(this.vec(b.points[b.points.length - 1]));
+    if (this.focused) {
+      this.focused = null;
+      this.paintAll();
+    }
+    // every point of the step, its line, its branches and its stubs, so that the hops of a chain and their plates fit in the free area
+    const all: V3[] = pts.map((p) => ({ x: p.x, y: p.y, z: p.z }));
+    const e = g.line.ends;
+    for (let i = 0; i < g.line.count; i += 1) if (g.line.step[i] === n) all.push({ x: e[i * 6], y: e[i * 6 + 1], z: e[i * 6 + 2] }, { x: e[i * 6 + 3], y: e[i * 6 + 4], z: e[i * 6 + 5] });
+    for (const b of g.branches) if (b.step === n && !b.dot) all.push(...b.points);
+    for (const st of g.stubs) if (st.step === n) all.push(st.from, st.to);
+    this.fitTo(all, this.dirOf(pts), PATH_EASE_MS);
+  }
+
+  /** Fly the camera to the distance and target at which every point lies in the free area of the canvas, 48 pixels from its edges. */
+  private fitTo(all: V3[], dir: Vector3, ms: number): void {
+    if (!all.length || this.width <= 0) return;
+    const { s, cx, cy } = this.framing(this.width, this.height);
+    const f = this.height / (2 * Math.tan((this.camera.fov * Math.PI) / 360));
+    const free = { left: Math.max(60, this.leftInset + 8), top: FRAME_TOP, right: this.width - BAR_ROOM, bottom: this.height - FRAME_BOTTOM };
+    const fit = fitPathCamera(all, { x: dir.x, y: dir.y, z: dir.z }, { sf: s * f, cx, cy }, free, { margin: PATH_FRAME_MARGIN, minDist: FOCUS_MIN_DISTANCE, maxDist: MAX_DISTANCE * this.draw() });
+    this.flyTo(dir, fit.dist, this.vec(fit.target), ms);
+    this.pauseOrbit();
+  }
+
+  /** Show the whole path: draw all of it and frame every waypoint. Following the head stops until the person turns it on again. */
+  framePath(): void {
+    const g = this.pathGeo;
+    if (!g) return;
+    this.pathWhole = true;
+    this.pathSelected = null;
+    this.pathAnim = null;
+    this.pathProgress = g.steps + 1;
+    if (this.focused) {
+      this.focused = null;
+      this.paintAll();
+    }
+    const pts: Vector3[] = g.waypoints.map((w) => this.vec(w.pos));
+    for (const k of g.knots) pts.push(this.vec(k.pos));
+    for (const b of g.branches) pts.push(this.vec(b.tip));
+    if (!pts.length || this.width <= 0) return;
+    const dir = this.dirOf(pts);
+    // every waypoint and every sample point of the main line lands inside the free area, 48 pixels from its edges
+    const all: V3[] = pts.map((p) => ({ x: p.x, y: p.y, z: p.z }));
+    const e = g.line.ends;
+    for (let i = 0; i + 2 < e.length; i += 3) all.push({ x: e[i], y: e[i + 1], z: e[i + 2] });
+    for (const b of g.branches) if (!b.dot) for (const q of b.points) all.push(q);
+    for (const st of g.stubs) all.push(st.from, st.to);
+    this.fitTo(all, dir, PATH_EASE_MS * 1.5);
+  }
+
+  private projectPoint(p: V3): { x: number; y: number } | null {
+    const v = new Vector3(p.x, p.y, p.z).project(this.camera);
+    if (v.z > 1 || v.z < -1) return null;
+    return { x: (v.x * 0.5 + 0.5) * this.width, y: (-v.y * 0.5 + 0.5) * this.height };
+  }
+
+  /** The regions the head has entered: those of the pieces of the line up to the head. */
+  private visitedAt(arc: number): void {
+    this.pathVisited.clear();
+    const g = this.pathGeo;
+    if (!g || arc < 0) return;
+    for (const r of g.ranges) {
+      for (const s of r.slots) if (s.region && s.arc0 <= arc + 1e-6) this.pathVisited.add(s.region);
+    }
+    for (const w of g.waypoints) if (w.region && w.arc <= arc + 1e-6 && w.at <= this.pathProgress + 1e-9) this.pathVisited.add(w.region);
+  }
+
+  /** Advance the head and tell the layer, the badges and the panel. Once a frame. */
+  private stepPath(now: number): void {
+    const g = this.pathGeo;
+    const data = this.pathData;
+    this.pathMoving = false;
+    if (!g || !data) return;
+    const reduced = reducedMotion();
+    const a = this.pathAnim;
+    if (reduced) {
+      this.pathProgress = g.steps + 1;
+      this.pathAnim = null;
+    } else if (a && this.pathPlaying) {
+      const u = (now - a.t0) / a.ms;
+      if (u >= 1) {
+        // the head parks a hair short of the next step, so that every caption still names the step that has just played
+        this.pathProgress = a.n + 1 - PATH_END_EPS;
+        this.pathAnim = null;
+      } else {
+        this.pathProgress = a.n + Math.max(0, u);
+        this.pathMoving = true;
+      }
+    }
+    const p = this.pathProgress;
+    const arc = headArc(g, p);
+    const region = arc >= 0 ? headRegion(g, arc) : null;
+    if (region !== this.pathHead) {
+      this.pathHead = region;
+      // the camera turns to a region when the head enters it, and only while the path is followed
+      if (region && this.pathMoving && this.pathFollow && !this.pathWhole && this.pathSelected === null && !reduced) this.turnTo(region);
+    }
+    if (region && this.pathMoving) this.regionGlow.add(region, 0.7, 220);
+    if (arc !== this.pathVisitedArc) {
+      this.pathVisitedArc = arc;
+      this.visitedAt(arc);
+    }
+    const sel = this.pathSelected;
+    const range = sel ? g.ranges[sel - 1] : null;
+    const stepNow = stepOfProgress(g, p).n;
+    this.pathLayer.update({
+      arc,
+      progress: p,
+      selected: range ? { a: range.s, b: range.e } : null,
+      activeStep: sel ?? stepNow,
+      centre: this.camera.position.distanceTo(this.controls.target),
+      unit: (2 * Math.tan((this.camera.fov * Math.PI) / 360) * this.camera.position.distanceTo(this.controls.target)) / Math.max(1, this.height),
+      head: { pos: arc >= 0 ? pointAt(g, arc) : null, region, moving: this.pathMoving },
+      now,
+      reduced,
+    });
+    // the scrubber follows the head about ten times a second
+    const state = stepOfProgress(g, p);
+    const key = `${data.id}|${state.n}|${state.fraction.toFixed(2)}|${this.pathMoving}`;
+    if (key !== this.pathSent.key && (now - this.pathSent.at > 100 || !this.pathMoving)) {
+      this.pathSent = { at: now, key };
+      bus.emit("path-progress", { id: data.id, n: state.n, fraction: state.fraction, playing: this.pathMoving });
+    }
+  }
+
+  /** The hops of the chains that stand on the line: all of them while the whole path is shown, and those of the selected step otherwise. */
+  private visibleSubs(): PathSub[] {
+    const g = this.pathGeo;
+    if (!g?.subs.length) return [];
+    if (this.pathWhole) return g.subs;
+    return this.pathSelected === null ? [] : g.subs.filter((s) => s.step === this.pathSelected);
+  }
+
+  private pathBadgeInput(): Parameters<PathBadges["update"]>[0] {
+    const g = this.pathGeo;
+    const data = this.pathData;
+    return {
+      geo: g,
+      progress: this.pathProgress,
+      selected: this.pathSelected,
+      active: g ? stepOfProgress(g, this.pathProgress).n : 0,
+      markers: this.pathMarkers,
+      subs: this.visibleSubs(),
+      project: (p) => this.projectPoint(p),
+      ink: (r) => (r ? this.pathInk.get(r) ?? "void" : "void"),
+      sentences: (n) => data?.steps[n - 1]?.sentence ?? "",
+      blocked: this.blockedBoxes(performance.now()),
+      bounds: { left: Math.max(60, this.leftInset), top: FRAME_TOP - 8, right: this.width - 8, bottom: this.height - 8 },
+    };
+  }
+
   // ----------------------------------------------------------------- camera
 
   private flyTo(dir: Vector3, dist: number, target: Vector3, ms = FOCUS_MS): void {
@@ -1181,20 +1530,26 @@ export class BrainEngine implements CanvasEngine {
   private focusFrame(id: RegionId, dir: Vector3): { dist: number; target: Vector3 } {
     const pts: Vector3[] = [];
     for (const b of this.nodes) if (b.region === id && b.visible) pts.push(new Vector3(b.x, b.y, b.z));
+    return this.frameFor(pts, dir, this.focusRange());
+  }
+
+  /** The distance and target at which the box of some points, seen from `dir`, fills the x range given. */
+  private frameFor(pts: Vector3[], dir: Vector3, range: { xa: number; xb: number }, whole = false): { dist: number; target: Vector3 } {
     const fallback = { dist: START_POSITION.length() * this.draw(), target: new Vector3(0, 0, 0) };
     if (!pts.length || this.width <= 0) return fallback;
     const { s } = this.framing(this.width, this.height);
     const f = this.height / (2 * Math.tan((this.camera.fov * Math.PI) / 360));
     const right = new Vector3(0, 1, 0).cross(dir).normalize();
     const up = dir.clone().cross(right).normalize();
-    const { xa, xb } = this.focusRange();
-    const availW = (xb - xa) * 0.97;
-    const availH = (this.height - FRAME_TOP - FRAME_BOTTOM) * 0.97;
+    const { xa, xb } = range;
+    // a path keeps every waypoint in view, with room for the plates beside the badges, where a focus may leave a few neurons outside
+    const availW = (xb - xa) * (whole ? 0.78 : 0.97);
+    const availH = (this.height - FRAME_TOP - FRAME_BOTTOM) * (whole ? 0.86 : 0.97);
     const co = pts.map((p) => [p.dot(right), p.dot(up), p.dot(dir)]);
     // the 5th to 95th percentile box of the projected neurons is fitted, so that a few outliers may stand at the edge or outside the view.
     // The view centre is the centre of the free area, so the target moves to put the box in the range right of the caption
     const wantX = (xa + xb) / 2 - (Math.min(this.leftInset, this.width * 0.7) + this.width - BAR_ROOM) / 2;
-    const fit = fitFocusFrame({ co, sf: s * f, availW, availH, wantX, wantY: 0, minDist: FOCUS_MIN_DISTANCE, maxDist: MAX_DISTANCE * this.draw() });
+    const fit = fitFocusFrame({ co, sf: s * f, availW, availH, wantX, wantY: 0, minDist: FOCUS_MIN_DISTANCE, maxDist: MAX_DISTANCE * this.draw(), ...(whole ? { lo: 0, hi: 1 } : {}) });
     const target = right.clone().multiplyScalar(fit.mid[0] - fit.shift).addScaledVector(up, fit.mid[1] - fit.lift).addScaledVector(dir, fit.mid[2]);
     return { dist: fit.dist, target };
   }
@@ -1511,6 +1866,56 @@ export class BrainEngine implements CanvasEngine {
     });
   }
 
+  /** The plate of a step of the path: its number, its sentence, its label when the step is a recorded run step, and its findings. */
+  private plateRec(n: number, step: TrailStep): LabelRec {
+    const key = `s:${this.pathData?.id}:${n}:${step.sentence}`;
+    return this.labelRec(key, (el) => {
+      el.style.border = "1px solid var(--color-rule-strong)";
+      el.style.background = "color-mix(in srgb, var(--color-surface), transparent 4%)";
+      el.style.fontWeight = "500";
+      el.style.whiteSpace = "normal";
+      el.style.maxWidth = "220px";
+      const head = document.createElement("div");
+      head.textContent = `${n}. ${plateSentence(step.sentence)}`;
+      el.appendChild(head);
+      if (step.label) {
+        const tag = document.createElement("div");
+        tag.style.cssText = "font-weight:400;color:var(--color-ink-soft)";
+        tag.textContent = step.label;
+        el.appendChild(tag);
+      }
+      for (const m of step.markers ?? []) {
+        const line = document.createElement("div");
+        line.style.cssText = `font-weight:600;color:${m.severity === "violation" ? "var(--color-block)" : m.severity === "warning" ? "var(--color-hold)" : "var(--color-ink-soft)"}`;
+        line.textContent = m.title;
+        el.appendChild(line);
+      }
+    });
+  }
+
+  /** The plate of a hop of a chain: its sub-step, its kind, its name and the status of the link that reaches it. */
+  private hopRec(sub: PathSub): LabelRec {
+    const text = hopLine(sub.step, sub.hop);
+    return this.labelRec(`h:${sub.id}:${text}`, (el) => {
+      el.style.border = `1px solid var(--color-region-${sub.region})`;
+      el.style.background = "color-mix(in srgb, var(--color-surface), transparent 4%)";
+      el.style.whiteSpace = "normal";
+      el.style.maxWidth = "200px";
+      el.textContent = text;
+    });
+  }
+
+  /** The words at the end of a dashed stub: no link. */
+  private stubRec(text: string): LabelRec {
+    return this.labelRec(`u:${text}`, (el) => {
+      el.style.border = "1px dashed var(--color-block)";
+      el.style.background = "color-mix(in srgb, var(--color-surface), transparent 4%)";
+      el.style.color = "var(--color-block)";
+      el.style.fontWeight = "600";
+      el.textContent = text.charAt(0).toUpperCase() + text.slice(1);
+    });
+  }
+
   private nodeRec(b: BNode, strong: boolean): LabelRec {
     return this.labelRec(`n:${b.id}:${strong ? "s" : "n"}`, (el) => {
       const name = document.createElement("div");
@@ -1554,6 +1959,59 @@ export class BrainEngine implements CanvasEngine {
       reqs.push({ key: `n:${id}`, x: this.screen[b.i * 3], y: this.screen[b.i * 3 + 1], w: rec.w, h: rec.h, radius: Math.max(3, radius), rec });
     };
 
+    // The sentence of the step that plays or is selected stands on a plate beside its waypoint, and while the whole path is shown the
+    // plates of up to 12 steps do (docs/BRAIN.md, "Rules of 7 October 2026 that change").
+    if (this.captionsOn && this.pathGeo && this.pathData) {
+      const g = this.pathGeo;
+      const steps = this.pathData.steps;
+      let picks: number[];
+      let urgent = new Set<number>();
+      if (this.pathWhole) {
+        const markerSteps = [...new Set(this.pathMarkers.map((m) => m.step))];
+        picks = platePicks(g.steps, markerSteps, routeRuns(steps, (id) => this.byId.get(id)?.region));
+        // the steps with a finding come first, then those of the badge under the pointer, then the rest, so that the first two are placed
+        // before the others take the room (a step the pointer names has its plate whatever the other plates are)
+        const over = this.pathHover;
+        const capOver = over ? this.pathBadges.placed.find((c) => !c.pin && !c.sub && c.steps.includes(over)) : undefined;
+        const hovered = capOver ? capOver.steps.slice(0, PATH_HOVER_PLATES_MAX) : over ? [over] : [];
+        const ordered = orderPlatePicks(picks, markerSteps, hovered);
+        picks = ordered.picks;
+        urgent = new Set(ordered.urgent);
+      } else {
+        const n = this.pathHover ?? this.pathSelected ?? stepOfProgress(g, this.pathProgress).n;
+        // a step with a finding keeps its label once the head has reached it
+        picks = livePlatePicks(n, [...new Set(this.pathMarkers.map((m) => m.step))], (k) => (g.waypoints[k - 1]?.at ?? Infinity) <= this.pathProgress + 1e-9);
+      }
+      for (const n of picks) {
+        const w = g.waypoints[n - 1];
+        const step = steps[n - 1];
+        if (!w || !step || w.at > this.pathProgress + 1e-9) continue;
+        const sp = this.projectPoint(w.pos);
+        if (!sp) continue;
+        const rec = this.plateRec(n, step);
+        // the plate stands clear of the whole capsule that holds this step, which may list several steps
+        const cap = this.pathBadges.placed.find((c) => !c.pin && !c.sub && c.steps.includes(n));
+        reqs.push({ key: `s:${n}`, x: sp.x, y: sp.y, w: rec.w, h: rec.h, radius: cap && !cap.moved ? Math.max(13, cap.w / 2 + 2) : 13, rec, far: urgent.has(n) });
+      }
+      // the hops of the chain of the selected step are named beside their sub-steps, and a missing link ends in the words "no link"
+      if (!this.pathWhole && this.pathSelected !== null) {
+        for (const sub of g.subs.filter((s) => s.step === this.pathSelected).slice(0, HOP_PLATES_MAX)) {
+          const sp = this.projectPoint(sub.pos);
+          if (!sp) continue;
+          const rec = this.hopRec(sub);
+          reqs.push({ key: `h:${sub.step}${sub.letter}`, x: sp.x, y: sp.y, w: rec.w, h: rec.h, radius: 12, rec });
+        }
+      }
+      const current = this.pathSelected ?? stepOfProgress(g, this.pathProgress).n;
+      g.stubs.forEach((st, k) => {
+        if (!st.label || st.at > this.pathProgress + 1e-9 || !(this.pathWhole || st.step === current)) return;
+        const sp = this.projectPoint(st.to);
+        if (!sp) return;
+        const rec = this.stubRec(st.label);
+        reqs.push({ key: `u:${st.step}:${k}`, x: sp.x, y: sp.y, w: rec.w, h: rec.h, radius: 6, rec });
+      });
+    }
+
     addNode(this.selected, true);
     addNode(this.hovered, true);
 
@@ -1567,6 +2025,7 @@ export class BrainEngine implements CanvasEngine {
     // (the lead region of the step: a step that reaches a few neighbouring nodes does not call out their regions)
     const stepRegions = new Set<RegionId>();
     if (this.stepSet && this.stepLabels.region) stepRegions.add(this.stepLabels.region);
+    if (this.pathGeo) for (const r of pathCalloutRegions(this.pathVisited, this.pathHead)) stepRegions.add(r);
     const shownIds = new Set(calloutRegions(REGIONS.map((d) => d.id), { focused: this.focused, trail: this.leftInset > 0, stepRegions }));
     for (const def of this.captionsOn ? REGIONS : []) {
       if (this.hidden.has(def.id) || !this.asset || !shownIds.has(def.id)) continue;
@@ -1605,7 +2064,9 @@ export class BrainEngine implements CanvasEngine {
     }
 
     // the top bar and the rail of the window cover the edges of the canvas, so a label keeps clear of them
-    const placed = placeLabels(reqs, this.width, this.height, 6, { left: Math.max(60, this.leftInset), top: 44, right: 8, bottom: 8 }, [...this.blockedBoxes(now), ...keepOut]);
+    // the badges and the markers are placed first (pathboxes.ts), and the labels keep clear of their real boxes
+    const badgeBoxes = this.pathBadges.placed.map((b) => ({ left: b.left - 2, top: b.top - 2, w: b.w + 4, h: b.h + 4 }));
+    const placed = placeLabels(reqs, this.width, this.height, 6, { left: Math.max(60, this.leftInset), top: 44, right: 8, bottom: 8 }, [...this.blockedBoxes(now), ...keepOut, ...badgeBoxes]);
     const byKey = new Map(reqs.map((r) => [r.key, r]));
     let leader = 0;
     const drawLeader = (box: { left: number; top: number; w: number; h: number }, x: number, y: number) => {
@@ -1617,6 +2078,8 @@ export class BrainEngine implements CanvasEngine {
       line.setAttribute("y2", String(Math.round(end.y)));
       line.style.display = "";
     };
+    // a badge that stands off its node keeps a leader line to the node
+    for (const b of this.pathBadges.placed) if (b.moved) drawLeader({ left: b.left, top: b.top, w: b.w, h: b.h }, b.ax, b.ay);
     for (const p of placed) {
       const r = byKey.get(p.key)!;
       r.rec.used = true;
@@ -1742,8 +2205,9 @@ export class BrainEngine implements CanvasEngine {
         const r = byKey.get(p.key)!;
         const id = r.id;
         const on = this.focused === id;
-        const lit = on || this.hoverRegion === id;
-        const fade = this.focused && !on ? CALLOUT_FADE : 1;
+        const lit = on || this.hoverRegion === id || (!!this.pathGeo && this.pathHead === id);
+        const quiet = !!this.pathGeo && this.pathVisited.size > 0 && this.pathHead !== id;
+        const fade = this.focused && !on ? CALLOUT_FADE : quiet ? PATH_CALLOUT_VISITED : 1;
         r.rec.used = true;
         r.rec.el.style.transform = `translate3d(${Math.round(p.left)}px,${Math.round(p.top)}px,0)`;
         r.rec.el.style.opacity = String(fade);
@@ -1755,6 +2219,14 @@ export class BrainEngine implements CanvasEngine {
         const shape = this.calloutShape(id);
         shape.line.setAttribute("points", p.path.map((q) => `${q.x.toFixed(1)},${q.y.toFixed(1)}`).join(" "));
         shape.line.setAttribute("stroke-width", lit ? "2" : "1");
+        // while a path is drawn, every leader is neutral and dashed, so that it never reads as a piece of the path or, in the red of a
+        // region, as a fault. The caption of the region of the head keeps its colour (13 October 2026)
+        const neutral = !!this.pathGeo;
+        const stroke = neutral ? "var(--color-rule-strong)" : `var(--color-region-${id})`;
+        if (shape.line.getAttribute("stroke") !== stroke) {
+          shape.line.setAttribute("stroke", stroke);
+          shape.line.setAttribute("stroke-dasharray", neutral ? "3 3" : "none");
+        }
         shape.dot.setAttribute("cx", p.dot.x.toFixed(1));
         shape.dot.setAttribute("cy", p.dot.y.toFixed(1));
         for (const el of [shape.line, shape.dot]) {
@@ -1802,7 +2274,7 @@ export class BrainEngine implements CanvasEngine {
   private leaderLine(i: number): SVGLineElement {
     while (this.leaders.length <= i) {
       const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
-      line.setAttribute("stroke", "var(--color-ink-faint)");
+      line.setAttribute("stroke", "var(--color-ink-soft)");
       line.setAttribute("stroke-width", "1");
       line.style.display = "none";
       this.svg.appendChild(line);
@@ -1878,7 +2350,7 @@ export class BrainEngine implements CanvasEngine {
     }
     this.regionGlow.step(dt);
     // the bloom is faint at rest, so that dense clusters show single neurons, and it rises while a neuron fires or is selected
-    const bloomTarget = this.tracker.size > 0 || this.selected ? BLOOM_FIRING : BLOOM_REST;
+    const bloomTarget = this.tracker.size > 0 || this.selected ? BLOOM_FIRING : this.pathMoving ? PATH_BLOOM_MOVING : BLOOM_REST;
     this.bloom.strength += (bloomTarget - this.bloom.strength) * Math.min(1, dt / 160);
     for (const [id, mat] of this.surfaces) mat.uniforms.uGlow.value = id === "shell" ? 0 : Math.min(1, this.regionGlow.glow(id));
 
@@ -1891,6 +2363,7 @@ export class BrainEngine implements CanvasEngine {
     }
     this.stepTurn();
     this.stepTween(now);
+    this.stepPath(now);
     if (!this.tween && !this.selected && this.ambient && now >= this.orbitPausedUntil && !reducedMotion()) this.controls.autoRotate = true;
     this.controls.update();
 
@@ -1901,6 +2374,7 @@ export class BrainEngine implements CanvasEngine {
     this.project();
     if (this.pointer.dirty) this.updateHover();
     this.composer.render();
+    if (this.pathGeo) this.pathBadges.update(this.pathBadgeInput());
     this.updateLabels(now);
     this.raf = requestAnimationFrame(this.frame);
   };
@@ -1952,6 +2426,8 @@ export class BrainEngine implements CanvasEngine {
     }
     this.nodeGeo.dispose();
     this.nodeMat.dispose();
+    this.pathLayer.dispose();
+    this.pathBadges.dispose();
     this.fx.geometry.dispose();
     this.markers.geometry.dispose();
     this.fxMat.dispose();

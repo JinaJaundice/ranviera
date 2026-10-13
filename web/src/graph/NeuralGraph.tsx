@@ -6,7 +6,7 @@ import { bus } from "../lib/bus";
 import { selectNode, useStore } from "../lib/store";
 import { GraphEngine } from "./engine";
 import { BrainEngine } from "./brain/BrainEngine";
-import type { BrainCommand, BrainView, CanvasEngine, TrailStep } from "./brain/types";
+import type { BrainCommand, BrainView, CanvasEngine, TracePath, TrailStep } from "./brain/types";
 import { BrainControls } from "./BrainControls";
 import { ThoughtTrail } from "./ThoughtTrail";
 
@@ -58,6 +58,28 @@ export function NeuralGraph({ className }: { className?: string }) {
     // the control group sends its zoom, reset and preset commands through this window event
     const onCommand = (ev: Event) => brain.current?.command((ev as CustomEvent<{ cmd: BrainCommand }>).detail.cmd);
     window.addEventListener("cortex:brain-command", onCommand);
+    // the traced path (docs/CONTRACTS.md, "The traced path"): the thought trail sets the path and moves its head through these window events
+    const onPathSet = (ev: Event) => {
+      const d = (ev as CustomEvent<{ path: TracePath | null; previous?: TracePath | null; progress?: number; frame?: boolean }>).detail;
+      brain.current?.setPath(d.path, { previous: d.previous, progress: d.progress, frame: d.frame });
+    };
+    const onPathSeek = (ev: Event) => {
+      const d = (ev as CustomEvent<{ n: number; fraction: number; select?: boolean }>).detail;
+      brain.current?.seekPath(d.n, d.fraction, d.select === true);
+    };
+    const onPathPlay = (ev: Event) => {
+      const d = (ev as CustomEvent<{ playing: boolean; speed?: number }>).detail;
+      brain.current?.setPathPlaying(d.playing, d.speed);
+    };
+    const onPathFrame = () => brain.current?.framePath();
+    const onPathPrevious = (ev: Event) => brain.current?.setPathPrevious((ev as CustomEvent<{ on: boolean }>).detail.on);
+    const onPathFollow = (ev: Event) => brain.current?.setPathFollow((ev as CustomEvent<{ on: boolean }>).detail.on);
+    window.addEventListener("cortex:path-set", onPathSet);
+    window.addEventListener("cortex:path-seek", onPathSeek);
+    window.addEventListener("cortex:path-play", onPathPlay);
+    window.addEventListener("cortex:path-frame", onPathFrame);
+    window.addEventListener("cortex:path-previous", onPathPrevious);
+    window.addEventListener("cortex:path-follow", onPathFollow);
     const theme = new MutationObserver(() => eng.refreshTheme());
     theme.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
 
@@ -67,6 +89,12 @@ export function NeuralGraph({ className }: { className?: string }) {
       window.removeEventListener("cortex:focus-region", onRegion);
       window.removeEventListener("cortex:view-inset", onInset);
       window.removeEventListener("cortex:brain-command", onCommand);
+      window.removeEventListener("cortex:path-set", onPathSet);
+      window.removeEventListener("cortex:path-seek", onPathSeek);
+      window.removeEventListener("cortex:path-play", onPathPlay);
+      window.removeEventListener("cortex:path-frame", onPathFrame);
+      window.removeEventListener("cortex:path-previous", onPathPrevious);
+      window.removeEventListener("cortex:path-follow", onPathFollow);
       theme.disconnect();
       eng.dispose();
       engine.current = null;
@@ -86,7 +114,9 @@ export function NeuralGraph({ className }: { className?: string }) {
     brain.current?.setSurface(view.surface);
     brain.current?.setExpand(view.expand);
     brain.current?.setCaptions(view.captions);
-  }, [view.sizeBy, view.ambient, view.labels, view.surface, view.expand, view.captions, layout]);
+    brain.current?.setPathPrevious(view.pathPrevious);
+    brain.current?.setPathFollow(view.pathFollow);
+  }, [view.sizeBy, view.ambient, view.labels, view.surface, view.expand, view.captions, view.pathPrevious, view.pathFollow, layout]);
 
   useEffect(() => {
     engine.current?.setSelected(selected);

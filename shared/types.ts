@@ -360,7 +360,7 @@ export type MappingStatus = "proposed" | "ratified" | "rejected" | "superseded";
 
 export interface MappingRecord {
   id: string;
-  relation: "implementsClause" | "realises" | "satisfies" | "notDischargedBy" | "detects" | "appliesTo";
+  relation: "implementsClause" | "realises" | "satisfies" | "expressedIn" | "notDischargedBy" | "detects" | "appliesTo" | "conflictsWith";
   s: string;
   t: string;
   status: MappingStatus;
@@ -377,6 +377,19 @@ export interface MappingRecord {
   history: { ts: string; action: "propose" | "ratify" | "reject" | "edit" | "supersede" | "reassign"; by: string; note: string | null }[];
   /** the mapping file that holds the record, added by the list command */
   scope?: string;
+  /** only on a conflictsWith mapping that suggest-conflicts wrote (13 October 2026) */
+  suggestion?: ConflictSuggestion;
+}
+
+/** A conflict that the model suggester proposed, with the quoted line of each side (13 October 2026). */
+export interface ConflictSuggestion {
+  v: 1;
+  a: { file: string; line: number; quote: string };
+  b: { file: string; line: number; quote: string };
+  reason: string;
+  model: string;
+  version: string;
+  time: string;
 }
 
 export interface InstructionVersionRecord {
@@ -453,6 +466,8 @@ export interface DecisionTrace {
   case_ref: string | null;
   decision: { id: string; outcome: string; step: number; ts: string } | null;
   review: {
+    /** the graph id of the Review node (13 October 2026, for the traced path) */
+    id?: string;
     reviewer: string;
     verdict: string | null;
     override: boolean;
@@ -467,10 +482,12 @@ export interface DecisionTrace {
     kind: string;
     ts: string;
     tool: string | null;
+    /** the graph id of the ToolCall node, or null (13 October 2026) */
+    tool_id?: string | null;
     evidence: { id: string; label: string; hash: string | null; source: string | null }[];
     in_context: InstrRef[];
     cited: InstrRef[];
-    rationale: { hash: string; content_ref: string | null; text: string | null } | null;
+    rationale: { id?: string; hash: string; content_ref: string | null; text: string | null } | null;
     findings: TraceFinding[];
   }[];
   chains: Record<string, ChainLink[]>;

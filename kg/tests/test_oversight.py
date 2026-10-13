@@ -54,6 +54,10 @@ def test_trace_of_a_reviewed_run_and_references(tmp_path):
     assert t["review"]["override"] is True and t["review"]["override_reason"] == "The date of birth differs."
     assert t["review"]["checks_ticked"] == ["name", "dob"] and t["review"]["time_open_s"] == 15
     assert t["steps"][2]["rationale"]["hash"].startswith("sha256:") and t["steps"][2]["rationale"]["content_ref"]
+    # 13 October 2026: the ids that the brain view needs to draw the path of the run
+    assert t["review"]["id"] and t["review"]["id"] in {n for n in (ov.View(cfg).nodes)}
+    assert t["steps"][2]["rationale"]["id"] in ov.View(cfg).nodes
+    assert t["steps"][1]["tool_id"] in ov.View(cfg).nodes and t["steps"][0]["tool_id"] is None
     with pytest.raises(ov.OversightError):
         ov.trace(cfg, "no-such-run")
 

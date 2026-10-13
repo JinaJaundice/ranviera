@@ -14,6 +14,8 @@ export interface LabelRequest {
   radius?: number;
   /** a caption is tried centred on its point first */
   centred?: boolean;
+  /** the label must be shown: where the 8 places round the point are taken, it tries places further out and keeps a leader line */
+  far?: boolean;
 }
 
 export interface PlacedLabel {
@@ -58,6 +60,21 @@ export function candidates(r: LabelRequest): Box[] {
     { left: x - d - w, top: y + d, w, h },
   ];
   if (r.centred) list.unshift({ left: x - w / 2, top: y - h / 2, w, h });
+  if (r.far) {
+    for (const reach of [48, 100, 170]) {
+      const e = d + reach;
+      list.push(
+        { left: x + e, top: y - h / 2, w, h },
+        { left: x - e - w, top: y - h / 2, w, h },
+        { left: x - w / 2, top: y - e - h, w, h },
+        { left: x - w / 2, top: y + e, w, h },
+        { left: x + e, top: y - e - h, w, h },
+        { left: x - e - w, top: y - e - h, w, h },
+        { left: x + e, top: y + e, w, h },
+        { left: x - e - w, top: y + e, w, h },
+      );
+    }
+  }
   return list;
 }
 

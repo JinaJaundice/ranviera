@@ -133,6 +133,23 @@ describe("TrailQueue", () => {
     expect(played).toEqual([1, 2]);
   });
 
+  it("keeps the pace of a replay or a recorded run, however many steps wait", () => {
+    const played: number[] = [];
+    const notes: boolean[] = [];
+    const q = new TrailQueue({ play: (s) => played.push(s.n), catchingUp: (on) => notes.push(on) });
+    q.setCatchUp(false);
+    for (let i = 1; i <= 12; i += 1) q.push(step(i));
+    expect(played).toEqual([1]);
+    expect(notes).toEqual([]);
+    vi.advanceTimersByTime(900);
+    // a step that starts with 11 waiting still lasts the full 900 ms
+    vi.advanceTimersByTime(899);
+    expect(played).toEqual([1, 2]);
+    vi.advanceTimersByTime(1);
+    expect(played).toEqual([1, 2, 3]);
+    expect(notes).toEqual([]);
+  });
+
   it("plays at double speed and says so when more than 8 steps wait", () => {
     const played: number[] = [];
     const notes: boolean[] = [];
@@ -201,5 +218,12 @@ describe("brain_domains", () => {
     setBrainDomains(undefined);
     const dflt = regionOfNode(node);
     expect(custom).not.toBe(dflt);
+  });
+});
+
+describe("tool sentences (13 October 2026)", () => {
+  it("keeps a label that is already a sentence and names any other tool", () => {
+    expect(sentenceFor({ kind: "tool", label: "Ran a Bash command" } as Parameters<typeof sentenceFor>[0])).toBe("Ran a Bash command");
+    expect(sentenceFor({ kind: "tool", label: "Bash" } as Parameters<typeof sentenceFor>[0])).toBe("Used the tool Bash");
   });
 });

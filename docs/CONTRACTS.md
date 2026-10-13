@@ -276,6 +276,27 @@ A proof in `inferred.json` records each negated condition of a rule as a child w
 
 `shared/brain.ts` exports `RegionId`, `REGIONS` (each with `id`, `label` (the category name shown on screen, such as Rules and decisions), `holds`, `name` (the anatomical name, shown only as a second line in the legend), `func` and `source`) and `regionOf(node, containerPath, domains)`, which returns the region of a node by the table in `BRAIN.md`. The web app loads `/brain/brain.glb`, `/brain/brain-points.bin` and `/brain/brain-regions.json`, as `scripts/brain/build-brain-asset.mjs` writes them. `GraphView` in `web/src/lib/store.ts` has `layout: "brain" | "network"` (default `"brain"`) and `hiddenRegions: RegionId[]`. The brain scene also has these controls, which the web app keeps in its own state and does not send to the server: the Surface opacity, the Expand distance from 0 to 1, the labels switch, auto-rotate and the focused region. The window event `cortex:view-inset` tells the scene how many pixels of the canvas the thought trail covers.
 
+### The traced path (13 October 2026)
+
+The brain view draws each prompt and each recorded agent run as one ordered path (`BRAIN.md`, "The traced path"). No stream message, route or server command is new. The shapes are held in `web/src/graph/brain/types.ts`.
+
+```ts
+interface TrailStep {                       // gains the optional fields marked new
+  n: number; kind: string; sentence: string; ts: string; activation: Activation[]
+  mode: "observed" | "predicted" | "recorded"   // new value "recorded": a step built from a recorded agent run
+  label?: string                                // new: "recorded", "loaded" or "stated by the agent, cause unverified" (a run step only)
+  markers?: PathMarker[]                        // new: findings shown on this step
+  absent?: string[]                             // new: ids of nodes of the step that the graph on screen does not hold
+}
+interface PathMarker { severity: "violation" | "warning" | "info"; title: string; node: string | null }
+interface TracePath { id: string; source: "live" | "replay" | "plan" | "run"; run: string | null; steps: TrailStep[] }
+```
+
+- The order of `TrailStep.activation` is the order in which the line visits the nodes of hop 0. For a step from the stream it is the order of `event.nodes`. A node of hop 1 or hop 2 is a branch from the node named in its `via`.
+- `DecisionTrace` gains the optional ids `review.id`, `steps[].rationale.id` and `steps[].tool_id`, so that the path can reach every node of a run. A reader of an older server treats a missing id as absent from the graph.
+- `BusEvents` gains `path-open: { path: TracePath }` and `path-progress: { id: string; n: number; fraction: number; playing: boolean }`. The scene listens to the window events `cortex:path-set`, `cortex:path-seek`, `cortex:path-play`, `cortex:path-frame`, `cortex:path-previous` and `cortex:path-follow`.
+- The Graph window opens on a run through the `open` event with the parameter `trace` set to the run reference. `GraphView` gains `pathPrevious` (default `false`) and `pathFollow` (default `true`), which the web app keeps in its own state.
+
 ## Agent transparency contracts
 
 This section fixes the shapes that the mapping store, the run ingestion, the ledger, the oversight commands, the views and the bundle exchange. Classes, relations and shapes are in `ONTOLOGY.md`, rules O03 to O07 and O09 to O14 are in `REASONING.md`, and the feature is described in `AGENT_TRANSPARENCY.md`. The instruction store, the identity contract, the view shapes and the routes are provisional until the maintainer's validation with second-line reviewers reports.
@@ -304,7 +325,7 @@ A design time link is a mapping. Mappings are kept in `<profile_dir>/mappings/<s
 interface MappingFile { v: 1; scope: string; mappings: MappingRecord[] }
 interface MappingRecord {
   id: string                       // map:<yyyymmdd>-<nnn>, the date of creation and a counter that restarts each day
-  relation: "implementsClause" | "realises" | "satisfies" | "notDischargedBy" | "detects" | "appliesTo"
+  relation: "implementsClause" | "realises" | "satisfies" | "expressedIn" | "notDischargedBy" | "detects" | "appliesTo" | "conflictsWith"   // 13 October 2026: expressedIn added (Obligation to LegislativeProvision only), conflictsWith added for suggest-conflicts
   s: string                        // node id of the source
   t: string                        // node id of the target
   status: "proposed" | "ratified" | "rejected" | "superseded"
@@ -318,6 +339,7 @@ interface MappingRecord {
   anchors: { s_hash: string | null; t_hash: string | null }   // sha256 of both ends at ratification
   reason: string | null            // required when rejected
   superseded_by: string | null     // the id of the mapping that replaces it
+  suggestion?: ConflictSuggestion  // 13 October 2026: only on a conflictsWith mapping that suggest-conflicts wrote
   history: { ts: string; action: "propose" | "ratify" | "reject" | "edit" | "supersede" | "reassign"; by: string; note: string | null }[]
 }
 ```
@@ -331,6 +353,7 @@ The rules for a mapping are these:
 - A proposed mapping gives an edge of provenance `proposed` at half weight, a ratified mapping gives an edge of provenance `ratified`, and a rejected or superseded mapping gives no edge. The evidence of the edge is `<file>#<id>`, and check P08 resolves that form against the mapping file.
 - An imported or suggested mapping carries `origin` and a `basis`. A suggestion does not have the status ratified at creation.
 - Each ratification, rejection and reassignment is also a ledger entry of kind `mapping.ratify`, `mapping.reject` or `mapping.reassign`.
+- The relation `expressedIn` allows the source class Obligation (an id of the form `obligation:<slug>`) and the target class LegislativeProvision (`provision:<slug>`). The store refuses any other class at either end. The other relations name no class at the store, and their classes are checked by the shapes. A ratified `expressedIn` mapping adds a link from an obligation to a provision and no other, so rules O01 to O14 read the same graph as before.
 
 ### The run record, `ranviera.run.v1`
 
@@ -472,6 +495,31 @@ Each command runs as `python -m cortex_kg <command>`, accepts `--json`, and exit
 | `ingest-run FILE\|- [--format run.v1\|otlp\|hook\|gateway]` | validates records, normalises them, writes the nodes of the run, appends ledger entries and signs the head where `ledger_key` is set. The default format is `run.v1`. |
 | `ledger verify [--head FILE]` | checks the hash chain, the completeness of each run (captured steps against `steps_reported`) and the signature, and writes `<data_dir>/ledger/verify.json`. Exit 1 on a break. |
 | `conflicts scan ROOT [--json]` | lists the candidate conflicts between the instruction files of the set-up at ROOT, found by 3 deterministic signals (a term banned by one rule and required by another, different numbers for one setting, and different members of one set of exclusive choices), with stated exceptions and different folders suppressed. A candidate is a proposal for a person to ratify or reject, and the list is the same on each run. |
+| `suggest-conflicts ROOT [--write] [--owner O] [--by MAKER] [--scope S] [--model M] [--timeout SECONDS] [--chunk-chars N] [--raw-dir DIR] [--json] [--config FILE]` | asks a model for conflicts between the instruction files of the set-up at ROOT, keeps each suggestion whose two quotes are found word for word in the files, and lists them. It writes nothing unless `--write` is given. It needs the key `conflict_suggest_cmd` (below) and exits 2 without it. |
+
+### Conflict suggestions
+
+The scan above is deterministic and finds few conflicts. `suggest-conflicts` adds a model suggester whose output is a proposal and never a finding. A suggestion enters the mapping store as a mapping of the relation `conflictsWith`, with the origin `suggested` and the status `proposed`. A person ratifies or rejects it, and only a ratified mapping gives an edge that rules R04 and O03 read.
+
+Model calls are off by default. The key `conflict_suggest_cmd` (environment variable `CORTEX_CONFLICT_SUGGEST_CMD`, a JSON array or one path) names the command that the person or the bank allows, and a null key makes the command refuse with exit 2 and make no call. The command must accept the headless flags of Claude Code and print its JSON result on standard output. The module sends the prompt on standard input, runs the command in an empty temporary folder, limits the setting sources to the project and local sources, gives the model no tools, and removes `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` from the environment of the call. The default model is `sonnet` and the default time limit is 600 seconds for each call.
+
+The module numbers the lines of the instruction files (every `CLAUDE.md`, `.claude/rules/*.md` and `.claude/agents/*.md`) and sends them in chunks of at most `--chunk-chars` characters (default 60000), cut at file boundaries. Where there is more than one chunk, each chunk and each pair of chunks is sent.
+
+```ts
+interface ConflictSuggestion {   // the optional key `suggestion` of the mapping record
+  v: 1
+  a: { file: string; line: number; quote: string }   // file relative to ROOT, the line that holds the quote
+  b: { file: string; line: number; quote: string }
+  reason: string
+  model: string                  // the model that answered
+  version: string                // the version of the command, from its --version, or unknown
+  time: string                   // UTC time of the call
+}
+```
+
+- A suggestion is kept only where each quote is found word for word (ignoring white space) in the named file and the two sides are different lines. A suggestion that fails is dropped and counted.
+- Two suggestions for the same two lines are one.
+- The mapping has `origin` `suggested`, `status` `proposed`, `maker` from `--by` (default `conflict-suggester`), `owner` from `--owner` (required with `--write`) and a `basis` that holds both quotes, their files and lines, and the reason. Its ends are the ids of the Rule nodes of `graph.json` whose evidence ends with `<file>:<line>`, or `<file>:<line>` where the graph holds none. A mapping whose end is not a node cannot be ratified.
 
 ### The bounds file of the bank
 
@@ -517,11 +565,11 @@ interface DecisionTrace {
   model: { id: string; status: string | null; approved: boolean; approver?: string | null; approved_on?: string | null }   // 13 October 2026: who approved the model version and on what day, from the instruction store (model_approvals), null where the version is not approved
   case_ref: string | null
   decision: { id: string; outcome: string; step: number; ts: string } | null
-  review: { reviewer: string; verdict: string | null; override: boolean; override_reason: string | null; time_open_s: number | null; items_viewed: number | null; checks_ticked: string[] } | null
-  steps: { id: string; step: number; kind: string; ts: string; tool: string | null
+  review: { id?: string; reviewer: string; verdict: string | null; override: boolean; override_reason: string | null; time_open_s: number | null; items_viewed: number | null; checks_ticked: string[] } | null   // id: 13 October 2026, the Review node, for the brain path
+  steps: { id: string; step: number; kind: string; ts: string; tool: string | null; tool_id?: string | null   // tool_id: 13 October 2026, the ToolCall node
            evidence: { id: string; label: string; hash: string | null; source: string | null }[]
            in_context: InstrRef[]; cited: InstrRef[]
-           rationale: { hash: string; content_ref: string | null; text: string | null } | null   // text: 13 October 2026, read at view time from the content store, null where it is not held
+           rationale: { id?: string; hash: string; content_ref: string | null; text: string | null } | null   // id: 13 October 2026, the StatedRationale node. text: 13 October 2026, read at view time from the content store, null where it is not held
            findings: TraceFinding[] }[]
   chains: Record<string, ChainLink[]>   // by instruction version id, the links to clause, control, obligation and provision
   findings: TraceFinding[]              // all findings of the run, with their proofs
@@ -603,6 +651,9 @@ As built on 7 October 2026 (`server/src/oversight.ts`), the routes differ from t
 
 ## Changes to this document
 
+- 13 October 2026: the traced path of the brain view. `TrailStep` gains the mode `recorded` and the optional fields `label`, `markers` and `absent`, `TracePath` is new, `DecisionTrace` gains the optional ids `review.id`, `steps[].rationale.id` and `steps[].tool_id`, `BusEvents` gains `path-open` and `path-progress`, and the Graph window opens on a run. No route or stream message is new.
+- 13 October 2026: the mapping store accepts the relation `expressedIn`, from an Obligation to a LegislativeProvision. `MappingRecord.relation` gains the value, the store refuses `expressedIn` between any other classes, and the Oversight views word it as 'is expressed in the provision'.
+- 13 October 2026: the model suggester of conflicts. The command `suggest-conflicts`, the key `conflict_suggest_cmd` (null by default, environment variable `CORTEX_CONFLICT_SUGGEST_CMD`), the shape `ConflictSuggestion`, the relation `conflictsWith` in the mapping store and the optional key `suggestion` of a mapping record.
 - 7 October 2026: agent transparency contracts. The configuration keys for oversight, the mapping file, the run record `ranviera.run.v1`, the run ledger, the instruction store, the policy pack, identity and roles, the oversight commands, the view shapes, the evidence pack, the oversight routes (provisional), the signed bundle and its verifier, the bounds file and the conflict scan command.
 - 12 October 2026: the compiler writes what shapes F02 to F04, F06, F08 and F14 read. A mapping node gains `sourceAnchor`, `targetAnchor` and `ratifiedOn` (ratified only) and the edges `ownedBy`, `proposedBy` and `approvedBy` (the last for a ratified mapping only) to Person nodes of the stated provenance, with the evidence `mappings/<scope>.json#<id>`. A Run node gains `promptHash`, a decision node gains a `statesRationale` edge to the last stated rationale before it (a rationale serves one decision), and the transparency stage writes a `ledger:<seq>` LedgerEntry node (`seq`, `recordHash`, `prevHash`, `entryHash`) with an `entryOf` edge to its run for each ledger entry that names a run. Check P08 also accepts `instructions/<agent>.json` and `instructions/<agent>.json#<version id>`, resolved in the profile folder and checked for the version, and resolves a bare vocabulary file name in `<profile>/vocab`.
 - 13 October 2026: the views answer the review of three second-line roles. `ChainLink` gains `clause_ref` and `policy` on a link to a policy clause, `DecisionTrace.model` gains `approver` and `approved_on` from the new `model_approvals` of the instruction store, and an agent of `MonitoringReport` gains `runs` and `runs_recorded`. The demonstrator records the approver and the day of each approved model version.

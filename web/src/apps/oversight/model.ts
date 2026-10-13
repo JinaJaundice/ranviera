@@ -163,6 +163,7 @@ const RELATION_WORD: Record<string, string> = {
   notDischargedBy: "is not discharged by",
   detects: "detects the typology",
   appliesTo: "applies to",
+  conflictsWith: "conflicts with",
 };
 
 /** A relation of the graph in plain words. */

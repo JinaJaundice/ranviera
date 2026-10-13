@@ -36,6 +36,16 @@ def test_propose_defaults(tmp_path):
     assert make(tmp_path, relation="satisfies")["id"] == "map:20261007-002"
 
 
+def test_expressed_in_runs_from_an_obligation_to_a_provision_only(tmp_path):
+    rec = make(tmp_path, relation="expressedIn", s="obligation:inv-a", t="provision:inv-a")
+    assert rec["relation"] == "expressedIn" and rec["status"] == "proposed"
+    for s, t in (("control:b", "provision:inv-a"), ("obligation:inv-a", "clause:a"), ("provision:inv-a", "obligation:inv-a")):
+        with pytest.raises(mp.MappingError):
+            make(tmp_path, relation="expressedIn", s=s, t=t)
+    nodes, edges = mp.graph_parts(tmp_path)
+    assert [e["r"] for e in edges] == ["expressedIn"] and nodes[0]["props"]["relation"] == "expressedIn"
+
+
 def test_propose_refuses_bad_input_and_duplicates(tmp_path):
     with pytest.raises(mp.MappingError):
         make(tmp_path, relation="likes")

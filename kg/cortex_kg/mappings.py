@@ -19,7 +19,11 @@ from typing import Callable
 
 from .fileio import write_atomic
 
-RELATIONS = ("implementsClause", "realises", "satisfies", "notDischargedBy", "detects", "appliesTo")
+RELATIONS = ("implementsClause", "realises", "satisfies", "expressedIn", "notDischargedBy", "detects", "appliesTo",
+             "conflictsWith")   # conflictsWith links 2 instruction lines and comes from suggest-conflicts (13 October 2026)
+# the id prefixes (the classes) that a relation allows at each end, for the relations that name them: expressedIn runs from an
+# Obligation to a LegislativeProvision (13 October 2026)
+END_PREFIXES = {"expressedIn": (("obligation",), ("provision",))}
 STATUSES = ("proposed", "ratified", "rejected", "superseded")
 ORIGINS = ("reviewer", "suggested", "imported")
 DEFAULT_SCOPE = "default"
@@ -127,7 +131,11 @@ def propose(profile_dir: str | Path, *, relation: str, s: str, t: str, basis: st
             origin: str = "reviewer", scope: str = DEFAULT_SCOPE, now: datetime | None = None) -> dict:
     """Add a proposed mapping and return it. A suggestion never starts as ratified."""
     if relation not in RELATIONS:
-        raise MappingError(f"The relation '{relation}' is not one of the six relations of the contract.")
+        raise MappingError(f"The relation '{relation}' is not a relation of the mapping contract.")
+    if relation in END_PREFIXES and all(v and v.strip() for v in (s, t)):
+        (src, tgt) = END_PREFIXES[relation]
+        if s.split(":")[0] not in src or t.split(":")[0] not in tgt:
+            raise MappingError(f"The relation '{relation}' runs from an obligation to a provision, so '{s}' to '{t}' is refused.")
     if origin not in ORIGINS:
         raise MappingError(f"The origin '{origin}' is not reviewer, suggested or imported.")
     for label, value in (("source", s), ("target", t), ("basis", basis), ("owner", owner), ("maker", maker)):

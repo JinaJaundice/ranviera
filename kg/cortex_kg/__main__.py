@@ -445,7 +445,8 @@ def cmd_demo(cfg, args) -> int:
 
 def make_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(prog="cortex", description="Cortex knowledge graph commands. The oversight commands "
-                                "(oversight, instructions, monitor, sample, backtest, pack and bundle) each print their own help.")
+                                "(oversight, instructions, monitor, sample, backtest, pack and bundle) and the conflict commands (conflicts and "
+                                "suggest-conflicts) each print their own help.")
     p.add_argument("--config", help="path to cortex.config.json")
     sub = p.add_subparsers(dest="command", required=True)
     sub.add_parser("build", help="harvest the set-up and write the graph").set_defaults(fn=cmd_build)
@@ -550,7 +551,8 @@ def make_parser() -> argparse.ArgumentParser:
 # The oversight commands of docs/CONTRACTS.md ("Oversight commands", 7 October 2026). Each module parses its own arguments,
 # including --config and --json, and takes the command word as its first argument.
 DELEGATED = {"oversight": "oversight", "instructions": "instructions", "monitor": "monitoring", "sample": "monitoring",
-             "backtest": "backtest", "pack": "evidence_pack", "bundle": "bundle", "conflicts": "conflicts"}
+             "backtest": "backtest", "pack": "evidence_pack", "bundle": "bundle", "conflicts": "conflicts",
+             "suggest-conflicts": "conflict_suggest"}
 
 
 def main(argv: list[str] | None = None) -> int:

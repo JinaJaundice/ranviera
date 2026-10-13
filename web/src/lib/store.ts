@@ -30,6 +30,8 @@ export interface GraphView {
   surface: number; // the opacity of the brain silhouette, from 0 (hidden) to 1 (solid); 0.25 by default
   expand: number; // how far the regions move outwards from the centre of the brain, from 0 (together) to 1 (apart); 0 by default
   captions: boolean; // the captions of the regions and the labels of the clusters; on by default
+  pathPrevious: boolean; // draw the prompt before as a dimmed line beside the current path; off by default (not sent to the server)
+  pathFollow: boolean; // the camera follows the head of the path; on by default (not sent to the server)
 }
 
 export interface CortexState {
@@ -58,6 +60,8 @@ let state: CortexState = {
     surface: 0.25,
     expand: 0,
     captions: true,
+    pathPrevious: false,
+    pathFollow: true,
   },
   graph: null,
   byId: new Map(),

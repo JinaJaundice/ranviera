@@ -3,7 +3,7 @@
 // the queue, so that the sentences and the timing are tested with fake timers.
 import type { Activation, CortexEvent, GraphNode, Plan } from "@shared/types";
 import { DEFAULT_BRAIN_DOMAINS, regionOf, type BrainDomains, type RegionId } from "@shared/brain";
-import { leadRegion } from "./schedule";
+import { MIN_STEP_MS, leadRegion, stepTiming } from "./schedule";
 import type { TrailStep } from "./types";
 
 /** The background class of each region colour, written out so that Tailwind finds it. */
@@ -45,8 +45,7 @@ export function stepRegion(step: TrailStep, byId: Map<string, GraphNode>): Regio
   });
 }
 
-/** A step lasts at least this long, so that a person can read its sentence. */
-export const MIN_STEP_MS = 900;
+export { MIN_STEP_MS };
 /** More than this many steps waiting makes the queue play at double speed. */
 export const CATCH_UP_AFTER = 8;
 
@@ -79,7 +78,8 @@ export function sentenceFor(event: Pick<CortexEvent, "kind" | "label" | "meta">)
     case "agent.stop":
       return `Agent ${name} finished`;
     case "tool":
-      return `Used the tool ${name}`;
+      // a label that is already a sentence, such as "Ran a Bash command", stands as it is (13 October 2026)
+      return /^(Ran|Used|Read|Wrote|Edited|Searched|Fetched|Listed|Opened|Called|Asked|Created|Updated|Moved|Started|Stopped) /.test(name) ? name : `Used the tool ${name}`;
     case "check":
       return `Ran the check ${name}`;
     case "fault":
@@ -96,6 +96,10 @@ export function sentenceFor(event: Pick<CortexEvent, "kind" | "label" | "meta">)
     }
     case "mission.end":
       return "Mission finished";
+    case "workflow":
+      return label ? `Ran the workflow ${name}` : "Ran a workflow";
+    case "compile":
+      return "Rebuilt the graph";
     default:
       return label ? `${event.kind} ${label}` : event.kind;
   }
@@ -197,9 +201,9 @@ export function stepsFromPlan(plan: Plan, labelOf: (id: string) => string, now: 
   });
 }
 
-/** The longest hop of a step, which sets how long its nodes take to light. */
-function span(step: TrailStep): number {
-  return step.activation.reduce((m, a) => Math.max(m, a.hop), 0) * 250;
+/** How long a step lasts at normal speed: the longer of 900 ms, the time of its head and the time of its branches plus 400 ms (schedule.ts). */
+export function stepMs(step: TrailStep): number {
+  return stepTiming(step.n, step.activation).total;
 }
 
 export interface QueueHooks {
@@ -212,8 +216,9 @@ export interface QueueHooks {
 }
 
 /**
- * Plays steps one at a time. A step lasts at least 900 ms, or its hop span and 400 ms where that is longer, divided
- * by the speed. The speed doubles while more than 8 steps wait. A step that arrives when the queue is empty plays at once.
+ * Plays steps one at a time. A step lasts as long as stepMs says, divided by the speed. The speed doubles while more than
+ * 8 steps wait. A step that arrives when the queue is empty plays at once. A paused queue keeps what waits and the time left
+ * of the step that is playing.
  */
 export class TrailQueue {
   private waiting: TrailStep[] = [];
@@ -221,8 +226,46 @@ export class TrailQueue {
   private busy = false;
   private catching = false;
   private base = 1;
+  /** live steps catch up at double speed, and a replay, a recorded run and a prediction do not (13 October 2026) */
+  private catchUp = true;
+  private paused = false;
+  /** the time the playing step still has to run, and when its timer started */
+  private left = 0;
+  private startedAt = 0;
 
   constructor(private hooks: QueueHooks) {}
+
+  get isPaused(): boolean {
+    return this.paused;
+  }
+
+  /** Stop the clock of the step that is playing. Steps that arrive wait. */
+  pause(): void {
+    if (this.paused) return;
+    this.paused = true;
+    if (this.timer) {
+      clearTimeout(this.timer);
+      this.timer = null;
+      this.left = Math.max(0, this.left - (Date.now() - this.startedAt));
+    }
+  }
+
+  /** Carry on from the time that was left. */
+  resume(): void {
+    if (!this.paused) return;
+    this.paused = false;
+    if (this.busy) this.arm(this.left);
+    else this.next();
+  }
+
+  private arm(ms: number): void {
+    this.left = ms;
+    this.startedAt = Date.now();
+    this.timer = setTimeout(() => {
+      this.timer = null;
+      this.next();
+    }, ms);
+  }
 
   get pending(): number {
     return this.waiting.length;
@@ -233,10 +276,15 @@ export class TrailQueue {
     this.base = speed;
   }
 
+  setCatchUp(on: boolean): void {
+    this.catchUp = on;
+    this.note();
+  }
+
   push(step: TrailStep): void {
     this.waiting.push(step);
     this.note();
-    if (!this.busy) this.next();
+    if (!this.busy && !this.paused) this.next();
   }
 
   /** Drop what waits and stop the timer, for a new prompt that replaces the replay. */
@@ -245,11 +293,13 @@ export class TrailQueue {
     this.timer = null;
     this.waiting = [];
     this.busy = false;
+    this.paused = false;
+    this.left = 0;
     this.note();
   }
 
   private note(): void {
-    const on = this.waiting.length > CATCH_UP_AFTER;
+    const on = this.catchUp && this.waiting.length > CATCH_UP_AFTER;
     if (on !== this.catching) {
       this.catching = on;
       this.hooks.catchingUp?.(on);
@@ -257,7 +307,7 @@ export class TrailQueue {
   }
 
   private next(): void {
-    const crowded = this.waiting.length > CATCH_UP_AFTER;
+    const crowded = this.catchUp && this.waiting.length > CATCH_UP_AFTER;
     const step = this.waiting.shift();
     this.note();
     if (!step) {
@@ -268,10 +318,6 @@ export class TrailQueue {
     this.busy = true;
     this.hooks.play(step);
     const factor = this.base * (crowded ? 2 : 1);
-    const ms = Math.max(MIN_STEP_MS, span(step) + 400) / factor;
-    this.timer = setTimeout(() => {
-      this.timer = null;
-      this.next();
-    }, ms);
+    this.arm(stepMs(step) / factor);
   }
 }

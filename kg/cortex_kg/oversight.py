@@ -327,7 +327,8 @@ def trace(cfg: Config, run_ref: str, view: View | None = None) -> dict:
     for s in v.steps(rid):
         day = str(v.prop(s, "ts") or "")[:10]
         kids = v.out(s, "contains")
-        tool = next((v.prop(k, "tool") for k in kids if v.type_of(k) == "ToolCall"), None)
+        tool_node = next((k for k in kids if v.type_of(k) == "ToolCall"), None)
+        tool = v.prop(tool_node, "tool") if tool_node else None
         rat = next((k for k in kids if v.type_of(k) == "StatedRationale"), None)
         evidence = [{"id": e, "label": v.label(e), "hash": v.prop(e, "hash"), "source": v.prop(e, "sourceRef")}
                     for e in v.out(s, "usedEvidence")]
@@ -338,15 +339,15 @@ def trace(cfg: Config, run_ref: str, view: View | None = None) -> dict:
                 chain_ids.append(i)
         steps.append({
             "id": s, "step": int(v.prop(s, "ordinal") or 0), "kind": v.prop(s, "stepKind") or "", "ts": v.prop(s, "ts") or "",
-            "tool": tool, "evidence": evidence,
+            "tool": tool, "tool_id": tool_node, "evidence": evidence,
             "in_context": [_instr_ref(v, i, day) for i in ctx], "cited": [_instr_ref(v, i, day) for i in cited],
-            "rationale": {"hash": v.prop(rat, "hash"), "content_ref": v.prop(rat, "contentRef"),
+            "rationale": {"id": rat, "hash": v.prop(rat, "hash"), "content_ref": v.prop(rat, "contentRef"),
                           "text": _stored_text(v.cfg, v.prop(rat, "contentRef"))} if rat else None,
             "findings": v.findings_for({s, *kids, *(v.out(s, "informedDecision") if v.prop(s, "stepKind") == "decision" else [])}),
         })
     review = None
     if rv:
-        review = {"reviewer": v.prop(rv, "reviewer") or "", "verdict": v.prop(rv, "verdict"),
+        review = {"id": rv, "reviewer": v.prop(rv, "reviewer") or "", "verdict": v.prop(rv, "verdict"),
                   "override": v.prop(rv, "override") is True, "override_reason": v.prop(rv, "overrideReason"),
                   "time_open_s": v.prop(rv, "timeOpenS"), "items_viewed": v.prop(rv, "itemsViewed"),
                   "checks_ticked": list(v.prop(rv, "checksTicked") or [])}

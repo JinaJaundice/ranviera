@@ -71,3 +71,40 @@ export function leadRegion(activation: Activation[], regionOfId: (id: string) =>
 export function stepDuration(entries: Entry[]): number {
   return entries.reduce((m, e) => Math.max(m, e.at), 0);
 }
+
+// ------------------------------------------------------------------- the head of the traced path (docs/BRAIN.md, 13 October 2026)
+
+/** The head takes this long for each segment of hop 0. */
+export const HEAD_SEGMENT_MS = 250;
+/** A step with more than 8 segments shortens them so that its head takes 2,000 ms at most. */
+export const HEAD_CAP_MS = 2000;
+/** A step lasts at least this long, so that a person can read its sentence. */
+export const MIN_STEP_MS = 900;
+/** The branches of a step end this long before the step does. */
+export const BRANCH_TAIL_MS = 400;
+
+export interface StepTiming {
+  /** the slots of the head: one for the entry segment from the step before and one for each further node of hop 0 */
+  slots: number;
+  /** milliseconds for one slot */
+  perSlot: number;
+  /** the time for the head to reach the first node of the step */
+  entry: number;
+  /** the time of the head for the whole step */
+  head: number;
+  /** the time of the branches: 250 ms for each hop */
+  branches: number;
+  /** the length of the step at normal speed */
+  total: number;
+}
+
+/** The timing of one step at normal speed. It follows from the step number and its activation alone, so that the queue and the scene agree. */
+export function stepTiming(n: number, activation: Activation[]): StepTiming {
+  const hop0 = activation.filter((a) => a.hop === 0).length;
+  const slots = (n > 1 ? 1 : 0) + Math.max(0, hop0 - 1);
+  const perSlot = slots > 8 ? HEAD_CAP_MS / slots : HEAD_SEGMENT_MS;
+  const head = slots * perSlot;
+  const maxHop = activation.reduce((m, a) => Math.max(m, a.hop), 0);
+  const branches = maxHop * HOP_DELAY_MS;
+  return { slots, perSlot, entry: n > 1 ? perSlot : 0, head, branches, total: Math.max(MIN_STEP_MS, head, branches + BRANCH_TAIL_MS) };
+}
