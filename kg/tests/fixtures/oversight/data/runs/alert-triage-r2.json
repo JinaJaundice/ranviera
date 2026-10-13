@@ -1,0 +1,370 @@
+{
+ "v": 1,
+ "run": "run:alert-triage-r2",
+ "nodes": [
+  {
+   "id": "adec:alert-triage-r2-003",
+   "type": "AgentDecision",
+   "label": "Decision 3",
+   "props": {
+    "outcome": "escalate",
+    "statedRationale": "rationale:alert-triage-r2-002"
+   },
+   "evidence": "run:r2#3"
+  },
+  {
+   "id": "call:alert-triage-r2-001",
+   "type": "ToolCall",
+   "label": "screening-lookup",
+   "props": {
+    "tool": "screening-lookup",
+    "inputHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "outputHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+   },
+   "evidence": "run:r2#1"
+  },
+  {
+   "id": "dagent:alert-triage",
+   "type": "DeployedAgent",
+   "label": "alert-triage",
+   "props": {},
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "evid:watchlist-entry-17-22222222",
+   "type": "Evidence",
+   "label": "watchlist-entry-17",
+   "props": {
+    "hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "sourceHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "sourceRef": "watchlist-snapshot"
+   },
+   "evidence": "run:r2#1"
+  },
+  {
+   "id": "instr:alert-triage-escalate-match-v1",
+   "type": "InstructionVersion",
+   "label": "instr:alert-triage-escalate-match-v1",
+   "props": {
+    "hash": "sha256:015faaa9abc4439dfa4585607844d8af4756884a323df3315ed28fae4d2dee1b",
+    "path": "alert-triage-escalate-match-v1.md"
+   },
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "instr:alert-triage-narrative-v1",
+   "type": "InstructionVersion",
+   "label": "instr:alert-triage-narrative-v1",
+   "props": {
+    "hash": "sha256:616b557ac29a69bff89211033ebdd5e720053aef51e61bb43bc97f3c10e90cb2",
+    "path": "alert-triage-narrative-v1.md"
+   },
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "ksrc:watchlist-snapshot",
+   "type": "KnowledgeSource",
+   "label": "watchlist-snapshot",
+   "props": {
+    "snapshotHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "evidence": "run:r2#1"
+  },
+  {
+   "id": "model:model-a",
+   "type": "ModelVersion",
+   "label": "model-a",
+   "props": {
+    "modelId": "model-a",
+    "parameters": "{\"temperature\":0}",
+    "promptHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+   },
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "rationale:alert-triage-r2-002",
+   "type": "StatedRationale",
+   "label": "Stated rationale 2",
+   "props": {
+    "hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "contentRef": "store:5",
+    "causalStatus": "unverified"
+   },
+   "evidence": "run:r2#2"
+  },
+  {
+   "id": "review:alert-triage-r2-004",
+   "type": "Review",
+   "label": "Review 4",
+   "props": {
+    "reviewer": "bob-chen",
+    "verdict": "reject",
+    "override": true,
+    "overrideReason": "The date of birth differs.",
+    "timeOpenS": 15,
+    "itemsViewed": 3,
+    "checksTicked": [
+     "name",
+     "dob"
+    ]
+   },
+   "evidence": "run:r2#4"
+  },
+  {
+   "id": "run:alert-triage-r2",
+   "type": "Run",
+   "label": "Run r2",
+   "props": {
+    "startedAt": "2026-10-02T09:00:00.000Z",
+    "endedAt": "2026-10-02T09:10:00.000Z",
+    "replayStatus": "replayable",
+    "caseRef": "A-101",
+    "stepsReported": 5,
+    "ended": true
+   },
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "step:alert-triage-r2-000",
+   "type": "Step",
+   "label": "start 0",
+   "props": {
+    "ordinal": 0,
+    "stepKind": "start",
+    "ts": "2026-10-02T09:00:00.000Z"
+   },
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "step:alert-triage-r2-001",
+   "type": "Step",
+   "label": "evidence 1",
+   "props": {
+    "ordinal": 1,
+    "stepKind": "evidence",
+    "ts": "2026-10-02T09:01:00.000Z"
+   },
+   "evidence": "run:r2#1"
+  },
+  {
+   "id": "step:alert-triage-r2-002",
+   "type": "Step",
+   "label": "rationale 2",
+   "props": {
+    "ordinal": 2,
+    "stepKind": "rationale",
+    "ts": "2026-10-02T09:02:00.000Z"
+   },
+   "evidence": "run:r2#2"
+  },
+  {
+   "id": "step:alert-triage-r2-003",
+   "type": "Step",
+   "label": "decision 3",
+   "props": {
+    "ordinal": 3,
+    "stepKind": "decision",
+    "ts": "2026-10-02T09:03:00.000Z"
+   },
+   "evidence": "run:r2#3"
+  },
+  {
+   "id": "step:alert-triage-r2-004",
+   "type": "Step",
+   "label": "review 4",
+   "props": {
+    "ordinal": 4,
+    "stepKind": "review",
+    "ts": "2026-10-02T09:04:00.000Z"
+   },
+   "evidence": "run:r2#4"
+  },
+  {
+   "id": "step:alert-triage-r2-005",
+   "type": "Step",
+   "label": "end 5",
+   "props": {
+    "ordinal": 5,
+    "stepKind": "end",
+    "ts": "2026-10-02T09:10:00.000Z"
+   },
+   "evidence": "run:r2#5"
+  }
+ ],
+ "edges": [
+  {
+   "s": "adec:alert-triage-r2-003",
+   "r": "reviewedBy",
+   "t": "review:alert-triage-r2-004",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "evid:watchlist-entry-17-22222222",
+   "r": "sourcedFrom",
+   "t": "ksrc:watchlist-snapshot",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-000",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-001",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-002",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-004",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-005",
+   "evidence": "run:r2#5"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "performedBy",
+   "t": "dagent:alert-triage",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "ranOn",
+   "t": "model:model-a",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "step:alert-triage-r2-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "step:alert-triage-r2-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "contains",
+   "t": "call:alert-triage-r2-001",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "usedEvidence",
+   "t": "evid:watchlist-entry-17-22222222",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "contains",
+   "t": "rationale:alert-triage-r2-002",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "citesInstruction",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "step:alert-triage-r2-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "step:alert-triage-r2-005",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#5"
+  },
+  {
+   "s": "step:alert-triage-r2-005",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#5"
+  }
+ ]
+}

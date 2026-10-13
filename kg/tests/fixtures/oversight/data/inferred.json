@@ -1,0 +1,131 @@
+{
+ "v": 1,
+ "built": "2026-10-07T09:00:00Z",
+ "rules": [
+  {
+   "id": "O01",
+   "message": "An applicable obligation has no ratified chain to an in-force instruction version."
+  },
+  {
+   "id": "O02",
+   "message": "An in-force instruction version has no ratified clause."
+  },
+  {
+   "id": "O04",
+   "message": "A decision cites an instruction that was not in context."
+  },
+  {
+   "id": "O12",
+   "message": "A run used a model version outside the approved model versions."
+  },
+  {
+   "id": "O13",
+   "message": "A measure is outside the bound that the bank set."
+  }
+ ],
+ "facts": [
+  {
+   "key": "violation(\"O04\", \"adec:alert-triage-r3-003\")",
+   "rule": "O04",
+   "kind": "violation",
+   "args": [
+    "O04",
+    "adec:alert-triage-r3-003"
+   ],
+   "proof": {
+    "fact": "violation(\"O04\", \"adec:alert-triage-r3-003\")",
+    "rule": "O04",
+    "children": [
+     {
+      "fact": "node(...)",
+      "rule": null,
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "key": "violation(\"O12\", \"run:alert-triage-r3\", \"model:model-b\")",
+   "rule": "O12",
+   "kind": "violation",
+   "args": [
+    "O12",
+    "run:alert-triage-r3",
+    "model:model-b"
+   ],
+   "proof": {
+    "fact": "violation(...)",
+    "rule": "O12",
+    "children": [
+     {
+      "fact": "node(...)",
+      "rule": null,
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "key": "warning(\"O02\", \"instr:alert-triage-narrative-v1\")",
+   "rule": "O02",
+   "kind": "warning",
+   "args": [
+    "O02",
+    "instr:alert-triage-narrative-v1"
+   ],
+   "proof": {
+    "fact": "warning(...)",
+    "rule": "O02",
+    "children": [
+     {
+      "fact": "node(...)",
+      "rule": null,
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "key": "violation(\"O01\", \"obligation:o3\", \"dagent:alert-triage\")",
+   "rule": "O01",
+   "kind": "violation",
+   "args": [
+    "O01",
+    "obligation:o3",
+    "dagent:alert-triage"
+   ],
+   "proof": {
+    "fact": "violation(...)",
+    "rule": "O01",
+    "children": [
+     {
+      "fact": "node(...)",
+      "rule": null,
+      "children": []
+     }
+    ]
+   }
+  },
+  {
+   "key": "warning(\"O13\", \"dagent:alert-triage\", \"override\")",
+   "rule": "O13",
+   "kind": "warning",
+   "args": [
+    "O13",
+    "dagent:alert-triage",
+    "override"
+   ],
+   "proof": {
+    "fact": "warning(...)",
+    "rule": "O13",
+    "children": [
+     {
+      "fact": "node(...)",
+      "rule": null,
+      "children": []
+     }
+    ]
+   }
+  }
+ ]
+}

@@ -1,0 +1,1184 @@
+{
+ "v": 1,
+ "built": "2026-10-07T09:00:00Z",
+ "nodes": [
+  {
+   "id": "adec:alert-triage-r1-003",
+   "type": "AgentDecision",
+   "label": "Decision 3",
+   "props": {
+    "outcome": "close",
+    "statedRationale": "rationale:alert-triage-r1-002"
+   },
+   "evidence": "run:r1#3"
+  },
+  {
+   "id": "adec:alert-triage-r2-003",
+   "type": "AgentDecision",
+   "label": "Decision 3",
+   "props": {
+    "outcome": "escalate",
+    "statedRationale": "rationale:alert-triage-r2-002"
+   },
+   "evidence": "run:r2#3"
+  },
+  {
+   "id": "adec:alert-triage-r3-003",
+   "type": "AgentDecision",
+   "label": "Decision 3",
+   "props": {
+    "outcome": "close",
+    "statedRationale": "rationale:alert-triage-r3-002"
+   },
+   "evidence": "run:r3#3"
+  },
+  {
+   "id": "call:alert-triage-r1-001",
+   "type": "ToolCall",
+   "label": "screening-lookup",
+   "props": {
+    "tool": "screening-lookup",
+    "inputHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "outputHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+   },
+   "evidence": "run:r1#1"
+  },
+  {
+   "id": "call:alert-triage-r2-001",
+   "type": "ToolCall",
+   "label": "screening-lookup",
+   "props": {
+    "tool": "screening-lookup",
+    "inputHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "outputHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+   },
+   "evidence": "run:r2#1"
+  },
+  {
+   "id": "call:alert-triage-r3-001",
+   "type": "ToolCall",
+   "label": "screening-lookup",
+   "props": {
+    "tool": "screening-lookup",
+    "inputHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "outputHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+   },
+   "evidence": "run:r3#1"
+  },
+  {
+   "id": "clause:escalate-1",
+   "type": "PolicyClause",
+   "label": "Escalate a potential match",
+   "props": {},
+   "evidence": null,
+   "status": null
+  },
+  {
+   "id": "control:review-1",
+   "type": "Control",
+   "label": "Second review of closed alerts",
+   "props": {},
+   "evidence": null,
+   "status": null
+  },
+  {
+   "id": "control:screen-1",
+   "type": "Control",
+   "label": "Screen payments against the sanctions list",
+   "props": {},
+   "evidence": null,
+   "status": null
+  },
+  {
+   "id": "dagent:alert-triage",
+   "type": "DeployedAgent",
+   "label": "dagent:alert-triage",
+   "props": {
+    "owner": "person:ana-reyes",
+    "intendedUse": "Triage sanctions screening alerts for Northgate Synthetic Bank.",
+    "riskTier": "high"
+   },
+   "evidence": "instructions/alert-triage.json",
+   "status": null,
+   "sensitivity": "internal"
+  },
+  {
+   "id": "evid:watchlist-entry-17-22222222",
+   "type": "Evidence",
+   "label": "watchlist-entry-17",
+   "props": {
+    "hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "sourceHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "sourceRef": "watchlist-snapshot"
+   },
+   "evidence": "run:r1#1"
+  },
+  {
+   "id": "evid:watchlist-entry-17-66666666",
+   "type": "Evidence",
+   "label": "watchlist-entry-17",
+   "props": {
+    "hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "sourceHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "sourceRef": "watchlist-snapshot"
+   },
+   "evidence": "run:r3#1"
+  },
+  {
+   "id": "instr:alert-triage-escalate-match-v1",
+   "type": "InstructionVersion",
+   "label": "Escalate a match on name and date of birth (version 1)",
+   "props": {
+    "hash": "sha256:015faaa9abc4439dfa4585607844d8af4756884a323df3315ed28fae4d2dee1b",
+    "path": "alert-triage-escalate-match-v1.md",
+    "approvedHash": "sha256:015faaa9abc4439dfa4585607844d8af4756884a323df3315ed28fae4d2dee1b",
+    "validFrom": "2026-09-01",
+    "version": 1,
+    "instruction": "instr:alert-triage-escalate-match",
+    "file": "escalation-criteria.md"
+   },
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-escalate-match-v1",
+   "status": "approved",
+   "sensitivity": "internal"
+  },
+  {
+   "id": "instr:alert-triage-escalate-match-v2",
+   "type": "InstructionVersion",
+   "label": "Escalate a match on name and date of birth (version 2)",
+   "status": "draft",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-escalate-match-v2",
+   "sensitivity": "internal",
+   "props": {
+    "hash": "sha256:2702440aa7ec2f26b183929b36a2e3fec41459c45deef0327aa6b47e6a0876f2",
+    "approvedHash": null,
+    "validFrom": null,
+    "validTo": null,
+    "version": 2,
+    "instruction": "instr:alert-triage-escalate-match",
+    "file": "escalation-criteria.md"
+   }
+  },
+  {
+   "id": "instr:alert-triage-narrative-v1",
+   "type": "InstructionVersion",
+   "label": "Write the narrative (version 1)",
+   "props": {
+    "hash": "sha256:616b557ac29a69bff89211033ebdd5e720053aef51e61bb43bc97f3c10e90cb2",
+    "path": "alert-triage-narrative-v1.md",
+    "approvedHash": "sha256:616b557ac29a69bff89211033ebdd5e720053aef51e61bb43bc97f3c10e90cb2",
+    "validFrom": "2026-09-01",
+    "version": 1,
+    "instruction": "instr:alert-triage-narrative",
+    "file": "narrative-standard.md"
+   },
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-narrative-v1",
+   "status": "approved",
+   "sensitivity": "internal"
+  },
+  {
+   "id": "ksrc:watchlist-snapshot",
+   "type": "KnowledgeSource",
+   "label": "watchlist-snapshot",
+   "props": {
+    "snapshotHash": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+   },
+   "evidence": "run:r1#1"
+  },
+  {
+   "id": "model:model-a",
+   "type": "ModelVersion",
+   "label": "model-a",
+   "props": {
+    "modelId": "model-a",
+    "parameters": "{\"temperature\":0}",
+    "promptHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+   },
+   "evidence": "instructions/alert-triage.json",
+   "status": "approved",
+   "sensitivity": "internal"
+  },
+  {
+   "id": "model:model-b",
+   "type": "ModelVersion",
+   "label": "model-b",
+   "props": {
+    "modelId": "model-b",
+    "parameters": "{\"temperature\":0}",
+    "promptHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+   },
+   "evidence": "run:r3#0",
+   "status": "pending"
+  },
+  {
+   "id": "obligation:o1",
+   "type": "Obligation",
+   "label": "Screen payments before release",
+   "props": {},
+   "evidence": null,
+   "status": "active"
+  },
+  {
+   "id": "obligation:o2",
+   "type": "Obligation",
+   "label": "Review closed alerts",
+   "props": {},
+   "evidence": null,
+   "status": "active"
+  },
+  {
+   "id": "obligation:o3",
+   "type": "Obligation",
+   "label": "Freeze assets on a confirmed match",
+   "props": {},
+   "evidence": null,
+   "status": "active"
+  },
+  {
+   "id": "obligation:o4",
+   "type": "Obligation",
+   "label": "Report to the regulator",
+   "props": {},
+   "evidence": null,
+   "status": "active"
+  },
+  {
+   "id": "person:ana-reyes",
+   "type": "Person",
+   "label": "person:ana-reyes",
+   "status": null,
+   "evidence": null,
+   "sensitivity": "internal",
+   "props": {}
+  },
+  {
+   "id": "person:bob-chen",
+   "type": "Person",
+   "label": "bob-chen",
+   "status": null,
+   "evidence": null,
+   "sensitivity": "internal",
+   "props": {}
+  },
+  {
+   "id": "provision:p1",
+   "type": "LegislativeProvision",
+   "label": "Invented provision 1",
+   "props": {},
+   "evidence": null,
+   "status": null
+  },
+  {
+   "id": "rationale:alert-triage-r1-002",
+   "type": "StatedRationale",
+   "label": "Stated rationale 2",
+   "props": {
+    "hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "contentRef": "store:5",
+    "causalStatus": "unverified"
+   },
+   "evidence": "run:r1#2"
+  },
+  {
+   "id": "rationale:alert-triage-r2-002",
+   "type": "StatedRationale",
+   "label": "Stated rationale 2",
+   "props": {
+    "hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "contentRef": "store:5",
+    "causalStatus": "unverified"
+   },
+   "evidence": "run:r2#2"
+  },
+  {
+   "id": "rationale:alert-triage-r3-002",
+   "type": "StatedRationale",
+   "label": "Stated rationale 2",
+   "props": {
+    "hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "contentRef": "store:5",
+    "causalStatus": "unverified"
+   },
+   "evidence": "run:r3#2"
+  },
+  {
+   "id": "review:alert-triage-r1-004",
+   "type": "Review",
+   "label": "Review 4",
+   "props": {
+    "reviewer": "bob-chen",
+    "verdict": "accept",
+    "override": false,
+    "timeOpenS": 45,
+    "itemsViewed": 3,
+    "checksTicked": [
+     "name",
+     "dob"
+    ]
+   },
+   "evidence": "run:r1#4"
+  },
+  {
+   "id": "review:alert-triage-r2-004",
+   "type": "Review",
+   "label": "Review 4",
+   "props": {
+    "reviewer": "bob-chen",
+    "verdict": "reject",
+    "override": true,
+    "overrideReason": "The date of birth differs.",
+    "timeOpenS": 15,
+    "itemsViewed": 3,
+    "checksTicked": [
+     "name",
+     "dob"
+    ]
+   },
+   "evidence": "run:r2#4"
+  },
+  {
+   "id": "run:alert-triage-r1",
+   "type": "Run",
+   "label": "Run r1",
+   "props": {
+    "startedAt": "2026-10-01T09:00:00.000Z",
+    "endedAt": "2026-10-01T09:10:00.000Z",
+    "replayStatus": "replayable",
+    "caseRef": "A-100",
+    "stepsReported": 5,
+    "ended": true
+   },
+   "evidence": "run:r1#0"
+  },
+  {
+   "id": "run:alert-triage-r2",
+   "type": "Run",
+   "label": "Run r2",
+   "props": {
+    "startedAt": "2026-10-02T09:00:00.000Z",
+    "endedAt": "2026-10-02T09:10:00.000Z",
+    "replayStatus": "replayable",
+    "caseRef": "A-101",
+    "stepsReported": 5,
+    "ended": true
+   },
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "run:alert-triage-r3",
+   "type": "Run",
+   "label": "Run r3",
+   "props": {
+    "startedAt": "2026-10-03T09:00:00.000Z",
+    "endedAt": "2026-10-03T09:10:00.000Z",
+    "replayStatus": "replayable",
+    "caseRef": "A-102",
+    "stepsReported": 4,
+    "ended": true
+   },
+   "evidence": "run:r3#0"
+  },
+  {
+   "id": "step:alert-triage-r1-000",
+   "type": "Step",
+   "label": "start 0",
+   "props": {
+    "ordinal": 0,
+    "stepKind": "start",
+    "ts": "2026-10-01T09:00:00.000Z"
+   },
+   "evidence": "run:r1#0"
+  },
+  {
+   "id": "step:alert-triage-r1-001",
+   "type": "Step",
+   "label": "evidence 1",
+   "props": {
+    "ordinal": 1,
+    "stepKind": "evidence",
+    "ts": "2026-10-01T09:01:00.000Z"
+   },
+   "evidence": "run:r1#1"
+  },
+  {
+   "id": "step:alert-triage-r1-002",
+   "type": "Step",
+   "label": "rationale 2",
+   "props": {
+    "ordinal": 2,
+    "stepKind": "rationale",
+    "ts": "2026-10-01T09:02:00.000Z"
+   },
+   "evidence": "run:r1#2"
+  },
+  {
+   "id": "step:alert-triage-r1-003",
+   "type": "Step",
+   "label": "decision 3",
+   "props": {
+    "ordinal": 3,
+    "stepKind": "decision",
+    "ts": "2026-10-01T09:03:00.000Z"
+   },
+   "evidence": "run:r1#3"
+  },
+  {
+   "id": "step:alert-triage-r1-004",
+   "type": "Step",
+   "label": "review 4",
+   "props": {
+    "ordinal": 4,
+    "stepKind": "review",
+    "ts": "2026-10-01T09:04:00.000Z"
+   },
+   "evidence": "run:r1#4"
+  },
+  {
+   "id": "step:alert-triage-r1-005",
+   "type": "Step",
+   "label": "end 5",
+   "props": {
+    "ordinal": 5,
+    "stepKind": "end",
+    "ts": "2026-10-01T09:10:00.000Z"
+   },
+   "evidence": "run:r1#5"
+  },
+  {
+   "id": "step:alert-triage-r2-000",
+   "type": "Step",
+   "label": "start 0",
+   "props": {
+    "ordinal": 0,
+    "stepKind": "start",
+    "ts": "2026-10-02T09:00:00.000Z"
+   },
+   "evidence": "run:r2#0"
+  },
+  {
+   "id": "step:alert-triage-r2-001",
+   "type": "Step",
+   "label": "evidence 1",
+   "props": {
+    "ordinal": 1,
+    "stepKind": "evidence",
+    "ts": "2026-10-02T09:01:00.000Z"
+   },
+   "evidence": "run:r2#1"
+  },
+  {
+   "id": "step:alert-triage-r2-002",
+   "type": "Step",
+   "label": "rationale 2",
+   "props": {
+    "ordinal": 2,
+    "stepKind": "rationale",
+    "ts": "2026-10-02T09:02:00.000Z"
+   },
+   "evidence": "run:r2#2"
+  },
+  {
+   "id": "step:alert-triage-r2-003",
+   "type": "Step",
+   "label": "decision 3",
+   "props": {
+    "ordinal": 3,
+    "stepKind": "decision",
+    "ts": "2026-10-02T09:03:00.000Z"
+   },
+   "evidence": "run:r2#3"
+  },
+  {
+   "id": "step:alert-triage-r2-004",
+   "type": "Step",
+   "label": "review 4",
+   "props": {
+    "ordinal": 4,
+    "stepKind": "review",
+    "ts": "2026-10-02T09:04:00.000Z"
+   },
+   "evidence": "run:r2#4"
+  },
+  {
+   "id": "step:alert-triage-r2-005",
+   "type": "Step",
+   "label": "end 5",
+   "props": {
+    "ordinal": 5,
+    "stepKind": "end",
+    "ts": "2026-10-02T09:10:00.000Z"
+   },
+   "evidence": "run:r2#5"
+  },
+  {
+   "id": "step:alert-triage-r3-000",
+   "type": "Step",
+   "label": "start 0",
+   "props": {
+    "ordinal": 0,
+    "stepKind": "start",
+    "ts": "2026-10-03T09:00:00.000Z"
+   },
+   "evidence": "run:r3#0"
+  },
+  {
+   "id": "step:alert-triage-r3-001",
+   "type": "Step",
+   "label": "evidence 1",
+   "props": {
+    "ordinal": 1,
+    "stepKind": "evidence",
+    "ts": "2026-10-03T09:01:00.000Z"
+   },
+   "evidence": "run:r3#1"
+  },
+  {
+   "id": "step:alert-triage-r3-002",
+   "type": "Step",
+   "label": "rationale 2",
+   "props": {
+    "ordinal": 2,
+    "stepKind": "rationale",
+    "ts": "2026-10-03T09:02:00.000Z"
+   },
+   "evidence": "run:r3#2"
+  },
+  {
+   "id": "step:alert-triage-r3-003",
+   "type": "Step",
+   "label": "decision 3",
+   "props": {
+    "ordinal": 3,
+    "stepKind": "decision",
+    "ts": "2026-10-03T09:03:00.000Z"
+   },
+   "evidence": "run:r3#3"
+  },
+  {
+   "id": "step:alert-triage-r3-004",
+   "type": "Step",
+   "label": "end 4",
+   "props": {
+    "ordinal": 4,
+    "stepKind": "end",
+    "ts": "2026-10-03T09:10:00.000Z"
+   },
+   "evidence": "run:r3#4"
+  }
+ ],
+ "edges": [
+  {
+   "s": "adec:alert-triage-r1-003",
+   "r": "reviewedBy",
+   "t": "review:alert-triage-r1-004",
+   "evidence": "run:r1#4"
+  },
+  {
+   "s": "evid:watchlist-entry-17-22222222",
+   "r": "sourcedFrom",
+   "t": "ksrc:watchlist-snapshot",
+   "evidence": "run:r1#1"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "contains",
+   "t": "step:alert-triage-r1-000",
+   "evidence": "run:r1#0"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "contains",
+   "t": "step:alert-triage-r1-001",
+   "evidence": "run:r1#1"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "contains",
+   "t": "step:alert-triage-r1-002",
+   "evidence": "run:r1#2"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "contains",
+   "t": "step:alert-triage-r1-003",
+   "evidence": "run:r1#3"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "contains",
+   "t": "step:alert-triage-r1-004",
+   "evidence": "run:r1#4"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "contains",
+   "t": "step:alert-triage-r1-005",
+   "evidence": "run:r1#5"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "performedBy",
+   "t": "dagent:alert-triage",
+   "evidence": "run:r1#0"
+  },
+  {
+   "s": "run:alert-triage-r1",
+   "r": "ranOn",
+   "t": "model:model-a",
+   "evidence": "run:r1#0"
+  },
+  {
+   "s": "step:alert-triage-r1-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r1#0"
+  },
+  {
+   "s": "step:alert-triage-r1-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r1#0"
+  },
+  {
+   "s": "step:alert-triage-r1-001",
+   "r": "contains",
+   "t": "call:alert-triage-r1-001",
+   "evidence": "run:r1#1"
+  },
+  {
+   "s": "step:alert-triage-r1-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r1#1"
+  },
+  {
+   "s": "step:alert-triage-r1-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r1#1"
+  },
+  {
+   "s": "step:alert-triage-r1-001",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r1-003",
+   "evidence": "run:r1#3"
+  },
+  {
+   "s": "step:alert-triage-r1-001",
+   "r": "usedEvidence",
+   "t": "evid:watchlist-entry-17-22222222",
+   "evidence": "run:r1#1"
+  },
+  {
+   "s": "step:alert-triage-r1-002",
+   "r": "contains",
+   "t": "rationale:alert-triage-r1-002",
+   "evidence": "run:r1#2"
+  },
+  {
+   "s": "step:alert-triage-r1-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r1#2"
+  },
+  {
+   "s": "step:alert-triage-r1-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r1#2"
+  },
+  {
+   "s": "step:alert-triage-r1-002",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r1-003",
+   "evidence": "run:r1#3"
+  },
+  {
+   "s": "step:alert-triage-r1-003",
+   "r": "citesInstruction",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r1#3"
+  },
+  {
+   "s": "step:alert-triage-r1-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r1#3"
+  },
+  {
+   "s": "step:alert-triage-r1-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r1#3"
+  },
+  {
+   "s": "step:alert-triage-r1-003",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r1-003",
+   "evidence": "run:r1#3"
+  },
+  {
+   "s": "step:alert-triage-r1-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r1#4"
+  },
+  {
+   "s": "step:alert-triage-r1-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r1#4"
+  },
+  {
+   "s": "step:alert-triage-r1-005",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r1#5"
+  },
+  {
+   "s": "step:alert-triage-r1-005",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r1#5"
+  },
+  {
+   "s": "adec:alert-triage-r2-003",
+   "r": "reviewedBy",
+   "t": "review:alert-triage-r2-004",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "evid:watchlist-entry-17-22222222",
+   "r": "sourcedFrom",
+   "t": "ksrc:watchlist-snapshot",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-000",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-001",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-002",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-004",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "contains",
+   "t": "step:alert-triage-r2-005",
+   "evidence": "run:r2#5"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "performedBy",
+   "t": "dagent:alert-triage",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "run:alert-triage-r2",
+   "r": "ranOn",
+   "t": "model:model-a",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "step:alert-triage-r2-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "step:alert-triage-r2-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#0"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "contains",
+   "t": "call:alert-triage-r2-001",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-001",
+   "r": "usedEvidence",
+   "t": "evid:watchlist-entry-17-22222222",
+   "evidence": "run:r2#1"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "contains",
+   "t": "rationale:alert-triage-r2-002",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#2"
+  },
+  {
+   "s": "step:alert-triage-r2-002",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "citesInstruction",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-003",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r2-003",
+   "evidence": "run:r2#3"
+  },
+  {
+   "s": "step:alert-triage-r2-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "step:alert-triage-r2-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#4"
+  },
+  {
+   "s": "step:alert-triage-r2-005",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r2#5"
+  },
+  {
+   "s": "step:alert-triage-r2-005",
+   "r": "inContext",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r2#5"
+  },
+  {
+   "s": "evid:watchlist-entry-17-66666666",
+   "r": "sourcedFrom",
+   "t": "ksrc:watchlist-snapshot",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-000",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-001",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-002",
+   "evidence": "run:r3#2"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-004",
+   "evidence": "run:r3#4"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "performedBy",
+   "t": "dagent:alert-triage",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "ranOn",
+   "t": "model:model-b",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "step:alert-triage-r3-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "contains",
+   "t": "call:alert-triage-r3-001",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "usedEvidence",
+   "t": "evid:watchlist-entry-17-66666666",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "step:alert-triage-r3-002",
+   "r": "contains",
+   "t": "rationale:alert-triage-r3-002",
+   "evidence": "run:r3#2"
+  },
+  {
+   "s": "step:alert-triage-r3-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#2"
+  },
+  {
+   "s": "step:alert-triage-r3-002",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-003",
+   "r": "citesInstruction",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-003",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#4"
+  },
+  {
+   "s": "dagent:alert-triage",
+   "r": "ownedBy",
+   "t": "person:ana-reyes",
+   "evidence": "instructions/alert-triage.json",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "dagent:alert-triage",
+   "r": "drawsOn",
+   "t": "model:model-a",
+   "evidence": "instructions/alert-triage.json",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "dagent:alert-triage",
+   "r": "operatesUnder",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-escalate-match-v1",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "instr:alert-triage-escalate-match-v1",
+   "r": "proposedBy",
+   "t": "person:ana-reyes",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-escalate-match-v1",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "instr:alert-triage-escalate-match-v1",
+   "r": "approvedBy",
+   "t": "person:bob-chen",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-escalate-match-v1",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "instr:alert-triage-escalate-match-v2",
+   "r": "proposedBy",
+   "t": "person:ana-reyes",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-escalate-match-v2",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "dagent:alert-triage",
+   "r": "operatesUnder",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-narrative-v1",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "instr:alert-triage-narrative-v1",
+   "r": "proposedBy",
+   "t": "person:ana-reyes",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-narrative-v1",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "instr:alert-triage-narrative-v1",
+   "r": "approvedBy",
+   "t": "person:bob-chen",
+   "evidence": "instructions/alert-triage.json#instr:alert-triage-narrative-v1",
+   "provenance": "stated",
+   "weight": 1.0
+  },
+  {
+   "s": "instr:alert-triage-escalate-match-v1",
+   "r": "implementsClause",
+   "t": "clause:escalate-1",
+   "evidence": null,
+   "provenance": "ratified",
+   "mapping": "map:20260901-001"
+  },
+  {
+   "s": "clause:escalate-1",
+   "r": "realises",
+   "t": "control:screen-1",
+   "evidence": null,
+   "provenance": "ratified",
+   "mapping": "map:20260901-002"
+  },
+  {
+   "s": "control:screen-1",
+   "r": "satisfies",
+   "t": "obligation:o1",
+   "evidence": null,
+   "provenance": "ratified",
+   "mapping": "map:20260901-003"
+  },
+  {
+   "s": "obligation:o1",
+   "r": "expressedIn",
+   "t": "provision:p1",
+   "evidence": null,
+   "provenance": "stated"
+  },
+  {
+   "s": "control:review-1",
+   "r": "satisfies",
+   "t": "obligation:o2",
+   "evidence": null,
+   "provenance": "proposed",
+   "mapping": "map:20260901-004"
+  },
+  {
+   "s": "obligation:o4",
+   "r": "notDischargedBy",
+   "t": "dagent:alert-triage",
+   "evidence": null,
+   "provenance": "ratified"
+  },
+  {
+   "s": "obligation:o1",
+   "r": "appliesTo",
+   "t": "dagent:alert-triage",
+   "evidence": null,
+   "provenance": "stated"
+  },
+  {
+   "s": "obligation:o2",
+   "r": "appliesTo",
+   "t": "dagent:alert-triage",
+   "evidence": null,
+   "provenance": "stated"
+  },
+  {
+   "s": "obligation:o3",
+   "r": "appliesTo",
+   "t": "dagent:alert-triage",
+   "evidence": null,
+   "provenance": "stated"
+  },
+  {
+   "s": "obligation:o4",
+   "r": "appliesTo",
+   "t": "dagent:alert-triage",
+   "evidence": null,
+   "provenance": "stated"
+  }
+ ]
+}

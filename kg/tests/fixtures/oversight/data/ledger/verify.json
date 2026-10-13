@@ -1,0 +1,25 @@
+{
+  "v": 1,
+  "ok": true,
+  "entries": 17,
+  "head_seq": 17,
+  "breaks": [],
+  "runs": {
+    "r1": {
+      "captured": 6,
+      "reported": 5,
+      "status": "complete"
+    },
+    "r2": {
+      "captured": 6,
+      "reported": 5,
+      "status": "complete"
+    },
+    "r3": {
+      "captured": 5,
+      "reported": 4,
+      "status": "complete"
+    }
+  },
+  "signature": "unsigned"
+}

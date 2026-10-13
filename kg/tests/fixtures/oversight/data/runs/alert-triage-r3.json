@@ -1,0 +1,284 @@
+{
+ "v": 1,
+ "run": "run:alert-triage-r3",
+ "nodes": [
+  {
+   "id": "adec:alert-triage-r3-003",
+   "type": "AgentDecision",
+   "label": "Decision 3",
+   "props": {
+    "outcome": "close",
+    "statedRationale": "rationale:alert-triage-r3-002"
+   },
+   "evidence": "run:r3#3"
+  },
+  {
+   "id": "call:alert-triage-r3-001",
+   "type": "ToolCall",
+   "label": "screening-lookup",
+   "props": {
+    "tool": "screening-lookup",
+    "inputHash": "sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "outputHash": "sha256:4444444444444444444444444444444444444444444444444444444444444444"
+   },
+   "evidence": "run:r3#1"
+  },
+  {
+   "id": "dagent:alert-triage",
+   "type": "DeployedAgent",
+   "label": "alert-triage",
+   "props": {},
+   "evidence": "run:r3#0"
+  },
+  {
+   "id": "evid:watchlist-entry-17-66666666",
+   "type": "Evidence",
+   "label": "watchlist-entry-17",
+   "props": {
+    "hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666",
+    "sourceHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "sourceRef": "watchlist-snapshot"
+   },
+   "evidence": "run:r3#1"
+  },
+  {
+   "id": "instr:alert-triage-escalate-match-v1",
+   "type": "InstructionVersion",
+   "label": "instr:alert-triage-escalate-match-v1",
+   "props": {
+    "hash": "sha256:015faaa9abc4439dfa4585607844d8af4756884a323df3315ed28fae4d2dee1b",
+    "path": "alert-triage-escalate-match-v1.md"
+   },
+   "evidence": "run:r3#0"
+  },
+  {
+   "id": "instr:alert-triage-narrative-v1",
+   "type": "InstructionVersion",
+   "label": "instr:alert-triage-narrative-v1",
+   "props": {},
+   "evidence": "run:r3#3"
+  },
+  {
+   "id": "ksrc:watchlist-snapshot",
+   "type": "KnowledgeSource",
+   "label": "watchlist-snapshot",
+   "props": {
+    "snapshotHash": "sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+   },
+   "evidence": "run:r3#1"
+  },
+  {
+   "id": "model:model-b",
+   "type": "ModelVersion",
+   "label": "model-b",
+   "props": {
+    "modelId": "model-b",
+    "parameters": "{\"temperature\":0}",
+    "promptHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"
+   },
+   "evidence": "run:r3#0"
+  },
+  {
+   "id": "rationale:alert-triage-r3-002",
+   "type": "StatedRationale",
+   "label": "Stated rationale 2",
+   "props": {
+    "hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+    "contentRef": "store:5",
+    "causalStatus": "unverified"
+   },
+   "evidence": "run:r3#2"
+  },
+  {
+   "id": "run:alert-triage-r3",
+   "type": "Run",
+   "label": "Run r3",
+   "props": {
+    "startedAt": "2026-10-03T09:00:00.000Z",
+    "endedAt": "2026-10-03T09:10:00.000Z",
+    "replayStatus": "replayable",
+    "caseRef": "A-102",
+    "stepsReported": 4,
+    "ended": true
+   },
+   "evidence": "run:r3#0"
+  },
+  {
+   "id": "step:alert-triage-r3-000",
+   "type": "Step",
+   "label": "start 0",
+   "props": {
+    "ordinal": 0,
+    "stepKind": "start",
+    "ts": "2026-10-03T09:00:00.000Z"
+   },
+   "evidence": "run:r3#0"
+  },
+  {
+   "id": "step:alert-triage-r3-001",
+   "type": "Step",
+   "label": "evidence 1",
+   "props": {
+    "ordinal": 1,
+    "stepKind": "evidence",
+    "ts": "2026-10-03T09:01:00.000Z"
+   },
+   "evidence": "run:r3#1"
+  },
+  {
+   "id": "step:alert-triage-r3-002",
+   "type": "Step",
+   "label": "rationale 2",
+   "props": {
+    "ordinal": 2,
+    "stepKind": "rationale",
+    "ts": "2026-10-03T09:02:00.000Z"
+   },
+   "evidence": "run:r3#2"
+  },
+  {
+   "id": "step:alert-triage-r3-003",
+   "type": "Step",
+   "label": "decision 3",
+   "props": {
+    "ordinal": 3,
+    "stepKind": "decision",
+    "ts": "2026-10-03T09:03:00.000Z"
+   },
+   "evidence": "run:r3#3"
+  },
+  {
+   "id": "step:alert-triage-r3-004",
+   "type": "Step",
+   "label": "end 4",
+   "props": {
+    "ordinal": 4,
+    "stepKind": "end",
+    "ts": "2026-10-03T09:10:00.000Z"
+   },
+   "evidence": "run:r3#4"
+  }
+ ],
+ "edges": [
+  {
+   "s": "evid:watchlist-entry-17-66666666",
+   "r": "sourcedFrom",
+   "t": "ksrc:watchlist-snapshot",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-000",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-001",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-002",
+   "evidence": "run:r3#2"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "contains",
+   "t": "step:alert-triage-r3-004",
+   "evidence": "run:r3#4"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "performedBy",
+   "t": "dagent:alert-triage",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "run:alert-triage-r3",
+   "r": "ranOn",
+   "t": "model:model-b",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "step:alert-triage-r3-000",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#0"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "contains",
+   "t": "call:alert-triage-r3-001",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-001",
+   "r": "usedEvidence",
+   "t": "evid:watchlist-entry-17-66666666",
+   "evidence": "run:r3#1"
+  },
+  {
+   "s": "step:alert-triage-r3-002",
+   "r": "contains",
+   "t": "rationale:alert-triage-r3-002",
+   "evidence": "run:r3#2"
+  },
+  {
+   "s": "step:alert-triage-r3-002",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#2"
+  },
+  {
+   "s": "step:alert-triage-r3-002",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-003",
+   "r": "citesInstruction",
+   "t": "instr:alert-triage-narrative-v1",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-003",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-003",
+   "r": "informedDecision",
+   "t": "adec:alert-triage-r3-003",
+   "evidence": "run:r3#3"
+  },
+  {
+   "s": "step:alert-triage-r3-004",
+   "r": "inContext",
+   "t": "instr:alert-triage-escalate-match-v1",
+   "evidence": "run:r3#4"
+  }
+ ]
+}
