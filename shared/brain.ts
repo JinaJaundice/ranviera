@@ -29,15 +29,15 @@ export interface RegionDef {
 }
 
 export const REGIONS: RegionDef[] = [
-  { id: "prefrontal", label: "Rules and decisions", holds: "Instruction files, rule files, skills, references, sections, rules, path scopes and decisions", name: "Prefrontal cortex", func: "Planning, reasoning and problem solving", source: "Queensland Brain Institute, Lobes of the brain" },
-  { id: "language", label: "Writing and vocabulary", holds: "Concepts, concept schemes, the output style and the writing rules", name: "Language areas", func: "Broca's area shapes speech and Wernicke's area supports understanding", source: "NIDCD, Aphasia, March 2025" },
+  { id: "prefrontal", label: "Rules and decisions", holds: "Instruction files, rule files, skills, references, sections, rules, path scopes and decisions, and for a deployed agent its instruction versions, policies, clauses, obligations, mappings and decisions", name: "Prefrontal cortex", func: "Planning, reasoning and problem solving", source: "Queensland Brain Institute, Lobes of the brain" },
+  { id: "language", label: "Writing and vocabulary", holds: "Concepts, concept schemes, the output style and the writing rules, and the typologies, risk indicators and stated rationale of a deployed agent", name: "Language areas", func: "Broca's area shapes speech and Wernicke's area supports understanding", source: "NIDCD, Aphasia, March 2025" },
   { id: "occipital", label: "Decks and visuals", holds: "Templates and the deck, chart and design rules", name: "Occipital lobe", func: "The major visual processing centre", source: "Queensland Brain Institute, Lobes of the brain" },
-  { id: "motor", label: "Tools and scripts", holds: "Tools, built-in tools and launch configurations", name: "Motor cortex", func: "The main region for voluntary movement", source: "Queensland Brain Institute, Lobes of the brain" },
-  { id: "parietal", label: "Projects and deliverables", holds: "Projects, apps, deliverables, folders, backlog sections, open items, organisations, clients, people and instruments", name: "Parietal lobe", func: "Brings sensory information together", source: "Queensland Brain Institute, Lobes of the brain" },
-  { id: "memory", label: "Memory and history", holds: "Memory files, record stores and history files", name: "Temporal lobe and hippocampus", func: "Where memory is formed", source: "Queensland Brain Institute, Lobes of the brain and Limbic system" },
-  { id: "basal", label: "Checks and gates", holds: "Gates, fault checks and findings", name: "Basal ganglia", func: "Select and start actions", source: "Coizet and Ambroggi 2024" },
+  { id: "motor", label: "Tools and scripts", holds: "Tools, built-in tools, launch configurations and the tool calls of an agent run", name: "Motor cortex", func: "The main region for voluntary movement", source: "Queensland Brain Institute, Lobes of the brain" },
+  { id: "parietal", label: "Projects and deliverables", holds: "Projects, apps, deliverables, folders, backlog sections, open items, organisations, clients, people, roles, instruments and legislative provisions", name: "Parietal lobe", func: "Brings sensory information together", source: "Queensland Brain Institute, Lobes of the brain" },
+  { id: "memory", label: "Memory and history", holds: "Memory files, record stores and history files, and the evidence, knowledge sources and ledger entries of agent runs", name: "Temporal lobe and hippocampus", func: "Where memory is formed", source: "Queensland Brain Institute, Lobes of the brain and Limbic system" },
+  { id: "basal", label: "Checks and gates", holds: "Gates, fault checks and findings, and the controls, control frameworks, reviews, samples, back-tests and test scripts", name: "Basal ganglia", func: "Select and start actions", source: "Coizet and Ambroggi 2024" },
   { id: "thalamus", label: "Task routing", holds: "Task types and routes", name: "Thalamus", func: "Relays incoming signals to the cortex", source: "Queensland Brain Institute, Forebrain" },
-  { id: "cerebellum", label: "Agents", holds: "Agents", name: "Cerebellum", func: "Coordinates movement", source: "Queensland Brain Institute, Hindbrain" },
+  { id: "cerebellum", label: "Agents", holds: "Agents, deployed agents, model versions, runs and steps", name: "Cerebellum", func: "Coordinates movement", source: "Queensland Brain Institute, Hindbrain" },
   { id: "brainstem", label: "Hooks and schedules", holds: "Hooks and scheduled tasks", name: "Brainstem", func: "Runs vital functions such as breathing without conscious control", source: "Queensland Brain Institute, Hindbrain" },
 ];
 
@@ -94,6 +94,35 @@ export const CLASS_REGION: Record<string, RegionId> = {
   Agent: "cerebellum",
   Hook: "brainstem",
   ScheduledTask: "brainstem",
+  // the agent transparency classes of docs/ONTOLOGY.md (7 October 2026)
+  DeployedAgent: "cerebellum",
+  ModelVersion: "cerebellum",
+  Run: "cerebellum",
+  Step: "cerebellum",
+  ToolCall: "motor",
+  InstructionVersion: "prefrontal",
+  PolicyClause: "prefrontal",
+  Mapping: "prefrontal",
+  AgentDecision: "prefrontal",
+  Obligation: "prefrontal",
+  PolicyException: "prefrontal",
+  Policy: "prefrontal",
+  StatedRationale: "language",
+  Typology: "language",
+  RiskIndicator: "language",
+  KnowledgeSource: "memory",
+  Evidence: "memory",
+  LedgerEntry: "memory",
+  Review: "basal",
+  Sample: "basal",
+  BackTest: "basal",
+  TestScript: "basal",
+  TestStep: "basal",
+  Requirement: "basal",
+  Control: "basal",
+  ControlFramework: "basal",
+  LegislativeProvision: "parietal",
+  OrganisationalRole: "parietal",
 };
 
 /** The instruction classes, whose domain comes from the path of the file that contains them. */

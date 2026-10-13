@@ -18,7 +18,7 @@ const nodes = [
   node("task:reply", "TaskType", "Reply or short text"),
   node("rulefile:decks", "RuleFile", "decks", { path: "C:/h/rules/decks.md" }),
   node("agent:checker", "Agent", "checker"),
-  node("gate:deck-family-qa", "Gate", "Deck family QA script", { props: { command: "python ey_qa.py <deck>" } }),
+  node("gate:deck-family-qa", "Gate", "Deck family QA script", { props: { command: "python deck_qa.py <deck>" } }),
   node("gate:look", "Gate", "Look at every page image"),
   node("project:falcon", "Project", "Falcon walkthrough", { family: "work", sensitivity: "client-confidential" }),
   node("memory:falcon", "MemoryFile", "project_falcon", { family: "record", path: "C:/m/project_falcon.md" }),
@@ -51,7 +51,7 @@ describe("plan", () => {
     expect(p.load[0].reason).toBe("Read first for Deck or slide");
     expect(p.steps[p.steps.length - 1].agent).toBe("checker");
     expect(p.gates).toEqual([
-      { node: "gate:deck-family-qa", command: "python ey_qa.py <deck>" },
+      { node: "gate:deck-family-qa", command: "python deck_qa.py <deck>" },
       { node: "gate:look", command: "Look at every page image" },
     ]);
     expect(p.cautions[p.cautions.length - 1]).toContain("switched off for missions");

@@ -70,7 +70,7 @@ def _write_status(cfg: Config, status: dict) -> None:
 def _git(cfg: Config, *args: str, timeout: int = 60) -> subprocess.CompletedProcess:
     # A background git call must never wait for a password or a credential prompt that nobody can see.
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never"}
-    return subprocess.run(["git", "-C", str(cfg.repo_root), *args], capture_output=True, text=True, timeout=timeout,
+    return subprocess.run(["git", "-C", str(cfg.repo_root), *args], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL,
                           env=env)
 
 

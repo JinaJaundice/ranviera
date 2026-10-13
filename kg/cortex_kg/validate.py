@@ -318,7 +318,7 @@ def _evidence_roots(cfg: Config, node_id: str | None) -> list[Path]:
     """The folders that a relative evidence path may be counted from: the harvesters write it relative to the root of
     the file they read (the Claude folder, the Projects folder, the memory folder, the ontology and its vocabulary)."""
     roots = [cfg.claude_home, cfg.projects_root, cfg.memory_dir, cfg.repo_root, cfg.ontology_dir, cfg.ontology_dir / "vocab",
-             cfg.memory_dir.parent, cfg.projects_root.parent, cfg.overlay_dir / "vocab"]
+             cfg.memory_dir.parent, cfg.projects_root.parent, cfg.overlay_dir / "vocab", cfg.profile_dir / "vocab"]
     if node_id and node_id.startswith("app:"):
         roots.insert(0, cfg.projects_root / (cfg.raw.get("apps_folder") or "apps") / node_id.split(":", 1)[1])
     return roots
@@ -358,6 +358,35 @@ def _alnum(text: str) -> str:
     return re.sub(r"[^0-9a-z]", "", normalise(text))
 
 
+_MAPPING_EVIDENCE = re.compile(r"^(mappings/[A-Za-z0-9_.-]+\.json)#(map:\d{8}-\d+)$")
+
+
+def _mapping_problem(cfg: Config, rel: str, mapping_id: str) -> str | None:
+    """None where the mapping file exists in the profile and holds the mapping, else the problem as a phrase."""
+    path = cfg.profile_dir / rel
+    data = read_json(path, None)
+    if not isinstance(data, dict):
+        return f"names the file {rel}, which does not exist in the profile"
+    if not any(isinstance(m, dict) and m.get("id") == mapping_id for m in data.get("mappings", [])):
+        return f"names {mapping_id}, which {rel} does not hold"
+    return None
+
+
+_INSTRUCTION_EVIDENCE = re.compile(r"^(instructions/[A-Za-z0-9_.-]+\.json)(?:#(instr:[A-Za-z0-9_.:-]+))?$")
+
+
+def _instruction_problem(cfg: Config, rel: str, version_id: str | None) -> str | None:
+    """None where the instruction store file exists in the profile and, if a version is named, holds that version."""
+    data = read_json(cfg.profile_dir / rel, None)
+    if not isinstance(data, dict):
+        return f"names the file {rel}, which does not exist in the profile"
+    if version_id is not None:
+        versions = [v for ins in data.get("instructions", []) if isinstance(ins, dict) for v in ins.get("versions", [])]
+        if not any(isinstance(v, dict) and v.get("id") == version_id for v in versions):
+            return f"names {version_id}, which {rel} does not hold"
+    return None
+
+
 def check_p08(cfg: Config, nodes, edges) -> list[dict]:
     """The evidence of each node and of each edge names a file that exists and a line within it, and for a rule the
     line holds the text of the rule. An edge computed from file text (evidence beginning 'computed:') names no line."""
@@ -369,15 +398,21 @@ def check_p08(cfg: Config, nodes, edges) -> list[dict]:
         return cache[path]
 
     def problem(evidence: str, node_id: str | None, text: str | None) -> str | None:
-        if evidence.startswith("computed"):
-            return None
+        if evidence.startswith("computed") or evidence.startswith(("http://", "https://")):
+            return None   # a computed edge names no line, and a web address is the source of imported legislation
+        m = _MAPPING_EVIDENCE.match(evidence.strip())
+        if m:   # <file>#<id>, the evidence of a mapping edge: the file is in the profile and holds the mapping
+            return _mapping_problem(cfg, m.group(1), m.group(2))
+        m = _INSTRUCTION_EVIDENCE.match(evidence.strip())
+        if m:   # instructions/<agent>.json[#<version id>], the evidence of the instruction store
+            return _instruction_problem(cfg, m.group(1), m.group(2))
         if _resolve_evidence(cfg, evidence.strip(), node_id) is not None:  # a file name may hold a comma
             return None
         # a curated assertion may hold several sources, separated by 'and', a semicolon or a comma, with a note in brackets
         for part in re.split(r"\s*[;,]\s*|\s+and\s+",re.sub(r"\s\([^)]*\)(?=\s|[;,]|$)", " ", evidence)):
             part = part.strip()
-            if not part or part.startswith("computed"):
-                continue
+            if not part or part.startswith(("computed", "http://", "https://")):
+                continue   # a web address among several sources names no file
             part = re.sub(r"^disk listing\s+|\s+[A-Z]\d+$", "", part)
             if not re.search(r"[/\\]|\.\w{1,5}(:\d|$)", part):  # a source such as 'Claude Code' is not a file
                 continue

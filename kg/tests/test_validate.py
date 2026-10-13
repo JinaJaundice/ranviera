@@ -379,3 +379,13 @@ def test_p08_resolves_the_root_that_md_evidence_writes(tmp_path):
              {"id": "agent:gone", "type": "Agent", "props": {"evidence": "claude/agents/gone.md:1"}}]
     found = validate.check_p08(cfg, nodes, [])
     assert [f["node"] for f in found] == ["agent:gone"]
+
+
+
+def test_p08_accepts_a_web_address_among_several_sources(tmp_path):
+    from cortex_kg.validate import check_p08
+    cfg = make_cfg(tmp_path)
+    nodes = [{"id": "term:hook", "type": "Concept", "props": {"evidence": "Claude Code documentation, https://code.claude.com/docs"}}]
+    assert check_p08(cfg, nodes, []) == []
+    nodes[0]["props"]["evidence"] = "Claude Code documentation, rules/missing.md:3"
+    assert len(check_p08(cfg, nodes, [])) == 1   # a missing file among the sources still gives the finding

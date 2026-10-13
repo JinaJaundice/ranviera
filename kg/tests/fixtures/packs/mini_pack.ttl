@@ -1,0 +1,53 @@
+# Invented fixture that follows the pack shapes (a class per role, the pack local names). The base is the invented base of the
+# committed default profile. None of this content comes from a real pack.
+@prefix x: <https://example.test/pack#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+x:LegislativeProvision a owl:Class .
+x:Article a owl:Class ; rdfs:subClassOf x:LegislativeProvision .
+x:Paragraph a owl:Class ; rdfs:subClassOf x:LegislativeProvision .
+x:GuidanceNote a owl:Class ; rdfs:subClassOf x:LegislativeProvision .
+x:DeonticStatement a owl:Class .
+x:Obligation a owl:Class ; rdfs:subClassOf x:DeonticStatement .
+x:Permission a owl:Class ; rdfs:subClassOf x:DeonticStatement .
+x:Prohibition a owl:Class ; rdfs:subClassOf x:DeonticStatement .
+x:Policy a owl:Class .
+x:Procedure a owl:Class .
+x:Control a owl:Class .
+x:PolicyException a owl:Class .
+x:OrganisationalRole a owl:Class .
+x:expressedIn a owl:ObjectProperty .
+x:satisfies a owl:ObjectProperty .
+x:hasOwner a owl:ObjectProperty .
+x:effectiveDate a owl:DatatypeProperty .
+x:bearer a owl:ObjectProperty .
+
+x:role-mlro a x:OrganisationalRole ; rdfs:label "Invented money laundering reporting officer" .
+
+x:prov-1 a x:Article ; rdfs:label "Invented Act article 1" ;
+    x:nodeId "INV.ACT.A:1" ; x:description "Invented text of the first article." ;
+    x:sourceRef <https://example.test/source/act-a> ; x:effectiveDate "2026-01-01"^^xsd:date .
+x:prov-1-1 a x:Paragraph ; rdfs:label "Invented Act article 1(1)" ;
+    x:nodeId "INV.ACT.A:1(1)" ; x:description "Invented text of the first paragraph." ;
+    x:partOf x:prov-1 ; x:effectiveDate "2026-01-01"^^xsd:date .
+x:prov-g-1 a x:GuidanceNote ; rdfs:label "Invented guidance note 1" ;
+    x:nodeId "INV.GUIDE:1" ; x:effectiveDate "2026-02-01"^^xsd:date .
+
+x:obl-1 a x:Obligation ; rdfs:label "Invented obligation 1" ; x:nodeId "INV.ACT.A:1(1)/D" ;
+    x:deonticModality "O" ; x:bearer x:role-mlro ; x:action "keep_records" ;
+    x:expressedIn x:prov-1-1 ; x:effectiveDate "2026-01-01"^^xsd:date .
+x:obl-2 a x:Obligation ; rdfs:label "Invented obligation 2" ; x:nodeId "INV.GUIDE:1/D" ;
+    x:deonticModality "O" ; x:action "review_alerts" ;
+    x:expressedIn x:prov-g-1 ; x:effectiveDate "2026-02-01"^^xsd:date .
+x:perm-1 a x:Permission ; rdfs:label "Invented permission 1" ; x:nodeId "INV.ACT.A:1(1)/P" ;
+    x:deonticModality "P" ; x:expressedIn x:prov-1-1 ; x:effectiveDate "2026-01-01"^^xsd:date .
+
+x:pol-1 a x:Policy ; rdfs:label "Invented financial crime policy" ; x:hasOwner x:role-mlro .
+x:proc-1 a x:Procedure ; rdfs:label "Invented alert handling procedure" .
+x:ctl-1 a x:Control ; rdfs:label "Invented record keeping control" ; x:controlType "Preventive" ;
+    x:satisfies x:obl-1 .
+x:ctl-2 a x:Control ; rdfs:label "Invented alert review control" ; x:controlType "Detective" ;
+    x:satisfies x:obl-2 .
+x:exc-1 a x:PolicyException ; rdfs:label "Invented exception" ; x:exceptionExpiry "2027-01-01"^^xsd:date .

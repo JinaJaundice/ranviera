@@ -1,0 +1,25 @@
+{
+  "v": 1,
+  "alerts": [
+    {
+      "case_ref": "H-1",
+      "final": "close"
+    },
+    {
+      "case_ref": "H-2",
+      "final": "escalate"
+    },
+    {
+      "case_ref": "H-3",
+      "final": "escalate"
+    },
+    {
+      "case_ref": "H-4",
+      "final": "close"
+    },
+    {
+      "case_ref": "H-6",
+      "final": "close"
+    }
+  ]
+}

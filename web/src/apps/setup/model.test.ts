@@ -10,6 +10,7 @@ const setup = (over: Partial<SetupState> = {}): SetupState => ({
   missions_consent_at: null,
   version: "0.1.0",
   product: "ranviera",
+  demo: false,
   claude_home: "C:/Users/a/.claude",
   claude_home_found: true,
   projects_root: null,

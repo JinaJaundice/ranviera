@@ -184,7 +184,7 @@ A hidden label is a form that must not be used. A proposed concept is reported a
 | S17 | a project is documented in a memory file, a backlog section or a history file (`documentedIn`) | violation |
 | S18 | a deliverable or a backlog section belongs to a project and an open item to a backlog section (`belongsTo`) | violation |
 | S19 | a concept denotes a node that is neither a concept nor a scheme (`denotes`) | violation |
-| S20 | a file holds sections or files, a section rules, an agent sections, a record store decisions and a tool fault checks (`contains`) | violation |
+| S20 | a file holds sections or files, a section rules, an agent sections, a record store decisions, a tool fault checks, a run steps, a step tool calls or a stated rationale and a test script test steps (`contains`) | violation |
 | S21 | a decision governs a rule or a file (`governs`) | violation |
 | S22 | only a rule conflicts with a rule (`conflictsWith`) | violation |
 | S23 | every node that carries a family, a sensitivity, a text or a path has a class of the ontology | violation |
@@ -205,8 +205,114 @@ Shape S10 was removed, because reasoning rule R04 does the same job from the sta
 
 In CI (`python cortex.py check --ci --strict`) the blocking checks are S01, S02, S03, S04, S06, S09, S12, S23, P03, P05, P06, P07, B01 and B03. Check B03 (the reasoning engine Nemo is missing) is a warning on a developer machine and a violation in CI, because a run that skips the rules would pass a graph that the rules never read. Check P08 does not run in CI, which has none of the files that the evidence names. The shapes S13 to S22 and S24 to S26 are reported and are not blocking.
 
+## Agent transparency extension
+
+This section adds the classes, relations and shapes that the agent transparency feature needs (`AGENT_TRANSPARENCY.md`). The machine-readable files are at ontology version 0.3.0 and shapes version 0.4.0. Nothing above this section changes, except that the enumeration of `cx:status` gains the values `draft`, `approved`, `proposed`, `ratified` and `rejected`, and that `conflictsWith` and `overrides` also accept an InstructionVersion at both ends (shape S22). The new classes belong to the families `agent` and `obligation`.
+
+### Agent side classes
+
+The agent side classes describe the agents in service, their instructions, their runs and the oversight of those runs.
+
+| Prefix | Class | Family | What it is |
+|---|---|---|---|
+| `dagent:` | DeployedAgent | agent | an agent in service, with `cx:intendedUse`, `cx:riskTier` and `cx:lastValidated`, an owner (`ownedBy`), approved instruction versions (`operatesUnder`) and approved model and knowledge sources (`drawsOn`) |
+| `instr:` | InstructionVersion | agent | the text of one instruction in force over an interval, as `instr:<agent>-<name>@<version>`, with `cx:hash`, `cx:validFrom`, `cx:validTo` (null while open), `cx:version`, `cx:path` and a `cx:status` of draft, approved or withdrawn |
+| `model:` | ModelVersion | agent | a pinned model, with `cx:provider`, `cx:modelId`, `cx:parameters` (canonical JSON) and a `cx:status` of approved or pending |
+| `ksrc:` | KnowledgeSource | agent | a retrieval source, with `cx:snapshotHash`, `cx:snapshotDate` and `cx:licence` |
+| `map:` | Mapping | agent | a reified design time link, as `map:<yyyymmdd>-<nnn>` (`CONTRACTS.md`) |
+| `run:` | Run | agent | one agent run, keyed `run:<agent>-<run>` so that a run name need only be unique within its agent, with `cx:startedAt`, `cx:endedAt`, `cx:replayStatus` (replayable or not-replayable) and `cx:caseRef` |
+| `step:` | Step | agent | one record of a run, as `step:<run>-<nnn>`, with `cx:ordinal`, `cx:stepKind` (start, instructions, retrieval, tool, evidence, rationale, decision, review or end) and `cx:ts` |
+| `call:` | ToolCall | agent | a tool or MCP call inside a step, with input and output hashes |
+| `evid:` | Evidence | agent | an item the agent read, with `cx:hash`, `cx:sourceHash` and `cx:sourceRef` |
+| `rationale:` | StatedRationale | agent | the text the agent wrote to explain a decision, always `cx:causalStatus "unverified"`, held as a hash |
+| `adec:` | AgentDecision | agent | the agent's decision, shown as 'Decision', with `cx:outcome` from the scheme `scheme:outcomes` (close, escalate, request-information) |
+| `review:` | Review | agent | a human review of a decision, with reviewer, verdict, `cx:override`, `cx:overrideReason`, time open, items viewed and checks ticked |
+| `sample:` | Sample | agent | a sample of runs drawn for review |
+| `backtest:` | BackTest | agent | a replay of closed alerts through a named instruction and model version |
+| `ledger:` | LedgerEntry | agent | one entry of the run ledger, with `cx:seq`, `cx:recordHash`, `cx:prevHash` and `cx:entryHash` |
+
+A case reference is held in `cx:caseRef` and points to the bank's own case system. The graph holds no suspicion decision.
+
+### Obligation side classes
+
+The obligation side classes describe what a bank must do and how it has organised the work. They are generic, and the instances come from a bank's own obligation pack or from the policy pack of `CONTRACTS.md`.
+
+| Prefix | Class | Family | What it is |
+|---|---|---|---|
+| `provision:` | LegislativeProvision | obligation | a provision of legislation or guidance, with its text hash, its version date and its effective date |
+| `obligation:` | Obligation | obligation | something a bank must do, with the properties `bearer`, `action`, `condition`, `within` and `modality`, and an effective date |
+| `policy:` | Policy | obligation | a policy, standard, procedure or guideline of the bank, with its specific kind in `props.kind` |
+| `clause:` | PolicyClause | obligation | one clause of a policy, standard or procedure, with `cx:text` and `cx:hash`, contained in its instrument through `contains` |
+| `control:` | Control | obligation | a control, with its `control_type` |
+| `framework:` | ControlFramework | obligation | a framework that groups controls |
+| `exception:` | PolicyException | obligation | an exemption from a requirement, which serves the exemption of rule O01 |
+| `role:` | OrganisationalRole | obligation | a role that may own a policy, a control or an agent |
+| `tscript:` | TestScript | obligation | a second-line test script, with `cx:version` and `cx:reviewed` |
+| `tstep:` | TestStep | obligation | one step of a test script, `contained` in it |
+| `req:` | Requirement | obligation | one requirement tested, which a TestStep `testedAgainst` |
+| `typology:` | Typology | obligation | a pattern of financial crime that a bank watches for, with `source_url` and the status `active` |
+| `riskind:` | RiskIndicator | obligation | a sign that may point to a typology (relation `signals`) |
+
+### New relations
+
+The weights are in `ontology/weights.json`, high on the chain from instruction to obligation and lower on the run record.
+
+| Relation | From and to | Forward | Backward |
+|---|---|---|---|
+| `implementsClause` | InstructionVersion to PolicyClause | 0.85 | 0.55 |
+| `realises` | PolicyClause to Control | 0.85 | 0.55 |
+| `satisfies` | Control to Obligation | 0.85 | 0.55 |
+| `expressedIn` | Obligation to LegislativeProvision | 0.70 | 0.50 |
+| `appliesTo` (extended) | Obligation to DeployedAgent, as the scope the policy owner declares | 0.50 | 0.50 |
+| `notDischargedBy` | Obligation to DeployedAgent, a ratified statement that the agent does not discharge it | 0.20 | 0.20 |
+| `detects` | InstructionVersion to Typology | 0.50 | 0.40 |
+| `signals` | RiskIndicator to Typology | 0.50 | 0.40 |
+| `operatesUnder` | DeployedAgent to InstructionVersion | 0.70 | 0.40 |
+| `drawsOn` | DeployedAgent to ModelVersion or KnowledgeSource | 0.50 | 0.30 |
+| `performedBy` | Run to DeployedAgent | 0.60 | 0.40 |
+| `ranOn` | Run to ModelVersion | 0.40 | 0.30 |
+| `contains` (extended) | Run to Step, Step to ToolCall, Step to StatedRationale, TestScript to TestStep | 0.60 | 0.35 |
+| `inContext` | Step to InstructionVersion, recorded from hooks or trace | 0.60 | 0.40 |
+| `citesInstruction` | Step to InstructionVersion, the agent's own claim | 0.50 | 0.30 |
+| `usedEvidence` | Step to Evidence | 0.50 | 0.30 |
+| `sourcedFrom` | Evidence to KnowledgeSource | 0.40 | 0.30 |
+| `informedDecision` | Step to AgentDecision | 0.60 | 0.40 |
+| `reviewedBy` | AgentDecision to Review | 0.40 | 0.30 |
+| `statesRationale` | AgentDecision to StatedRationale | 0.40 | 0.30 |
+| `entryOf` | LedgerEntry to Run | 0.30 | 0.20 |
+| `sampledFrom` | Sample to Run | 0.30 | 0.20 |
+| `testedAgainst` | BackTest or Review to TestStep or Requirement | 0.40 | 0.30 |
+| `approvedBy`, `proposedBy` | InstructionVersion or Mapping to Person | 0.30 and 0.20 | 0.20 and 0.10 |
+| `ownedBy` (extended) | DeployedAgent, InstructionVersion, Mapping or Policy to Person or role | 0.20 | 0.10 |
+
+`overrides` and `conflictsWith` are reused for instruction versions. Only a stated, computed or ratified `overrides` edge settles a conflict between 2 instruction versions, because rule R03 derives dates for rules only. Shape S22 admits an InstructionVersion at both ends of `conflictsWith`.
+
+### Shapes F01 to F14
+
+The shapes are in `ontology/shapes.ttl` and read the union of the stated and ratified graphs, as S01 to S26 do. Each finding has the severity shown.
+
+| Id | Check | Severity |
+|---|---|---|
+| F01 | an obligation has 1 or more `expressedIn` provisions, a deontic type and an effective date | violation |
+| F02 | a mapping has a status of proposed, ratified, rejected or superseded, an owner and a maker | violation |
+| F03 | a ratified mapping has a checker who differs from its maker | violation |
+| F04 | a ratified mapping records the hash of both ends and a ratification date | violation |
+| F05 | an approved instruction version has a hash, a `cx:validFrom` date and an approver | violation |
+| F06 | a run has 1 agent, 1 model version, a prompt hash and a start time | violation |
+| F07 | a step has 1 run, a unique ordinal in that run, a step kind and a time | violation |
+| F08 | a decision has an outcome from `scheme:outcomes`, 1 or more informing steps and a stated rationale | violation |
+| F09 | a stated rationale has `cx:causalStatus "unverified"`, and an evidence item has a source reference and a hash | violation |
+| F10 | a node loaded from a bank's own obligation pack has a sensitivity of internal or higher and is absent from the public export | violation |
+| F11 | a deployed agent has an owner, an intended use, a risk tier and 1 or more approved model versions (`drawsOn`) | violation |
+| F12 | a review with `cx:override` true has a reason | violation |
+| F13 | a run has a replay status, and a run marked not-replayable names the missing items | warning |
+| F14 | a run has 1 or more ledger entries | violation |
+
+F10 blocks in CI with P06. The other F shapes do not block until the tests of the feature pass and the maintainer agrees.
+
 ## Changes to this document
 
+- 7 October 2026: agent transparency extension, with the agent side classes, the obligation side classes, the new relations and shapes F01 to F14.
 - 6 October 2026: first public version, written from the project's internal specification.
 
 ## Non-affiliation

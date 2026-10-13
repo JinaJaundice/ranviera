@@ -15,19 +15,9 @@ from pathlib import Path
 
 from . import md, privacy
 
+from .fileio import write_atomic  # noqa: F401  (kept here for the callers that import it from the ledger)
+
 SIMILARITY = 0.8
-
-
-def write_atomic(path: Path, text: str) -> None:
-    """Write a file so that a reader sees the old or the new text, never a part of either: a temporary file in the same
-    folder, flushed to disk, then renamed over the target."""
-    path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    with open(tmp, "w", encoding="utf-8", newline="\n") as fh:
-        fh.write(text)
-        fh.flush()
-        os.fsync(fh.fileno())
-    os.replace(tmp, path)
 
 
 def stored_text(text: str) -> str:

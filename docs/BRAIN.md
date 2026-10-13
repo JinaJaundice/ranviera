@@ -52,6 +52,20 @@ Within a region, nodes form clusters, one for each container. A cluster is the f
 
 Nodes are placed on both hemispheres, except in the Writing and vocabulary region. The nodes of one file stay together on one hemisphere, and files alternate between hemispheres in the order of their identifiers.
 
+### The agent transparency classes (7 October 2026)
+
+The classes of a deployed agent and of a bank's obligations, added for agent transparency, take the regions of the table below, which `shared/brain.ts` holds as `CLASS_REGION`.
+
+| Region | Classes |
+|---|---|
+| `prefrontal` | InstructionVersion, PolicyClause, Mapping, AgentDecision, Obligation, PolicyException and Policy |
+| `language` | StatedRationale, Typology and RiskIndicator |
+| `motor` | ToolCall |
+| `parietal` | LegislativeProvision and OrganisationalRole |
+| `memory` | KnowledgeSource, Evidence and LedgerEntry |
+| `basal` | Review, Sample, BackTest, TestScript, TestStep, Requirement, Control and ControlFramework |
+| `cerebellum` | DeployedAgent, ModelVersion, Run and Step |
+
 ## Placement
 
 Placement is deterministic, so that a rule appears in the same place from one session to the next and a person can learn where things are. Within a region, the placer groups nodes by the file that contains them, gives each group a seed point by farthest-point sampling over the region's sample points, and then gives each node of the group the nearest free sample point to the seed, in the order of the node identifiers. Cortical nodes are placed 1.5 units outside the surface along its normal, and nodes of the deep regions lie on the surface of their structure. If a region has more nodes than sample points, the placer reports it and reuses points with a small offset.

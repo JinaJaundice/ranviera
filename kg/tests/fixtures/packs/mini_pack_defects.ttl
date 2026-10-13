@@ -1,0 +1,11 @@
+# Defect variants of mini_pack.ttl: an obligation with no provision, one with no effective date, and a bare statement
+# that is none of Obligation, Permission or Prohibition.
+@prefix x: <https://example.test/pack#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+x:prov-d a x:Article ; rdfs:label "Invented article D" ; x:effectiveDate "2026-01-01"^^xsd:date .
+x:obl-no-provision a x:Obligation ; rdfs:label "No provision" ; x:effectiveDate "2026-01-01"^^xsd:date .
+x:obl-no-date a x:Obligation ; rdfs:label "No date" ; x:expressedIn x:prov-d .
+x:stmt-bare a x:DeonticStatement ; rdfs:label "Bare statement" ;
+    x:expressedIn x:prov-d ; x:effectiveDate "2026-01-01"^^xsd:date .

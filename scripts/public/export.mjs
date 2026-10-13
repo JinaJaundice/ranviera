@@ -56,14 +56,22 @@ export const ALLOW = [
   "ontology/defaults",
   "scripts/brain",
   "scripts/build",
+  "scripts/demo",
   "scripts/public",
   "scripts/smoke.mjs",
   "scripts/desktop-smoke.mjs",
 ];
 
 export const SKIP_NAMES = new Set(["node_modules", "__pycache__", ".pytest_cache", ".git", ".DS_Store", "Thumbs.db", "dist", "release", "shots"]);
-// Nothing else is left out by path: every script and every test of an allowed folder is exported.
-export const SKIP_PATHS = new Set();
+// The private pack of section 10 of docs/AGENT_TRANSPARENCY.md (7 October 2026): the rules that read the bank side classes,
+// the loaders of the local obligation packs and their tests, and the synthetic demonstrator. Nothing else is left out by
+// path, so every other script and test of an allowed folder is exported.
+export const SKIP_PATHS = new Set([
+  "ontology/rules/transparency_private.rls",
+  "kg/tests/test_importers_private.py",
+  "kg/cortex_kg/demo",
+  "kg/tests/test_demo_northgate.py",
+]);
 const SKIP_SUFFIXES = [".pyc", ".pyo", ".tsbuildinfo", ".log"];
 
 function sha256(file) {
@@ -88,7 +96,7 @@ function copyAllowed(repo, out, rel) {
     filter: (from) => {
       const r = relative(repo, from).split(sep).join("/");
       const name = r.split("/").pop();
-      if (SKIP_NAMES.has(name) || SKIP_PATHS.has(r) || SKIP_SUFFIXES.some((s) => name.endsWith(s))) return false;
+      if (SKIP_NAMES.has(name) || SKIP_PATHS.has(r) || (r.startsWith("kg/cortex_kg/importers/") && name.endsWith("_loader.py")) || SKIP_SUFFIXES.some((s) => name.endsWith(s))) return false;
       if (statSync(from).isFile()) files++;
       return true;
     },

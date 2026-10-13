@@ -47,6 +47,37 @@ CLASSES: dict[str, tuple[str, str | None, str]] = {
     "instrument": ("Instrument", None, "world"),
     "scheme": ("ConceptScheme", None, "language"),
     "term": ("Concept", None, "language"),
+    # the agent side (docs/ONTOLOGY.md, 7 October 2026)
+    "dagent": ("DeployedAgent", None, "agent"),
+    "instr": ("InstructionVersion", None, "agent"),
+    "model": ("ModelVersion", None, "agent"),
+    "ksrc": ("KnowledgeSource", None, "agent"),
+    "map": ("Mapping", None, "agent"),
+    "run": ("Run", None, "agent"),
+    "step": ("Step", None, "agent"),
+    "call": ("ToolCall", None, "agent"),
+    "evid": ("Evidence", None, "agent"),
+    "rationale": ("StatedRationale", None, "agent"),
+    "adec": ("AgentDecision", None, "agent"),
+    "review": ("Review", None, "agent"),
+    "sample": ("Sample", None, "agent"),
+    "backtest": ("BackTest", None, "agent"),
+    "ledger": ("LedgerEntry", None, "agent"),
+    # the obligation side: the bank side of the chain and the second line test scripts
+    "provision": ("LegislativeProvision", None, "obligation"),
+    "obligation": ("Obligation", None, "obligation"),
+    "exception": ("PolicyException", None, "obligation"),
+    "control": ("Control", None, "obligation"),
+    "framework": ("ControlFramework", None, "obligation"),
+    "policy": ("Policy", None, "obligation"),
+    "role": ("OrganisationalRole", None, "obligation"),
+    "clause": ("PolicyClause", None, "obligation"),
+    "tscript": ("TestScript", None, "obligation"),
+    "tstep": ("TestStep", None, "obligation"),
+    "req": ("Requirement", None, "obligation"),
+    # the typologies and risk indicators of a bank's own scheme (docs/ONTOLOGY.md, 7 October 2026)
+    "typology": ("Typology", None, "obligation"),
+    "riskind": ("RiskIndicator", None, "obligation"),
 }
 
 CLASS_TO_PREFIX = {cls: prefix for prefix, (cls, _p, _f) in CLASSES.items()}
@@ -58,6 +89,11 @@ RELATIONS = (
     "ownedBy", "linksTo", "indexes", "launches", "denotes", "inScheme",
     # inferred by the rules in ontology/rules/cortex.rls (docs/REASONING.md, 6 October 2026)
     "overrides", "supersedesChain", "appliesToTask",
+    # the agent transparency relations (docs/ONTOLOGY.md, 7 October 2026)
+    "implementsClause", "realises", "satisfies", "expressedIn", "notDischargedBy", "detects", "signals",
+    "operatesUnder", "drawsOn", "performedBy", "ranOn", "inContext", "citesInstruction", "usedEvidence",
+    "sourcedFrom", "informedDecision", "reviewedBy", "sampledFrom", "testedAgainst", "approvedBy", "proposedBy",
+    "statesRationale", "entryOf",
 )
 
 SENSITIVITY = ("public", "internal", "client-confidential")

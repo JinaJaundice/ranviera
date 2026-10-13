@@ -32,7 +32,19 @@ DEFAULTS = {
     "private_terms": None,      # a file of client, project and people names; null reads <data_dir>/overlay/private_terms.json
     "agent_model": None,        # the model name every agent must name (check S03); null runs no check
     "size_limits": None,        # { claude_md_lines, memory_index_bytes, memory_index_lines, rule_file_chars } (check P02); null runs no check
+    # the local packs of the agent transparency work (docs/CONTRACTS.md, 7 October 2026); each key has an environment variable
+    "pack_dir": None,            # CORTEX_PACK_DIR, the folder of the .ttl modules of an obligation pack
+    "pack_register": None,       # CORTEX_PACK_REGISTER, the path of the register .ttl of an obligation pack
+    "hub_dir": None,            # CORTEX_HUB_DIR, the folder of an obligation hub whose workbooks are read only
+    "pack_profile": None,        # CORTEX_PACK_PROFILE, the chain profile; null selects ontology/defaults/pack_profile.json
+    "include_private_graphs": False,  # CORTEX_INCLUDE_PRIVATE_GRAPHS, true writes the private graph into graph.trig
+    "monitoring_bounds": None,  # CORTEX_MONITORING_BOUNDS, the bounds file of the bank (rule O13)
+    "ledger_key": None,         # CORTEX_LEDGER_KEY, the key that signs the ledger head
 }
+
+PACK_ENV = {"pack_dir": "CORTEX_PACK_DIR", "pack_register": "CORTEX_PACK_REGISTER", "hub_dir": "CORTEX_HUB_DIR",
+            "pack_profile": "CORTEX_PACK_PROFILE", "include_private_graphs": "CORTEX_INCLUDE_PRIVATE_GRAPHS",
+            "monitoring_bounds": "CORTEX_MONITORING_BOUNDS", "ledger_key": "CORTEX_LEDGER_KEY"}
 
 SIZE_LIMIT_KEYS = ("claude_md_lines", "memory_index_bytes", "memory_index_lines", "rule_file_chars")
 
@@ -116,6 +128,45 @@ class Config:
         if not isinstance(v, dict):
             return None
         return {k: int(v[k]) for k in SIZE_LIMIT_KEYS if isinstance(v.get(k), (int, float)) and not isinstance(v.get(k), bool)}
+
+    def _pack_path(self, key: str) -> Path | None:
+        """The path that a pack key names. The environment variable overrides the key, and null or empty means not set."""
+        v = os.environ.get(PACK_ENV[key]) or (self.raw or {}).get(key)
+        return _opt_path(v) if isinstance(v, (str, os.PathLike)) and str(v).strip() else None
+
+    @property
+    def pack_dir(self) -> Path | None:
+        return self._pack_path("pack_dir")
+
+    @property
+    def pack_register(self) -> Path | None:
+        return self._pack_path("pack_register")
+
+    @property
+    def hub_dir(self) -> Path | None:
+        return self._pack_path("hub_dir")
+
+    @property
+    def pack_profile(self) -> Path | None:
+        return self._pack_path("pack_profile")
+
+    @property
+    def monitoring_bounds(self) -> Path | None:
+        return self._pack_path("monitoring_bounds")
+
+    @property
+    def ledger_key(self) -> Path | None:
+        return self._pack_path("ledger_key")
+
+    @property
+    def include_private_graphs(self) -> bool:
+        """Whether graph.trig and graph.json carry the private graph. False unless the key or the variable says true."""
+        v = os.environ.get(PACK_ENV["include_private_graphs"])
+        if v is None:
+            v = (self.raw or {}).get("include_private_graphs")
+        if isinstance(v, str):
+            return v.strip().lower() in ("1", "true", "yes", "on")
+        return v is True
 
     @property
     def has_projects(self) -> bool:

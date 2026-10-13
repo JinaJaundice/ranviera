@@ -1,0 +1,104 @@
+[
+ {
+  "type": "system",
+  "subtype": "init",
+  "model": "claude-synth-1",
+  "ts": "2026-10-07T09:00:00.000Z"
+ },
+ {
+  "type": "assistant",
+  "ts": "2026-10-07T09:00:01.000Z",
+  "message": {
+   "content": [
+    {
+     "type": "tool_use",
+     "id": "t1",
+     "name": "search_alerts",
+     "input": {
+      "query": "acct 123"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "type": "user",
+  "ts": "2026-10-07T09:00:02.000Z",
+  "message": {
+   "content": [
+    {
+     "type": "tool_result",
+     "tool_use_id": "t1",
+     "content": "3 alerts"
+    }
+   ]
+  }
+ },
+ {
+  "type": "assistant",
+  "ts": "2026-10-07T09:00:03.000Z",
+  "message": {
+   "content": [
+    {
+     "type": "tool_use",
+     "id": "t2",
+     "name": "fetch_kb",
+     "input": {
+      "doc": "kb-7"
+     }
+    }
+   ]
+  }
+ },
+ {
+  "type": "user",
+  "ts": "2026-10-07T09:00:04.000Z",
+  "message": {
+   "content": [
+    {
+     "type": "tool_result",
+     "tool_use_id": "t2",
+     "content": "Synthetic knowledge base text."
+    }
+   ]
+  }
+ },
+ {
+  "type": "assistant",
+  "ts": "2026-10-07T09:00:05.000Z",
+  "message": {
+   "content": [
+    {
+     "type": "text",
+     "text": "The account matches typology X."
+    }
+   ]
+  }
+ },
+ {
+  "type": "assistant",
+  "ts": "2026-10-07T09:00:06.000Z",
+  "message": {
+   "content": [
+    {
+     "type": "tool_use",
+     "id": "t3",
+     "name": "submit_decision",
+     "input": {
+      "outcome": "escalate",
+      "cited": [
+       "instr:triage-agent-core@3",
+       "instr:triage-agent-escalation@1"
+      ],
+      "rationale": "Escalate because of the match to typology X."
+     }
+    }
+   ]
+  }
+ },
+ {
+  "type": "result",
+  "subtype": "success",
+  "ts": "2026-10-07T09:00:07.000Z"
+ }
+]

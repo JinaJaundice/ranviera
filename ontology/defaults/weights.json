@@ -209,6 +209,167 @@
       "inverse_label": "is superseded through a chain by",
       "weight": 0.2,
       "reverse_weight": 0.2
+    },
+    {
+      "id": "implementsClause",
+      "label": "implements clause",
+      "inverse_label": "is implemented by",
+      "weight": 0.85,
+      "reverse_weight": 0.55
+    },
+    {
+      "id": "realises",
+      "label": "realises",
+      "inverse_label": "is realised by",
+      "weight": 0.85,
+      "reverse_weight": 0.55
+    },
+    {
+      "id": "satisfies",
+      "label": "satisfies",
+      "inverse_label": "is satisfied by",
+      "weight": 0.85,
+      "reverse_weight": 0.55
+    },
+    {
+      "id": "expressedIn",
+      "label": "expressed in",
+      "inverse_label": "expresses",
+      "weight": 0.7,
+      "reverse_weight": 0.5
+    },
+    {
+      "id": "notDischargedBy",
+      "label": "not discharged by",
+      "inverse_label": "does not discharge",
+      "weight": 0.2,
+      "reverse_weight": 0.2
+    },
+    {
+      "id": "detects",
+      "label": "detects",
+      "inverse_label": "is detected by",
+      "weight": 0.5,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "signals",
+      "label": "signals",
+      "inverse_label": "is signalled by",
+      "weight": 0.5,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "operatesUnder",
+      "label": "operates under",
+      "inverse_label": "is operated under by",
+      "weight": 0.7,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "drawsOn",
+      "label": "draws on",
+      "inverse_label": "is drawn on by",
+      "weight": 0.5,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "performedBy",
+      "label": "performed by",
+      "inverse_label": "performed",
+      "weight": 0.6,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "ranOn",
+      "label": "ran on",
+      "inverse_label": "was run by",
+      "weight": 0.4,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "inContext",
+      "label": "in context",
+      "inverse_label": "was in context of",
+      "weight": 0.6,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "citesInstruction",
+      "label": "cites instruction",
+      "inverse_label": "is cited by",
+      "weight": 0.5,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "usedEvidence",
+      "label": "used evidence",
+      "inverse_label": "was used at",
+      "weight": 0.5,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "sourcedFrom",
+      "label": "sourced from",
+      "inverse_label": "is the source of",
+      "weight": 0.4,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "informedDecision",
+      "label": "informed decision",
+      "inverse_label": "was informed by",
+      "weight": 0.6,
+      "reverse_weight": 0.4
+    },
+    {
+      "id": "reviewedBy",
+      "label": "reviewed by",
+      "inverse_label": "reviewed",
+      "weight": 0.4,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "sampledFrom",
+      "label": "sampled from",
+      "inverse_label": "was sampled in",
+      "weight": 0.3,
+      "reverse_weight": 0.2
+    },
+    {
+      "id": "testedAgainst",
+      "label": "tested against",
+      "inverse_label": "was tested by",
+      "weight": 0.4,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "approvedBy",
+      "label": "approved by",
+      "inverse_label": "approved",
+      "weight": 0.3,
+      "reverse_weight": 0.2
+    },
+    {
+      "id": "proposedBy",
+      "label": "proposed by",
+      "inverse_label": "proposed",
+      "weight": 0.2,
+      "reverse_weight": 0.1
+    },
+    {
+      "id": "statesRationale",
+      "label": "states rationale",
+      "inverse_label": "is the rationale of",
+      "weight": 0.5,
+      "reverse_weight": 0.3
+    },
+    {
+      "id": "entryOf",
+      "label": "entry of",
+      "inverse_label": "has the entry",
+      "weight": 0.4,
+      "reverse_weight": 0.3
     }
   ],
   "activation": {

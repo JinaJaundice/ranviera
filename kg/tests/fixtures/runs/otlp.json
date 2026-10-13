@@ -1,0 +1,203 @@
+{
+ "resourceSpans": [
+  {
+   "resource": {
+    "attributes": []
+   },
+   "scopeSpans": [
+    {
+     "spans": [
+      {
+       "traceId": "0af7651916cd43dd8448eb211c80319c",
+       "spanId": "0000000000000001",
+       "parentSpanId": "",
+       "name": "x",
+       "startTimeUnixNano": "1791363600000000000",
+       "endTimeUnixNano": "1791363607000000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "invoke_agent"
+         }
+        },
+        {
+         "key": "gen_ai.agent.id",
+         "value": {
+          "stringValue": "triage-agent"
+         }
+        },
+        {
+         "key": "ranviera.run",
+         "value": {
+          "stringValue": "R-001"
+         }
+        },
+        {
+         "key": "gen_ai.request.model",
+         "value": {
+          "stringValue": "claude-synth-1"
+         }
+        },
+        {
+         "key": "gen_ai.request.temperature",
+         "value": {
+          "doubleValue": 0
+         }
+        },
+        {
+         "key": "ranviera.prompt_hash",
+         "value": {
+          "stringValue": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+         }
+        },
+        {
+         "key": "ranviera.instructions_loaded",
+         "value": {
+          "stringValue": "[{\"id\": \"instr:triage-agent-core@3\", \"hash\": \"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\", \"path\": \"synthetic/core.md\"}, {\"id\": \"instr:triage-agent-escalation@1\", \"hash\": \"sha256:cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc\", \"path\": \"synthetic/escalation.md\"}]"
+         }
+        },
+        {
+         "key": "ranviera.case_ref",
+         "value": {
+          "stringValue": "CASE-SYN-1"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "0af7651916cd43dd8448eb211c80319c",
+       "spanId": "0000000000000002",
+       "parentSpanId": "0000000000000001",
+       "name": "x",
+       "startTimeUnixNano": "1791363601000000000",
+       "endTimeUnixNano": "1791363602000000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "execute_tool"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "search_alerts"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "stringValue": "{\"query\": \"acct 123\"}"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.result",
+         "value": {
+          "stringValue": "3 alerts"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "0af7651916cd43dd8448eb211c80319c",
+       "spanId": "0000000000000003",
+       "parentSpanId": "0000000000000001",
+       "name": "x",
+       "startTimeUnixNano": "1791363603000000000",
+       "endTimeUnixNano": "1791363604000000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "retrieval"
+         }
+        },
+        {
+         "key": "gen_ai.tool.name",
+         "value": {
+          "stringValue": "fetch_kb"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.arguments",
+         "value": {
+          "stringValue": "{\"doc\": \"kb-7\"}"
+         }
+        },
+        {
+         "key": "gen_ai.tool.call.result",
+         "value": {
+          "stringValue": "Synthetic knowledge base text."
+         }
+        },
+        {
+         "key": "ranviera.evidence",
+         "value": {
+          "stringValue": "[{\"id\": \"t2\", \"hash\": \"sha256:c1c7f5a5941201cb7e3c1836df39208222edad3e407cbd9336e6949cf09d05ae\"}]"
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "0af7651916cd43dd8448eb211c80319c",
+       "spanId": "0000000000000004",
+       "parentSpanId": "0000000000000001",
+       "name": "x",
+       "startTimeUnixNano": "1791363605000000000",
+       "endTimeUnixNano": "1791363605000000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "chat"
+         }
+        },
+        {
+         "key": "ranviera.rationale",
+         "value": {
+          "stringValue": "The account matches typology X."
+         }
+        }
+       ]
+      },
+      {
+       "traceId": "0af7651916cd43dd8448eb211c80319c",
+       "spanId": "0000000000000005",
+       "parentSpanId": "0000000000000001",
+       "name": "x",
+       "startTimeUnixNano": "1791363606000000000",
+       "endTimeUnixNano": "1791363606000000000",
+       "attributes": [
+        {
+         "key": "gen_ai.operation.name",
+         "value": {
+          "stringValue": "chat"
+         }
+        },
+        {
+         "key": "ranviera.outcome",
+         "value": {
+          "stringValue": "escalate"
+         }
+        },
+        {
+         "key": "ranviera.cited",
+         "value": {
+          "stringValue": "[\"instr:triage-agent-core@3\", \"instr:triage-agent-escalation@1\"]"
+         }
+        },
+        {
+         "key": "ranviera.rationale",
+         "value": {
+          "stringValue": "Escalate because of the match to typology X."
+         }
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

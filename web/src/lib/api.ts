@@ -1,7 +1,17 @@
 // Typed calls to the Cortex server. The routes are fixed in docs/CONTRACTS.md.
 import type {
   Activation,
+  DecisionTrace,
+  CoverageMatrix,
   InferredFact,
+  InstructionDetail,
+  InstructionSummary,
+  MappingRecord,
+  MonitoringReport,
+  OversightStatus,
+  PackResult,
+  RunSummary,
+  SampleRecord,
   InferredRule,
   SavedQuery,
   SparqlResult,
@@ -45,6 +55,21 @@ export interface NodeDetail {
   neighbours: GraphNode[];
   events: CortexEvent[];
 }
+
+/** The person that the demonstration selector chose. Only a server in demonstration mode reads the header that carries it. */
+let actingAs: string | null = null;
+export function setActingAs(id: string | null): void {
+  actingAs = id;
+}
+
+const oversight = <T>(path: string, init?: RequestInit) =>
+  call<T>(`/api/oversight${path}`, { ...init, headers: actingAs ? { "x-ranviera-actor": actingAs } : undefined });
+const send = <T>(path: string, body: unknown) => oversight<T>(path, { method: "POST", body: JSON.stringify(body) });
+const qs = (o: Record<string, string | undefined>) => {
+  const p = new URLSearchParams(Object.entries(o).filter((e): e is [string, string] => Boolean(e[1])));
+  return p.size ? `?${p.toString()}` : "";
+};
+const enc = encodeURIComponent;
 
 export const api = {
   graph: (max: Sensitivity = "client-confidential") => call<GraphFile>(`/api/graph?max=${max}`),
@@ -90,6 +115,28 @@ export const api = {
   uninstallHooks: () =>
     call<{ installed: false; removed: number; backup: string }>("/api/hooks/uninstall", { method: "POST", body: "{}" }),
   claude: () => call<ClaudeState>("/api/claude"),
+  // The oversight views (docs/CONTRACTS.md, "Oversight routes")
+  oversightStatus: () => oversight<OversightStatus>("/status"),
+  oversightRuns: () => oversight<RunSummary[]>("/runs"),
+  oversightTrace: (run: string) => oversight<DecisionTrace>(`/trace/${enc(run)}`),
+  oversightCoverage: (agent?: string) => oversight<CoverageMatrix>(`/coverage${qs({ agent })}`),
+  oversightMappings: (f: { status?: string; owner?: string; stale?: boolean } = {}) =>
+    oversight<MappingRecord[]>(`/mappings${qs({ status: f.status, owner: f.owner, stale: f.stale ? "1" : undefined })}`),
+  ratifyMapping: (id: string, note?: string) => send<MappingRecord>(`/mappings/${enc(id)}/ratify`, { note }),
+  rejectMapping: (id: string, reason: string) => send<MappingRecord>(`/mappings/${enc(id)}/reject`, { reason }),
+  reassignMapping: (id: string, owner: string) => send<MappingRecord>(`/mappings/${enc(id)}/reassign`, { owner }),
+  oversightInstructions: () => oversight<InstructionSummary[]>("/instructions"),
+  oversightInstruction: (id: string) => oversight<InstructionDetail>(`/instructions/${enc(id)}`),
+  draftInstruction: (id: string, text: string) => send<InstructionDetail>(`/instructions/${enc(id)}/draft`, { text }),
+  approveVersion: (id: string) => send<InstructionDetail>(`/versions/${enc(id)}/approve`, {}),
+  oversightMonitoring: () => oversight<MonitoringReport>("/monitoring"),
+  drawSample: (agent: string, size: number, seed?: number, risk_weighted?: boolean) =>
+    send<SampleRecord>("/samples", { agent, size, seed, risk_weighted }),
+  sampleVerdict: (sample: string, run: string, verdict: "agree" | "disagree", reason?: string) =>
+    send<SampleRecord>(`/samples/${enc(sample)}/verdict`, { run, verdict, reason }),
+  exportPack: (scope: string) => send<PackResult>("/pack", { scope }),
+  packFile: (folder: string, file: "pack.html" | "pack.json" | "manifest.json") =>
+    oversight<{ file: string; text: string }>(`/pack-file${qs({ folder, file })}`),
   claudeLogin: () =>
     call<{ started: boolean; terminal: string; message: string }>("/api/claude/login", { method: "POST", body: "{}" }),
 };

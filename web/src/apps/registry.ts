@@ -1,6 +1,6 @@
 // The windows the dock can open. Each module must exist at the path given and export the named component.
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { Activity, BookA, Bot, DatabaseZap, FolderKanban, Info, Network, ScrollText, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Activity, BookA, Bot, DatabaseZap, FolderKanban, Info, Network, Scale, ScrollText, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
 
 export interface AppProps {
   params?: Record<string, string>;
@@ -13,8 +13,8 @@ export interface AppDef {
   /** default window size in px */
   size: { w: number; h: number };
   component: LazyExoticComponent<ComponentType<AppProps>>;
-  /** keyboard shortcut digit, opened with Alt and the digit */
-  key: string;
+  /** keyboard shortcut digit, opened with Alt and the digit. An app may have none, because the ten digits are in use. */
+  key?: string;
 }
 
 export const APPS: AppDef[] = [
@@ -81,6 +81,13 @@ export const APPS: AppDef[] = [
     size: { w: 900, h: 640 },
     key: "7",
     component: lazy(() => import("./health/HealthApp").then((m) => ({ default: m.HealthApp }))),
+  },
+  {
+    id: "oversight",
+    title: "Oversight",
+    icon: Scale,
+    size: { w: 1120, h: 740 },
+    component: lazy(() => import("./oversight/OversightApp").then((m) => ({ default: m.OversightApp }))),
   },
   {
     id: "settings",

@@ -1,6 +1,6 @@
 # Third-party notices
 
-This file lists the third-party packages that the application contains or needs when it runs, with the licence of each. It was generated on 2026-10-07 by `scripts/public/notices.mjs` from the lockfile and the installed Python packages, and CI checks it for a licence outside the allow list (MIT, ISC, BSD, Apache-2.0, 0BSD, Python-2.0, PSF, MPL-2.0 for files only, CC-BY-4.0 for data and OFL-1.1 for fonts and W3C-20150513 for the owlrl package).
+This file lists the third-party packages that the application contains or needs when it runs, with the licence of each. It was generated on 2026-10-13 by `scripts/public/notices.mjs` from the lockfile and the installed Python packages, and CI checks it for a licence outside the allow list (MIT, ISC, BSD, Apache-2.0, 0BSD, Python-2.0, PSF, MPL-2.0 for files only, CC-BY-4.0 for data and OFL-1.1 for fonts and W3C-20150513 for the owlrl package).
 
 ## Packages of the web app and the server (npm)
 

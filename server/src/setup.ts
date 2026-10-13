@@ -77,6 +77,7 @@ export function setupState(cfg: Config, graph?: { built: string; nodes: number; 
     memory_dirs: memoryDirs(cfg),
     graph_built: g?.built ?? null,
     counts: g ? { nodes: g.nodes, edges: g.edges } : null,
+    demo: cfg.oversight_demo === true,
   };
 }
 

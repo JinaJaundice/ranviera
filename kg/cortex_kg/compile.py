@@ -15,7 +15,7 @@ from datetime import date, datetime, timezone
 from pathlib import Path
 
 from .config import Config, assertion_folders, norm_path, weights_table
-from .model import CLASSES, RELATIONS, Edge, Finding, Harvest, class_of, prefix_of, slugify
+from .model import CLASSES, RELATIONS, SENSITIVITY, Edge, Finding, Harvest, Node, class_of, prefix_of, slugify
 
 HARVEST_ORDER = ["vocab", "tasktypes", "harness", "skills", "memory", "projects"]
 ALWAYS = ["claudemd:global"]   # the map file, which Claude Code reads in every session; see always_nodes()
@@ -252,6 +252,156 @@ def apply_assertions(h: Harvest, cfg: Config) -> None:
         kinds = ", ".join(f"{n} {r}" for r, n in sorted(Counter(rels).items()))
         h.find("P10", "warning", f"The assertion file {fname} holds {len(rels)} proposed assertions that nobody has reviewed ({kinds}). "
                f"Each is drawn at half weight and stays out of the rules until it is ratified.", None, fname)
+
+
+# ---------------------------------------------------------------- the transparency stage
+
+PRIVATE_ORIGIN = "local-pack"
+
+
+def add_parts(h: Harvest, nodes: list[dict], edges: list[dict], source: str, private: bool = False) -> int:
+    """Merge the dict nodes and edges of a transparency module into the harvest as Node and edge objects, and return the
+    number of nodes added. A node whose id prefix is unknown or whose sensitivity is not allowed is reported (B08) and left
+    out, and so is an edge whose relation is unknown. The class comes from the id prefix, so a different 'type' is reported
+    and ignored. A private node carries the origin local-pack and at least the sensitivity internal."""
+    added = 0
+    for d in nodes:
+        nid = str(d.get("id") or "")
+        if prefix_of(nid) not in CLASSES:
+            h.find("B08", "warning", f"A node of {source} was left out because its identifier {nid} has no known prefix.", None, source)
+            continue
+        if d.get("type") not in (None, class_of(nid)[0]):
+            h.find("B08", "warning", f"The node {nid} of {source} names the class {d.get('type')}, and its prefix gives {class_of(nid)[0]}, so the prefix was used.", nid, source)
+        sens = d.get("sensitivity") or "internal"
+        if sens not in SENSITIVITY:
+            h.find("B08", "warning", f"The node {nid} of {source} has the sensitivity {sens}, which is not allowed, so it was left out.", nid, source)
+            continue
+        props = dict(d.get("props") or {})
+        if private:
+            props["origin"] = PRIVATE_ORIGIN
+            sens = sens if sens != "public" else "internal"
+        h.add_node(Node(nid, str(d.get("label") or nid), d.get("path"), d.get("summary"), d.get("date"),
+                        d.get("status"), sens, props, d.get("evidence")))
+        added += 1
+    for e in edges:
+        try:
+            h.add_edge(e["s"], e["r"], e["t"], e.get("evidence"))
+        except (KeyError, ValueError) as exc:
+            h.find("B08", "warning", f"An edge of {source} was left out: {exc}.", None, source)
+    return added
+
+
+def ledger_parts(h: Harvest, cfg: Config, run_ids: dict[str, str]) -> int:
+    """One LedgerEntry node for each entry of the run ledger that belongs to a run, with an entryOf edge to the run node
+    (shape F14). An entry with no run, such as an instruction approval or a mapping ratification, gets no node. A ledger that
+    cannot be read gives B08 and no node."""
+    from .runledger import RunLedger
+    try:
+        entries = RunLedger(cfg.data_dir).entries()
+    except (OSError, ValueError, KeyError) as exc:
+        h.find("B08", "warning", f"The run ledger could not be read, so no ledger entry was added: {exc}", None, "ledger")
+        return 0
+    nodes, edges = [], []
+    for e in entries:
+        rid = run_ids.get(str(e.get("run") or ""))
+        if not rid or not isinstance(e.get("seq"), int):
+            continue
+        lid = f"ledger:{e['seq']:06d}"
+        ev = f"ledger/{str(e.get('ts') or '')[:7]}.jsonl"
+        nodes.append({"id": lid, "type": "LedgerEntry", "label": f"Ledger entry {e['seq']}", "evidence": ev,
+                      "sensitivity": "internal",
+                      "props": {"seq": e["seq"], "recordHash": e.get("record_hash"), "prevHash": e.get("prev_hash"),
+                                "entryHash": e.get("entry_hash")}})
+        edges.append({"s": lid, "r": "entryOf", "t": rid, "evidence": ev})
+    return add_parts(h, nodes, edges, "ledger")
+
+
+def transparency_stage(h: Harvest, cfg: Config) -> dict:
+    """Merge the agent transparency parts into the harvest: the mappings of the profile, the runs ingested into
+    <data_dir>/runs, the saved legislation provisions (public, Open Government Licence text) and, only where
+    include_private_graphs is true and a pack key is set, the nodes of the local obligation packs, which carry the origin
+    local-pack and are routed to the private graph by rdf.split_private. A mapping edge takes the provenance of its status
+    (proposed or ratified), so that the rules read only the ratified links (rule O01)."""
+    from . import mappings
+    from .importers import legislation
+    if not hasattr(h, "assertion_status"):
+        h.assertion_status = {}
+    if not hasattr(h, "assertion_by"):
+        h.assertion_by = {}
+    counts = {"mappings": 0, "instructions": 0, "policy": 0, "runs": 0, "ledger": 0, "provisions": 0, "private": 0}
+    try:
+        nodes, edges = mappings.graph_parts(cfg.profile_dir)
+    except (mappings.MappingError, OSError, ValueError, KeyError) as exc:
+        h.find("B08", "warning", f"The mapping files could not be read, so no mapping was added: {exc}", None, "mappings")
+        nodes, edges = [], []
+    counts["mappings"] = add_parts(h, nodes, [], "mappings")
+    by_id = {n["id"]: n for n in nodes}
+    mapping_nodes = nodes
+    for e in edges:
+        key = (e["s"], e["r"], e["t"])
+        is_new = key not in h.edges and e["s"] != e["t"]
+        add_parts(h, [], [e], "mappings")
+        if is_new and key in h.edges:
+            m = (by_id.get(e.get("mapping")) or {}).get("props") or {}
+            h.assertion_status[key] = e["provenance"]
+            h.assertion_by[key] = str((m.get("checker") if e["provenance"] == "ratified" else m.get("maker")) or "unknown")
+    # the instruction store of each deployed agent (docs/CONTRACTS.md, "The instruction store"): its versions, approvals,
+    # people and approved models are stated content, because each approval already passed the maker and checker test
+    people, edges = mappings.person_parts(mapping_nodes)
+    counts["mappings"] += add_parts(h, people, edges, "mappings")
+    from . import instructions
+    try:
+        nodes, edges = instructions.graph_parts(cfg.profile_dir)
+    except (instructions.InstructionError, OSError, ValueError, KeyError) as exc:
+        h.find("B08", "warning", f"The instruction store could not be read, so no instruction version was added: {exc}", None, "instructions")
+        nodes, edges = [], []
+    counts["instructions"] = add_parts(h, nodes, edges, "instructions")
+    # the policy pack of the bank (docs/CONTRACTS.md, "The policy pack"): clauses, controls, obligations, provisions and
+    # typologies as stated content. A file that breaks the contract is left out whole and reported as B08.
+    from . import policypack
+    pack_problems: list[str] = []
+    try:
+        nodes, edges = policypack.graph_parts(cfg.profile_dir, pack_problems)
+    except (OSError, ValueError, KeyError) as exc:
+        pack_problems.append(f"The policy pack could not be read, so no pack node was added: {exc}")
+        nodes, edges = [], []
+    for msg in pack_problems:
+        h.find("B08", "warning", msg, None, "policy")
+    counts["policy"] = add_parts(h, nodes, edges, "policy")
+    runs = cfg.data_dir / "runs"
+    run_ids: dict[str, str] = {}   # the run name of the ledger (AT-0001) -> the run node (run:alert-triage-at-0001)
+    for f in sorted(runs.glob("*.json")) if runs.is_dir() else []:
+        data = read_json(f, None)
+        if not isinstance(data, dict):
+            h.find("B08", "warning", f"The run file {f.name} could not be read, so it was left out.", None, f.name)
+            continue
+        counts["runs"] += add_parts(h, data.get("nodes", []), data.get("edges", []), f"runs/{f.name}")
+        for n in data.get("nodes", []):
+            if n.get("type") == "Run" and str(n.get("evidence") or "").startswith("run:"):
+                run_ids[str(n["evidence"])[4:].split("#")[0]] = n["id"]
+    counts["ledger"] = ledger_parts(h, cfg, run_ids)
+    folder = cfg.data_dir / "imports" / "legislation"
+    stems = [p.name[:-len(".provisions.json")] for p in sorted(folder.glob("*.provisions.json"))] if folder.is_dir() else []
+    if stems:
+        try:
+            nodes, edges = legislation.load_saved(cfg, stems)
+            counts["provisions"] = add_parts(h, nodes, edges, "imports/legislation")
+        except (OSError, ValueError, KeyError) as exc:
+            h.find("B08", "warning", f"The saved legislation could not be read: {exc}", None, "imports/legislation")
+    if cfg.include_private_graphs:
+        try:
+            from . import importers
+            loader = importers.local_loader()
+            if loader is None:
+                raise ImportError("no local pack loader")
+        except ImportError:   # the public product holds no private pack loader (docs/AGENT_TRANSPARENCY.md, section 10)
+            h.find("B08", "info", "The private pack loaders are not part of this installation, so no local pack was loaded.", None, "pack")
+            return counts
+        res = loader.import_pack(cfg, check=True)   # check mode writes no manifest, so a build never writes into the packs
+        for w in res.warnings:
+            h.find("B08", "info", f"The local packs report: {w}.", None, "pack")
+        counts["private"] = add_parts(h, res.nodes, res.edges, "pack", private=True)
+    return counts
 
 
 def drop_dangling(h: Harvest) -> int:
@@ -507,11 +657,15 @@ def provenance_of(key: tuple, computed: set, assertion_status: dict) -> str:
 def render_rdf(cfg: Config, nodes, stated_rows, edge_rows, inferred_edges, findings, metrics, today: str,
                generated: dict | None = None) -> tuple[str, str]:
     """(graph.ttl, graph.trig) text. graph.ttl is the stated graph alone, and graph.trig holds the 5 named graphs, with
-    generated (build times and the engine) described in its default graph."""
+    generated (build times and the engine) described in its default graph. The sixth graph, private-pack, is written only when
+    include_private_graphs is true."""
     from .rdf import to_dataset, to_rdf
     from .rdf import serialize_trig
-    ttl = to_rdf(nodes, stated_rows, metrics, today).serialize(format="turtle")
-    ds = to_dataset(nodes, edge_rows, inferred_edges, findings, cfg.ontology_dir / "cortex.ttl", metrics, today, generated)
+    from .rdf import split_private
+    public_nodes, public_rows, _pn, _pe = split_private(nodes, stated_rows)   # a node of origin local-pack never reaches graph.ttl
+    ttl = to_rdf(public_nodes, public_rows, metrics, today).serialize(format="turtle")
+    ds = to_dataset(nodes, edge_rows, inferred_edges, findings, cfg.ontology_dir / "cortex.ttl", metrics, today, generated,
+                    include_private=cfg.include_private_graphs)
     return ttl, serialize_trig(ds)
 
 
@@ -543,7 +697,8 @@ def refresh_dataset(cfg: Config) -> None:
     today = inferred.get("today") or date.today().isoformat()
     generated = {"built": graph.get("built"), "inferred_built": inferred.get("built"), "engine": inferred.get("engine"),
                  "rules_sha256": inferred.get("rules_sha256")}
-    ds = to_dataset(nodes, rows, inferred_edges, findings, cfg.ontology_dir / "cortex.ttl", metrics, today, generated)
+    ds = to_dataset(nodes, rows, inferred_edges, findings, cfg.ontology_dir / "cortex.ttl", metrics, today, generated,
+                    include_private=cfg.include_private_graphs)
     try:
         atomic_write(cfg.data_dir / "graph.trig", serialize_trig(ds))
     except OSError as exc:
@@ -611,6 +766,7 @@ def build(cfg: Config, today: str | None = None) -> dict:
     before = set(h.edges)
     add_restatements(h)
     computed = set(h.edges) - before
+    transparency_stage(h, cfg)
     apply_assertions(h, cfg)
     dropped = drop_dangling(h)
     drop_sensitivity(h, cfg)

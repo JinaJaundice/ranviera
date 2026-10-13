@@ -5,7 +5,7 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-# The Cortex ontology (OWL 2 DL, version 0.2.0 of 6 October 2026). The classes and relations follow docs/ONTOLOGY.md, which is
+# The Cortex ontology (OWL 2 DL, version 0.3.0 of 7 October 2026). The classes and relations follow docs/ONTOLOGY.md, which is
 # changed first. The change log is in docs/ONTOLOGY.md. kg/tests/test_ontology.py checks the file against the OWL 2 DL
 # restrictions that apply to it.
 # Instances are written as cxi:<prefix>/<slug> and are built by the compiler, so none is declared here.
@@ -13,8 +13,8 @@
 <https://cortex.local/ont> a owl:Ontology ;
     rdfs:label "Cortex ontology" ;
     rdfs:comment "The classes, relations and properties of the Cortex knowledge graph of the Claude Code set-up." ;
-    owl:versionIRI <https://cortex.local/ont/0.2.0> ;
-    owl:versionInfo "0.2.0" .
+    owl:versionIRI <https://cortex.local/ont/0.3.0> ;
+    owl:versionInfo "0.3.0" .
 
 cx:inverseLabel a owl:AnnotationProperty ;
     rdfs:label "inverse label" ;
@@ -194,7 +194,7 @@ cx:Folder a owl:Class ;
 
 cx:Organisation a owl:Class ;
     rdfs:label "Organisation" ;
-    rdfs:comment "An organisation, such as org:ey." ;
+    rdfs:comment "An organisation, such as org:example." ;
     cx:family "world" .
 
 cx:Client a owl:Class ;
@@ -205,7 +205,7 @@ cx:Client a owl:Class ;
 
 cx:Person a owl:Class ;
     rdfs:label "Person" ;
-    rdfs:comment "A named person (client-confidential unless EY staff)." ;
+    rdfs:comment "A named person (client-confidential unless a member of the firm's own staff)." ;
     cx:family "world" .
 
 cx:Instrument a owl:Class ;
@@ -230,7 +230,7 @@ cx:Concept a owl:Class ;
 # members, and Client is left out because it is a subclass of Organisation.
 
 [] a owl:AllDisjointClasses ;
-    owl:members ( cx:MapFile cx:RuleFile cx:OutputStyle cx:Skill cx:ReferenceFile cx:GuideFile cx:Section cx:Rule cx:Route cx:TaskType cx:PathScope cx:Agent cx:Hook cx:Tool cx:Gate cx:FaultCheck cx:ScheduledTask cx:BuiltinTool cx:LaunchConfig cx:RecordStore cx:MemoryFile cx:BacklogSection cx:OpenItem cx:HistoryFile cx:Decision cx:Project cx:App cx:Deliverable cx:Template cx:Folder cx:Organisation cx:Person cx:Instrument cx:ConceptScheme cx:Concept cx:Finding ) .
+    owl:members ( cx:MapFile cx:RuleFile cx:OutputStyle cx:Skill cx:ReferenceFile cx:GuideFile cx:Section cx:Rule cx:Route cx:TaskType cx:PathScope cx:Agent cx:Hook cx:Tool cx:Gate cx:FaultCheck cx:ScheduledTask cx:BuiltinTool cx:LaunchConfig cx:RecordStore cx:MemoryFile cx:BacklogSection cx:OpenItem cx:HistoryFile cx:Decision cx:Project cx:App cx:Deliverable cx:Template cx:Folder cx:Organisation cx:Person cx:Instrument cx:ConceptScheme cx:Concept cx:Finding cx:DeployedAgent cx:InstructionVersion cx:ModelVersion cx:KnowledgeSource cx:PolicyClause cx:Mapping cx:Run cx:Step cx:ToolCall cx:Evidence cx:StatedRationale cx:AgentDecision cx:Review cx:Sample cx:BackTest cx:LedgerEntry cx:TestScript cx:TestStep cx:Requirement cx:LegislativeProvision cx:Obligation cx:PolicyException cx:Control cx:ControlFramework cx:Policy cx:OrganisationalRole cx:Typology cx:RiskIndicator ) .
 
 # ---- Relations ----
 # Domains and ranges are inference axioms in OWL, not checks: a reasoner that meets an edge outside them concludes that the
@@ -241,8 +241,8 @@ cx:contains a owl:ObjectProperty ;
     rdfs:label "contains" ;
     cx:inverseLabel "is contained in" ;
     rdfs:comment "A file holds its sections and a skill its files, a section holds its rules, an agent body holds its sections, a record store holds its decisions and a tool holds its fault checks." ;
-    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:InstructionFile cx:Section cx:Agent cx:RecordStore cx:Tool ) ] ;
-    rdfs:range [ a owl:Class ; owl:unionOf ( cx:InstructionFile cx:Section cx:Rule cx:Decision cx:FaultCheck ) ] .
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:InstructionFile cx:Section cx:Agent cx:RecordStore cx:Tool cx:Run cx:Step cx:TestScript ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:InstructionFile cx:Section cx:Rule cx:Decision cx:FaultCheck cx:Step cx:ToolCall cx:StatedRationale cx:TestStep ) ] .
 
 cx:triggers a owl:ObjectProperty ;
     rdfs:label "triggers" ;
@@ -272,8 +272,8 @@ cx:checkedBy a owl:ObjectProperty ;
 cx:appliesTo a owl:ObjectProperty ;
     rdfs:label "applies to" ;
     cx:inverseLabel "is applied by" ;
-    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:RuleFile cx:Rule ) ] ;
-    rdfs:range [ a owl:Class ; owl:unionOf ( cx:PathScope cx:TaskType ) ] .
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:RuleFile cx:Rule cx:Obligation ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:PathScope cx:TaskType cx:DeployedAgent ) ] .
 
 cx:loads a owl:ObjectProperty ;
     rdfs:label "loads" ;
@@ -308,8 +308,8 @@ cx:supersedes a owl:ObjectProperty , owl:AsymmetricProperty ;
 cx:conflictsWith a owl:ObjectProperty , owl:SymmetricProperty ;
     rdfs:label "conflicts with" ;
     cx:inverseLabel "conflicts with" ;
-    rdfs:domain cx:Rule ;
-    rdfs:range cx:Rule .
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:InstructionVersion ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:Rule cx:InstructionVersion ) ] .
 
 cx:governs a owl:ObjectProperty ;
     rdfs:label "governs" ;
@@ -370,7 +370,7 @@ cx:usesTemplate a owl:ObjectProperty ;
 cx:ownedBy a owl:ObjectProperty ;
     rdfs:label "is owned by" ;
     cx:inverseLabel "owns" ;
-    rdfs:domain cx:OpenItem ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:OpenItem cx:DeployedAgent cx:InstructionVersion cx:Mapping ) ] ;
     rdfs:range cx:Person .
 
 cx:linksTo a owl:ObjectProperty ;
@@ -424,8 +424,8 @@ cx:date a owl:DatatypeProperty , owl:FunctionalProperty ;
 
 cx:status a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "status" ;
-    rdfs:comment "The state of the node: active, maintained, parked, blocked, superseded, archived or retired." ;
-    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "active" "maintained" "parked" "blocked" "superseded" "archived" "retired" ) ] .
+    rdfs:comment "The state of the node: active, maintained, parked, blocked, superseded, archived or retired, and for the agent side draft, approved, withdrawn, pending, proposed, ratified or rejected." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "active" "maintained" "parked" "blocked" "superseded" "archived" "retired" "draft" "approved" "withdrawn" "pending" "proposed" "ratified" "rejected" ) ] .
 
 cx:sensitivity a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "sensitivity" ;
@@ -435,7 +435,7 @@ cx:sensitivity a owl:DatatypeProperty , owl:FunctionalProperty ;
 cx:family a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "family" ;
     rdfs:comment "The family of a class, which sets the colour of its nodes in the graph. A class declaration carries it, and so does each node of the class." ;
-    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "instruction" "machinery" "record" "work" "world" "language" ) ] .
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "instruction" "machinery" "record" "work" "world" "language" "agent" "obligation" ) ] .
 
 cx:evidence a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "evidence" ;
@@ -444,8 +444,8 @@ cx:evidence a owl:DatatypeProperty , owl:FunctionalProperty ;
 
 cx:text a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "text" ;
-    rdfs:comment "The text of a rule or of an open item." ;
-    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:OpenItem ) ] ;
+    rdfs:comment "The text of a rule, of an open item, of a policy clause, of a provision, of a typology or of a risk indicator." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:OpenItem cx:PolicyClause cx:LegislativeProvision cx:Typology cx:RiskIndicator ) ] ;
     rdfs:range xsd:string .
 
 cx:modal a owl:DatatypeProperty , owl:FunctionalProperty ;
@@ -601,8 +601,8 @@ cx:overrides a owl:ObjectProperty , owl:AsymmetricProperty ;
     cx:inverseLabel "is overridden by" ;
     rdfs:comment "Inferred by rule R03: of 2 conflicting rules that both state a date, the later one applies." ;
     rdfs:subPropertyOf cx:conflictsWith ;
-    rdfs:domain cx:Rule ;
-    rdfs:range cx:Rule .
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:InstructionVersion ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:Rule cx:InstructionVersion ) ] .
 
 cx:supersedesChain a owl:ObjectProperty , owl:TransitiveProperty ;
     rdfs:label "supersedes through a chain" ;
@@ -615,3 +615,547 @@ cx:appliesToTask a owl:ObjectProperty ;
     rdfs:comment "Inferred by rule R05: a rule applies to a task type that reads first the file holding it." ;
     rdfs:domain cx:Rule ;
     rdfs:range cx:TaskType .
+
+# ---- Agent transparency extension (7 October 2026, docs/ONTOLOGY.md) ----
+# The classes of the agent side and the obligation side, and their relations and properties. The bank side classes (obligation,
+# provision, policy, control) are also pack classes that the chain profile maps. They are declared below by their local names so
+# that every node has a declared kind, and the relations that reach them (realises, satisfies, expressedIn, notDischargedBy,
+# detects, signals) leave the domain or range open.
+
+# PROV-O terms that the classes below align to are declared so that every entity has one declared kind.
+<http://www.w3.org/ns/prov#Activity> a owl:Class .
+<http://www.w3.org/ns/prov#Agent> a owl:Class .
+<http://www.w3.org/ns/prov#Entity> a owl:Class .
+
+cx:DeployedAgent a owl:Class ;
+    rdfs:label "DeployedAgent" ;
+    rdfs:comment "An agent in service, with an intended use, a risk tier, an owner, approved instruction versions and approved model and knowledge sources." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Agent> ;
+    cx:family "agent" .
+
+cx:InstructionVersion a owl:Class ;
+    rdfs:label "InstructionVersion" ;
+    rdfs:comment "The text of one instruction in force over an interval, with its hash, version and validity dates." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> ;
+    cx:family "agent" .
+
+cx:ModelVersion a owl:Class ;
+    rdfs:label "ModelVersion" ;
+    rdfs:comment "A pinned model, with its provider, model identifier and parameters." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> ;
+    cx:family "agent" .
+
+cx:KnowledgeSource a owl:Class ;
+    rdfs:label "KnowledgeSource" ;
+    rdfs:comment "A retrieval source, with the hash and date of its snapshot and its licence." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> ;
+    cx:family "agent" .
+
+cx:PolicyClause a owl:Class ;
+    rdfs:label "PolicyClause" ;
+    rdfs:comment "One clause of a policy, a standard or a procedure." ;
+    cx:family "obligation" .
+
+cx:Mapping a owl:Class ;
+    rdfs:label "Mapping" ;
+    rdfs:comment "A reified design time link between 2 nodes, with a status, an owner, a maker and a checker." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> ;
+    cx:family "agent" .
+
+cx:Run a owl:Class ;
+    rdfs:label "Run" ;
+    rdfs:comment "One run of a deployed agent." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Activity> ;
+    cx:family "agent" .
+
+cx:Step a owl:Class ;
+    rdfs:label "Step" ;
+    rdfs:comment "One record of a run." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Activity> ;
+    cx:family "agent" .
+
+cx:ToolCall a owl:Class ;
+    rdfs:label "ToolCall" ;
+    rdfs:comment "A tool or MCP call inside a step, with input and output hashes." ;
+    cx:family "agent" .
+
+cx:Evidence a owl:Class ;
+    rdfs:label "Evidence" ;
+    rdfs:comment "An item that the agent read, with its hash and source reference." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> ;
+    cx:family "agent" .
+
+cx:StatedRationale a owl:Class ;
+    rdfs:label "StatedRationale" ;
+    rdfs:comment "The text that the agent wrote to explain a decision, held as a hash and never verified as the cause." ;
+    cx:family "agent" .
+
+cx:AgentDecision a owl:Class ;
+    rdfs:label "AgentDecision" ;
+    rdfs:comment "The decision of the agent, shown as 'Decision', with an outcome." ;
+    rdfs:subClassOf <http://www.w3.org/ns/prov#Entity> ;
+    cx:family "agent" .
+
+cx:Review a owl:Class ;
+    rdfs:label "Review" ;
+    rdfs:comment "A human review of a decision." ;
+    cx:family "agent" .
+
+cx:Sample a owl:Class ;
+    rdfs:label "Sample" ;
+    rdfs:comment "A sample of runs drawn for review." ;
+    cx:family "agent" .
+
+cx:BackTest a owl:Class ;
+    rdfs:label "BackTest" ;
+    rdfs:comment "A replay of closed alerts through a named instruction version and model version." ;
+    cx:family "agent" .
+
+cx:LedgerEntry a owl:Class ;
+    rdfs:label "LedgerEntry" ;
+    rdfs:comment "One entry of the run ledger, chained to the previous entry by hash." ;
+    cx:family "agent" .
+
+cx:TestScript a owl:Class ;
+    rdfs:label "TestScript" ;
+    rdfs:comment "A second line test script." ;
+    cx:family "obligation" .
+
+cx:TestStep a owl:Class ;
+    rdfs:label "TestStep" ;
+    rdfs:comment "One step of a test script." ;
+    cx:family "obligation" .
+
+cx:Requirement a owl:Class ;
+    rdfs:label "Requirement" ;
+    rdfs:comment "One requirement that a test step tests." ;
+    cx:family "obligation" .
+
+# The bank side classes that the importers emit (7 October 2026). The chain profile maps each to a pack class, so the rules
+# read the class identifier and the profile supplies the IRI. They are declared here so that every node has one declared kind.
+cx:LegislativeProvision a owl:Class ;
+    rdfs:label "LegislativeProvision" ;
+    rdfs:comment "A provision of legislation or guidance, with its text hash, version date and licence. Its id starts provision:." ;
+    cx:family "obligation" .
+
+cx:Obligation a owl:Class ;
+    rdfs:label "Obligation" ;
+    rdfs:comment "A deontic statement (an obligation, a permission, a prohibition or an expectation) that a provision expresses. Its id starts obligation:." ;
+    cx:family "obligation" .
+
+cx:PolicyException a owl:Class ;
+    rdfs:label "PolicyException" ;
+    rdfs:comment "An approved exception to a policy or an obligation, with an expiry. Its id starts exception:." ;
+    cx:family "obligation" .
+
+cx:Control a owl:Class ;
+    rdfs:label "Control" ;
+    rdfs:comment "A control of the bank, of a type such as preventive or detective. Its id starts control:." ;
+    cx:family "obligation" .
+
+cx:ControlFramework a owl:Class ;
+    rdfs:label "ControlFramework" ;
+    rdfs:comment "A framework or framework activity that groups controls. Its id starts framework:." ;
+    cx:family "obligation" .
+
+cx:Policy a owl:Class ;
+    rdfs:label "Policy" ;
+    rdfs:comment "A policy, standard, procedure or guideline of the bank. Its id starts policy:." ;
+    cx:family "obligation" .
+
+cx:OrganisationalRole a owl:Class ;
+    rdfs:label "OrganisationalRole" ;
+    rdfs:comment "A role of the bank that owns a policy, a control or an agent. Its id starts role:." ;
+    cx:family "obligation" .
+
+cx:Typology a owl:Class ;
+    rdfs:label "Typology" ;
+    rdfs:comment "A pattern of financial crime that a bank watches for, such as the use of intermediaries to evade sanctions, with a source address. Its id starts typology:." ;
+    cx:family "obligation" .
+
+cx:RiskIndicator a owl:Class ;
+    rdfs:label "RiskIndicator" ;
+    rdfs:comment "A sign that may point to a typology, for example a change of spelling of a name between payments. Its id starts riskind:." ;
+    cx:family "obligation" .
+
+cx:implementsClause a owl:ObjectProperty ;
+    rdfs:label "implements clause" ;
+    cx:inverseLabel "is implemented by" ;
+    rdfs:comment "An instruction version implements a policy clause." ;
+    rdfs:domain cx:InstructionVersion ;
+    rdfs:range cx:PolicyClause .
+
+cx:realises a owl:ObjectProperty ;
+    rdfs:label "realises" ;
+    cx:inverseLabel "is realised by" ;
+    rdfs:comment "A policy clause is realised by a control. The class of the control comes from the chain profile, so the range is open." ;
+    rdfs:domain cx:PolicyClause .
+
+cx:satisfies a owl:ObjectProperty ;
+    rdfs:label "satisfies" ;
+    cx:inverseLabel "is satisfied by" ;
+    rdfs:comment "A control satisfies an obligation, a permission or a prohibition. Both classes come from the chain profile, so the domain and range are open." .
+
+cx:expressedIn a owl:ObjectProperty ;
+    rdfs:label "expressed in" ;
+    cx:inverseLabel "expresses" ;
+    rdfs:comment "An obligation is expressed in a legislative provision. Both classes come from the chain profile." .
+
+cx:notDischargedBy a owl:ObjectProperty ;
+    rdfs:label "not discharged by" ;
+    cx:inverseLabel "does not discharge" ;
+    rdfs:comment "A ratified statement that the agent does not discharge the obligation." ;
+    rdfs:range cx:DeployedAgent .
+
+cx:detects a owl:ObjectProperty ;
+    rdfs:label "detects" ;
+    cx:inverseLabel "is detected by" ;
+    rdfs:comment "An instruction version detects a typology of the financial crime pack." ;
+    rdfs:domain cx:InstructionVersion .
+
+cx:signals a owl:ObjectProperty ;
+    rdfs:label "signals" ;
+    cx:inverseLabel "is signalled by" ;
+    rdfs:comment "A risk indicator signals a typology. Both classes belong to the financial crime pack." .
+
+cx:operatesUnder a owl:ObjectProperty ;
+    rdfs:label "operates under" ;
+    cx:inverseLabel "is operated under by" ;
+    rdfs:comment "A deployed agent operates under an approved instruction version." ;
+    rdfs:domain cx:DeployedAgent ;
+    rdfs:range cx:InstructionVersion .
+
+cx:drawsOn a owl:ObjectProperty ;
+    rdfs:label "draws on" ;
+    cx:inverseLabel "is drawn on by" ;
+    rdfs:comment "A deployed agent draws on an approved model version or knowledge source." ;
+    rdfs:domain cx:DeployedAgent ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:ModelVersion cx:KnowledgeSource ) ] .
+
+cx:performedBy a owl:ObjectProperty ;
+    rdfs:label "performed by" ;
+    cx:inverseLabel "performed" ;
+    rdfs:comment "A run is performed by a deployed agent." ;
+    rdfs:domain cx:Run ;
+    rdfs:range cx:DeployedAgent .
+
+cx:ranOn a owl:ObjectProperty ;
+    rdfs:label "ran on" ;
+    cx:inverseLabel "was run by" ;
+    rdfs:comment "A run ran on a model version." ;
+    rdfs:domain cx:Run ;
+    rdfs:range cx:ModelVersion .
+
+cx:inContext a owl:ObjectProperty ;
+    rdfs:label "in context" ;
+    cx:inverseLabel "was in context of" ;
+    rdfs:comment "The instruction version that the hooks or the trace record as loaded at a step." ;
+    rdfs:domain cx:Step ;
+    rdfs:range cx:InstructionVersion .
+
+cx:citesInstruction a owl:ObjectProperty ;
+    rdfs:label "cites instruction" ;
+    cx:inverseLabel "is cited by" ;
+    rdfs:comment "The instruction version that the agent names for a step, which is the claim of the agent." ;
+    rdfs:domain cx:Step ;
+    rdfs:range cx:InstructionVersion .
+
+cx:usedEvidence a owl:ObjectProperty ;
+    rdfs:label "used evidence" ;
+    cx:inverseLabel "was used at" ;
+    rdfs:comment "An item of evidence that a step read." ;
+    rdfs:domain cx:Step ;
+    rdfs:range cx:Evidence .
+
+cx:sourcedFrom a owl:ObjectProperty ;
+    rdfs:label "sourced from" ;
+    cx:inverseLabel "is the source of" ;
+    rdfs:comment "An item of evidence comes from a knowledge source." ;
+    rdfs:domain cx:Evidence ;
+    rdfs:range cx:KnowledgeSource .
+
+cx:informedDecision a owl:ObjectProperty ;
+    rdfs:label "informed decision" ;
+    cx:inverseLabel "was informed by" ;
+    rdfs:comment "A step informed a decision." ;
+    rdfs:domain cx:Step ;
+    rdfs:range cx:AgentDecision .
+
+cx:reviewedBy a owl:ObjectProperty ;
+    rdfs:label "reviewed by" ;
+    cx:inverseLabel "reviewed" ;
+    rdfs:comment "A decision is reviewed in a review." ;
+    rdfs:domain cx:AgentDecision ;
+    rdfs:range cx:Review .
+
+cx:sampledFrom a owl:ObjectProperty ;
+    rdfs:label "sampled from" ;
+    cx:inverseLabel "was sampled in" ;
+    rdfs:comment "A sample draws on a run." ;
+    rdfs:domain cx:Sample ;
+    rdfs:range cx:Run .
+
+cx:testedAgainst a owl:ObjectProperty ;
+    rdfs:label "tested against" ;
+    cx:inverseLabel "was tested by" ;
+    rdfs:comment "A back test or a review is tested against a test step or a requirement." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:BackTest cx:Review ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:TestStep cx:Requirement ) ] .
+
+cx:approvedBy a owl:ObjectProperty ;
+    rdfs:label "approved by" ;
+    cx:inverseLabel "approved" ;
+    rdfs:comment "The person who approved an instruction version or ratified a mapping." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:InstructionVersion cx:Mapping ) ] ;
+    rdfs:range cx:Person .
+
+cx:proposedBy a owl:ObjectProperty ;
+    rdfs:label "proposed by" ;
+    cx:inverseLabel "proposed" ;
+    rdfs:comment "The person who proposed an instruction version or a mapping." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:InstructionVersion cx:Mapping ) ] ;
+    rdfs:range cx:Person .
+
+cx:statesRationale a owl:ObjectProperty ;
+    rdfs:label "states rationale" ;
+    cx:inverseLabel "is the rationale of" ;
+    rdfs:comment "A decision has the rationale that the agent wrote. Added on 7 October 2026 for shape F08 and to be recorded in docs/ONTOLOGY.md." ;
+    rdfs:domain cx:AgentDecision ;
+    rdfs:range cx:StatedRationale .
+
+cx:entryOf a owl:ObjectProperty ;
+    rdfs:label "entry of" ;
+    cx:inverseLabel "has the entry" ;
+    rdfs:comment "A ledger entry belongs to a run. Added on 7 October 2026 for shape F14 and to be recorded in docs/ONTOLOGY.md." ;
+    rdfs:domain cx:LedgerEntry ;
+    rdfs:range cx:Run .
+
+cx:origin a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "origin" ;
+    rdfs:comment "Where the node was loaded from, such as local-pack for the local packs. The public export drops a node with an origin." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:modalityNote a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "modalityNote" ;
+    rdfs:comment "A note on the deontic modality, such as expectation for a hub expectation." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:intendedUse a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "intendedUse" ;
+    rdfs:comment "What the deployed agent is approved to do." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:riskTier a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "riskTier" ;
+    rdfs:comment "The risk tier that the owner assigned to the deployed agent." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:lastValidated a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "lastValidated" ;
+    rdfs:comment "The date on which the deployed agent was last validated." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#date> .
+
+cx:hash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "hash" ;
+    rdfs:comment "The sha256 of the text or content of the node." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:promptHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "promptHash" ;
+    rdfs:comment "The sha256 of the prompt that a run started with." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:validFrom a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "validFrom" ;
+    rdfs:comment "The first day on which the instruction version applies." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#date> .
+
+cx:validTo a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "validTo" ;
+    rdfs:comment "The last day on which the instruction version applies, absent while it is open." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#date> .
+
+cx:versionDate a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "versionDate" ;
+    rdfs:comment "The date of the version of a source." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#date> .
+
+cx:version a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "version" ;
+    rdfs:comment "The version label." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:provider a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "provider" ;
+    rdfs:comment "The provider of a model." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:modelId a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "modelId" ;
+    rdfs:comment "The identifier of a pinned model." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:parameters a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "parameters" ;
+    rdfs:comment "The parameters of a model as canonical JSON." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:snapshotHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "snapshotHash" ;
+    rdfs:comment "The sha256 of the snapshot of a knowledge source." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:snapshotDate a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "snapshotDate" ;
+    rdfs:comment "The date of the snapshot of a knowledge source." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#date> .
+
+cx:licence a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "licence" ;
+    rdfs:comment "The licence under which a knowledge source is used." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:startedAt a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "startedAt" ;
+    rdfs:comment "The time at which a run started." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#dateTime> .
+
+cx:endedAt a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "endedAt" ;
+    rdfs:comment "The time at which a run ended." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#dateTime> .
+
+cx:replayStatus a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "replayStatus" ;
+    rdfs:comment "Whether a run can be replayed." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "replayable" "not-replayable" ) ] .
+
+cx:missingItem a owl:DatatypeProperty ;
+    rdfs:label "missingItem" ;
+    rdfs:comment "An item that stops a run from being replayed." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:caseRef a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "caseRef" ;
+    rdfs:comment "The reference of the case, which is held in the financial crime pack and never here." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:ordinal a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "ordinal" ;
+    rdfs:comment "The position of a step in its run." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#integer> .
+
+cx:stepKind a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "stepKind" ;
+    rdfs:comment "The kind of a step." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "start" "instructions" "retrieval" "tool" "evidence" "rationale" "decision" "review" "end" ) ] .
+
+cx:ts a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "ts" ;
+    rdfs:comment "The time of a step." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#dateTime> .
+
+cx:inputHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "inputHash" ;
+    rdfs:comment "The sha256 of the input of a tool call." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:outputHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "outputHash" ;
+    rdfs:comment "The sha256 of the output of a tool call." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:sourceHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "sourceHash" ;
+    rdfs:comment "The sha256 of the source that an item of evidence came from." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:sourceRef a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "sourceRef" ;
+    rdfs:comment "The reference of the source of an item of evidence." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:causalStatus a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "causalStatus" ;
+    rdfs:comment "Whether the stated rationale is known to be the cause of the decision. It is always unverified." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "unverified" ) ] .
+
+cx:outcome a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "outcome" ;
+    rdfs:comment "The outcome of a decision, from the scheme of outcomes." ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "close" "escalate" "request-information" ) ] .
+
+cx:reviewer a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "reviewer" ;
+    rdfs:comment "The identifier of the reviewer." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:verdict a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "verdict" ;
+    rdfs:comment "The verdict of a review." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:override a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "override" ;
+    rdfs:comment "Whether the reviewer overrode the decision." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#boolean> .
+
+cx:overrideReason a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "overrideReason" ;
+    rdfs:comment "The reason that the reviewer gave for an override." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:timeOpen a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "timeOpen" ;
+    rdfs:comment "The seconds for which the reviewer held the decision open." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#integer> .
+
+cx:itemsViewed a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "itemsViewed" ;
+    rdfs:comment "The number of items that the reviewer viewed." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#integer> .
+
+cx:checksTicked a owl:DatatypeProperty ;
+    rdfs:label "checksTicked" ;
+    rdfs:comment "A check that the reviewer ticked." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:seq a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "seq" ;
+    rdfs:comment "The sequence number of a ledger entry." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#integer> .
+
+cx:recordHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "recordHash" ;
+    rdfs:comment "The sha256 of the record that a ledger entry holds." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:prevHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "prevHash" ;
+    rdfs:comment "The hash of the previous ledger entry." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:entryHash a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "entryHash" ;
+    rdfs:comment "The hash of the ledger entry." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:reviewed a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "reviewed" ;
+    rdfs:comment "The date on which a test script was last reviewed." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#date> .
+
+cx:sourceAnchor a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "sourceAnchor" ;
+    rdfs:comment "The sha256 of the source end of a mapping at ratification." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:targetAnchor a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "targetAnchor" ;
+    rdfs:comment "The sha256 of the target end of a mapping at ratification." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#string> .
+
+cx:ratifiedOn a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "ratifiedOn" ;
+    rdfs:comment "The date on which a mapping was ratified." ;
+    rdfs:range <http://www.w3.org/2001/XMLSchema#date> .

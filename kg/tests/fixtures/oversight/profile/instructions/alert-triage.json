@@ -1,0 +1,99 @@
+{
+  "v": 1,
+  "agent": "dagent:alert-triage",
+  "owner": "person:ana-reyes",
+  "intended_use": "Triage sanctions screening alerts for Northgate Synthetic Bank.",
+  "risk_tier": "high",
+  "approved_models": [
+    "model:model-a"
+  ],
+  "instructions": [
+    {
+      "id": "instr:alert-triage-escalate-match",
+      "label": "Escalate a match on name and date of birth",
+      "file": "escalation-criteria.md",
+      "detects": [],
+      "versions": [
+        {
+          "id": "instr:alert-triage-escalate-match-v1",
+          "version": 1,
+          "text": "alert-triage-escalate-match-v1.md",
+          "hash": "sha256:015faaa9abc4439dfa4585607844d8af4756884a323df3315ed28fae4d2dee1b",
+          "status": "approved",
+          "maker": "ana-reyes",
+          "approver": "bob-chen",
+          "approved_hash": "sha256:015faaa9abc4439dfa4585607844d8af4756884a323df3315ed28fae4d2dee1b",
+          "valid_from": "2026-09-01",
+          "valid_to": null,
+          "history": [
+            {
+              "ts": "2026-09-01T09:00:00Z",
+              "action": "draft",
+              "by": "ana-reyes",
+              "note": null
+            },
+            {
+              "ts": "2026-09-01T09:00:00Z",
+              "action": "approve",
+              "by": "bob-chen",
+              "note": null
+            }
+          ]
+        },
+        {
+          "id": "instr:alert-triage-escalate-match-v2",
+          "version": 2,
+          "text": "alert-triage-escalate-match-v2.md",
+          "hash": "sha256:2702440aa7ec2f26b183929b36a2e3fec41459c45deef0327aa6b47e6a0876f2",
+          "status": "draft",
+          "maker": "ana-reyes",
+          "approver": null,
+          "approved_hash": null,
+          "valid_from": null,
+          "valid_to": null,
+          "history": [
+            {
+              "ts": "2026-10-05T09:00:00Z",
+              "action": "draft",
+              "by": "ana-reyes",
+              "note": null
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "instr:alert-triage-narrative",
+      "label": "Write the narrative",
+      "file": "narrative-standard.md",
+      "versions": [
+        {
+          "id": "instr:alert-triage-narrative-v1",
+          "version": 1,
+          "text": "alert-triage-narrative-v1.md",
+          "hash": "sha256:616b557ac29a69bff89211033ebdd5e720053aef51e61bb43bc97f3c10e90cb2",
+          "status": "approved",
+          "maker": "ana-reyes",
+          "approver": "bob-chen",
+          "approved_hash": "sha256:616b557ac29a69bff89211033ebdd5e720053aef51e61bb43bc97f3c10e90cb2",
+          "valid_from": "2026-09-01",
+          "valid_to": null,
+          "history": [
+            {
+              "ts": "2026-09-01T09:00:00Z",
+              "action": "draft",
+              "by": "ana-reyes",
+              "note": null
+            },
+            {
+              "ts": "2026-09-01T09:00:00Z",
+              "action": "approve",
+              "by": "bob-chen",
+              "note": null
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

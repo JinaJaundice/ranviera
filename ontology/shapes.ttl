@@ -6,14 +6,14 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-# Version 0.3.0 of 6 October 2026. The SHACL shapes S01 to S09 and S11 to S26 of docs/ONTOLOGY.md (S10 was removed). Each shape and each property shape in it carries its check
+# Version 0.4.0 of 7 October 2026 (0.3.0 of 6 October 2026 held S01 to S26, and 0.4.0 adds the shapes F01 to F14). The SHACL shapes S01 to S09 and S11 to S26 of docs/ONTOLOGY.md (S10 was removed). Each shape and each property shape in it carries its check
 # identifier as cx:checkId, so that a result can be traced to the check by walking sh:sourceShape.
 # The path checks P01 to P08 and the checks that SHACL cannot express are made by kg/cortex_kg/validate.py.
 
 <https://cortex.local/shapes> a owl:Ontology ;
     rdfs:label "Cortex shapes" ;
-    owl:versionIRI <https://cortex.local/shapes/0.3.0> ;
-    owl:versionInfo "0.3.0" ;
+    owl:versionIRI <https://cortex.local/shapes/0.4.0> ;
+    owl:versionInfo "0.4.0" ;
     sh:declare [ sh:prefix "cx" ; sh:namespace "https://cortex.local/ont#"^^xsd:anyURI ] ,
                [ sh:prefix "skos" ; sh:namespace "http://www.w3.org/2004/02/skos/core#"^^xsd:anyURI ] ,
                [ sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] ,
@@ -32,7 +32,10 @@ cx:S01Shape a sh:NodeShape ;
         cx:Agent , cx:Hook , cx:Tool , cx:Gate , cx:FaultCheck , cx:ScheduledTask , cx:BuiltinTool , cx:LaunchConfig ,
         cx:RecordStore , cx:MemoryFile , cx:BacklogSection , cx:OpenItem , cx:HistoryFile , cx:Decision ,
         cx:Project , cx:App , cx:Deliverable , cx:Template , cx:Folder ,
-        cx:Organisation , cx:Person , cx:Instrument , cx:ConceptScheme , cx:Concept ;
+        cx:Organisation , cx:Person , cx:Instrument , cx:ConceptScheme , cx:Concept ,
+        cx:DeployedAgent , cx:InstructionVersion , cx:ModelVersion , cx:KnowledgeSource , cx:PolicyClause , cx:Mapping ,
+        cx:Run , cx:Step , cx:ToolCall , cx:Evidence , cx:StatedRationale , cx:AgentDecision , cx:Review , cx:Sample ,
+        cx:BackTest , cx:LedgerEntry , cx:TestScript , cx:TestStep , cx:Requirement ;
     sh:message "Every node must have 1 label, 1 family and 1 sensitivity from the 3 allowed values." ;
     sh:or ( [ sh:class owl:Class ]
             [ sh:property cx:S01Label , cx:S01Family , cx:S01Sensitivity ] ) .
@@ -41,8 +44,8 @@ cx:S01Label a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
     sh:message "Every node must have exactly 1 label." .
 cx:S01Family a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
     sh:path cx:family ; sh:minCount 1 ; sh:maxCount 1 ;
-    sh:in ( "instruction" "machinery" "record" "work" "world" "language" ) ;
-    sh:message "Every node must have exactly 1 family from the 6 allowed values." .
+    sh:in ( "instruction" "machinery" "record" "work" "world" "language" "agent" "obligation" ) ;
+    sh:message "Every node must have exactly 1 family from the 8 allowed values." .
 cx:S01Sensitivity a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
     sh:path cx:sensitivity ; sh:minCount 1 ; sh:maxCount 1 ;
     sh:in ( "public" "internal" "client-confidential" ) ;
@@ -302,8 +305,11 @@ cx:S20Shape a sh:NodeShape ;
         [ sh:class cx:Section ; sh:property [ sh:path cx:contains ; sh:class cx:Rule ] ]
         [ sh:class cx:Agent ; sh:property [ sh:path cx:contains ; sh:class cx:Section ] ]
         [ sh:class cx:RecordStore ; sh:property [ sh:path cx:contains ; sh:class cx:Decision ] ]
-        [ sh:class cx:Tool ; sh:property [ sh:path cx:contains ; sh:class cx:FaultCheck ] ] ) ;
-    sh:message "A file must contain sections or files, a section rules, an agent sections, a record store decisions and a tool fault checks." .
+        [ sh:class cx:Tool ; sh:property [ sh:path cx:contains ; sh:class cx:FaultCheck ] ]
+        [ sh:class cx:Run ; sh:property [ sh:path cx:contains ; sh:class cx:Step ] ]
+        [ sh:class cx:Step ; sh:property [ sh:path cx:contains ; sh:or ( [ sh:class cx:ToolCall ] [ sh:class cx:StatedRationale ] ) ] ]
+        [ sh:class cx:TestScript ; sh:property [ sh:path cx:contains ; sh:class cx:TestStep ] ] ) ;
+    sh:message "A file must contain sections or files, a section rules, an agent sections, a record store decisions, a tool fault checks, a run steps, a step tool calls or a stated rationale and a test script test steps." .
 
 # S21. A decision governs a rule or a file.
 cx:S21Shape a sh:NodeShape ;
@@ -322,11 +328,11 @@ cx:S22Shape a sh:NodeShape ;
     cx:checkId "S22" ;
     sh:severity sh:Violation ;
     sh:targetSubjectsOf cx:conflictsWith ;
-    sh:class cx:Rule ;
-    sh:message "Only a rule conflicts with another rule." ;
+    sh:or ( [ sh:class cx:Rule ] [ sh:class cx:InstructionVersion ] ) ;
+    sh:message "Only a rule or an instruction version conflicts with another of its kind." ;
     sh:property [ a sh:PropertyShape ; cx:checkId "S22" ; sh:severity sh:Violation ;
-        sh:path cx:conflictsWith ; sh:class cx:Rule ;
-        sh:message "A rule must conflict with another rule." ] .
+        sh:path cx:conflictsWith ; sh:or ( [ sh:class cx:Rule ] [ sh:class cx:InstructionVersion ] ) ;
+        sh:message "A rule or an instruction version must conflict with another of its kind." ] .
 
 # S23. Every node that carries a family, a sensitivity, a text or a path has a class of cortex.ttl. A node with none of these
 # would otherwise pass every shape that targets a class, because no shape reaches it.
@@ -379,3 +385,229 @@ cx:S26Section a sh:PropertyShape ; cx:checkId "S26" ; sh:severity sh:Violation ;
 cx:S26Text a sh:PropertyShape ; cx:checkId "S26" ; sh:severity sh:Violation ;
     sh:path cx:text ; sh:minCount 1 ; sh:maxCount 1 ;
     sh:message "Every open item must have exactly 1 text." .
+
+# ---- Agent transparency shapes (7 October 2026, docs/ONTOLOGY.md, F01 to F14) ----
+# S12 for the 2 new families. Every new class is named here, as test_s12_names_every_class requires.
+cx:S12AgentShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:DeployedAgent , cx:InstructionVersion , cx:ModelVersion , cx:KnowledgeSource , cx:Mapping , cx:Run ,
+        cx:Step , cx:ToolCall , cx:Evidence , cx:StatedRationale , cx:AgentDecision , cx:Review , cx:Sample , cx:BackTest ,
+        cx:LedgerEntry ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "agent" ;
+        sh:message "Every node must carry the agent family of its class." ] .
+cx:S12ObligationShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:PolicyClause , cx:TestScript , cx:TestStep , cx:Requirement , cx:LegislativeProvision , cx:Obligation ,
+        cx:PolicyException , cx:Control , cx:ControlFramework , cx:Policy , cx:OrganisationalRole , cx:Typology ,
+        cx:RiskIndicator ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "obligation" ;
+        sh:message "Every node must carry the obligation family of its class." ] .
+
+# The bank side classes are pack classes that the chain profile maps. The shapes below name them under the invented base of the
+# committed default profile (ontology/defaults/pack_profile.json), and kg/cortex_kg/packs.py retargets them to the base of the
+# private profile before it validates the loaded packs.
+# F01. An obligation has 1 or more provisions that express it, a deontic type and an effective date.
+cx:F01Shape a sh:NodeShape ;
+    cx:checkId "F01" ;
+    sh:severity sh:Violation ;
+    sh:targetClass <https://example.test/pack#Obligation> , <https://example.test/pack#Permission> ,
+        <https://example.test/pack#Prohibition> , <https://example.test/pack#DeonticStatement> ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F01" ; sh:severity sh:Violation ;
+        sh:path <https://example.test/pack#expressedIn> ; sh:minCount 1 ;
+        sh:message "An obligation must be expressed in 1 or more provisions." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F01" ; sh:severity sh:Violation ;
+        sh:path <https://example.test/pack#effectiveDate> ; sh:minCount 1 ;
+        sh:message "An obligation must have an effective date." ] ;
+    sh:or ( [ sh:class <https://example.test/pack#Obligation> ] [ sh:class <https://example.test/pack#Permission> ]
+            [ sh:class <https://example.test/pack#Prohibition> ] ) ;
+    sh:message "An obligation must be an Obligation, a Permission or a Prohibition." .
+
+# F02. A mapping has a status of proposed, ratified, rejected or superseded, an owner and a maker.
+cx:F02Shape a sh:NodeShape ;
+    cx:checkId "F02" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Mapping ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F02" ; sh:severity sh:Violation ;
+        sh:path cx:status ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "proposed" "ratified" "rejected" "superseded" ) ;
+        sh:message "A mapping must have 1 status of proposed, ratified, rejected or superseded." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F02" ; sh:severity sh:Violation ;
+        sh:path cx:ownedBy ; sh:minCount 1 ; sh:message "A mapping must have an owner." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F02" ; sh:severity sh:Violation ;
+        sh:path cx:proposedBy ; sh:minCount 1 ; sh:message "A mapping must name the person who made it." ] .
+
+# F03. A ratified mapping has a checker who differs from its maker.
+cx:F03Shape a sh:NodeShape ;
+    cx:checkId "F03" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Mapping ;
+    sh:or ( [ sh:not [ sh:property [ sh:path cx:status ; sh:hasValue "ratified" ] ] ]
+            [ sh:property [ sh:path cx:approvedBy ; sh:minCount 1 ; sh:disjoint cx:proposedBy ] ] ) ;
+    sh:message "A ratified mapping must have a checker who differs from its maker." .
+
+# F04. A ratified mapping records the hash of both ends and its ratification date.
+cx:F04Shape a sh:NodeShape ;
+    cx:checkId "F04" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Mapping ;
+    sh:or ( [ sh:not [ sh:property [ sh:path cx:status ; sh:hasValue "ratified" ] ] ]
+            [ sh:property [ sh:path cx:sourceAnchor ; sh:minCount 1 ] ;
+              sh:property [ sh:path cx:targetAnchor ; sh:minCount 1 ] ;
+              sh:property [ sh:path cx:ratifiedOn ; sh:minCount 1 ] ] ) ;
+    sh:message "A ratified mapping must record the hash of both ends and a ratification date." .
+
+# F05. An approved instruction version has a hash, a start date and an approver.
+cx:F05Shape a sh:NodeShape ;
+    cx:checkId "F05" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:InstructionVersion ;
+    sh:or ( [ sh:not [ sh:property [ sh:path cx:status ; sh:hasValue "approved" ] ] ]
+            [ sh:property [ sh:path cx:hash ; sh:minCount 1 ] ;
+              sh:property [ sh:path cx:validFrom ; sh:minCount 1 ] ;
+              sh:property [ sh:path cx:approvedBy ; sh:minCount 1 ] ] ) ;
+    sh:message "An approved instruction version must have a hash, a validFrom date and an approver." .
+
+# F06. A run has 1 agent, 1 model version, a prompt hash and a start time.
+cx:F06Shape a sh:NodeShape ;
+    cx:checkId "F06" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Run ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F06" ; sh:severity sh:Violation ;
+        sh:path cx:performedBy ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A run must have exactly 1 agent." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F06" ; sh:severity sh:Violation ;
+        sh:path cx:ranOn ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A run must have exactly 1 model version." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F06" ; sh:severity sh:Violation ;
+        sh:path cx:promptHash ; sh:minCount 1 ; sh:message "A run must have a prompt hash." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F06" ; sh:severity sh:Violation ;
+        sh:path cx:startedAt ; sh:minCount 1 ; sh:message "A run must have a start time." ] .
+
+# F07. A step has 1 run, a unique ordinal in that run, a step kind and a time.
+cx:F07Shape a sh:NodeShape ;
+    cx:checkId "F07" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Step ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F07" ; sh:severity sh:Violation ;
+        sh:path [ sh:inversePath cx:contains ] ; sh:minCount 1 ; sh:maxCount 1 ; sh:class cx:Run ;
+        sh:message "A step must belong to exactly 1 run." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F07" ; sh:severity sh:Violation ;
+        sh:path cx:ordinal ; sh:minCount 1 ; sh:maxCount 1 ; sh:message "A step must have exactly 1 ordinal." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F07" ; sh:severity sh:Violation ;
+        sh:path cx:stepKind ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "start" "instructions" "retrieval" "tool" "evidence" "rationale" "decision" "review" "end" ) ;
+        sh:message "A step must have 1 step kind from the 9 allowed values." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F07" ; sh:severity sh:Violation ;
+        sh:path cx:ts ; sh:minCount 1 ; sh:message "A step must have a time." ] ;
+    sh:sparql [ a sh:SPARQLConstraint ;
+        sh:message "A step must have an ordinal that no other step of its run has." ;
+        sh:select """SELECT $this WHERE {
+            ?run <https://cortex.local/ont#contains> $this .
+            ?run <https://cortex.local/ont#contains> ?other .
+            FILTER(?other != $this)
+            $this <https://cortex.local/ont#ordinal> ?o .
+            ?other <https://cortex.local/ont#ordinal> ?o . }""" ] .
+
+# F08. A decision has an outcome from the scheme of outcomes, 1 or more informing steps and a stated rationale.
+cx:F08Shape a sh:NodeShape ;
+    cx:checkId "F08" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:AgentDecision ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F08" ; sh:severity sh:Violation ;
+        sh:path cx:outcome ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "close" "escalate" "request-information" ) ;
+        sh:message "A decision must have 1 outcome of close, escalate or request-information." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F08" ; sh:severity sh:Violation ;
+        sh:path [ sh:inversePath cx:informedDecision ] ; sh:minCount 1 ;
+        sh:message "A decision must have 1 or more informing steps." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F08" ; sh:severity sh:Violation ;
+        sh:path cx:statesRationale ; sh:minCount 1 ; sh:class cx:StatedRationale ;
+        sh:message "A decision must have a stated rationale." ] .
+
+# F09. A stated rationale is unverified, and an item of evidence has a source reference and a hash.
+cx:F09RationaleShape a sh:NodeShape ;
+    cx:checkId "F09" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:StatedRationale ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F09" ; sh:severity sh:Violation ;
+        sh:path cx:causalStatus ; sh:minCount 1 ; sh:maxCount 1 ; sh:hasValue "unverified" ;
+        sh:message "A stated rationale must have the causal status unverified." ] .
+cx:F09EvidenceShape a sh:NodeShape ;
+    cx:checkId "F09" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Evidence ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F09" ; sh:severity sh:Violation ;
+        sh:path cx:sourceRef ; sh:minCount 1 ; sh:message "An item of evidence must have a source reference." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F09" ; sh:severity sh:Violation ;
+        sh:path cx:hash ; sh:minCount 1 ; sh:message "An item of evidence must have a hash." ] .
+
+# F10. A node of the financial crime namespace, or with the origin local-pack, has a sensitivity of internal or higher.
+# The public export drops these nodes, and the exporter makes that check. The shape checks the sensitivity.
+cx:F10OriginShape a sh:NodeShape ;
+    cx:checkId "F10" ;
+    sh:severity sh:Violation ;
+    sh:targetSubjectsOf cx:origin ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F10" ; sh:severity sh:Violation ;
+        sh:path cx:sensitivity ; sh:minCount 1 ; sh:in ( "internal" "client-confidential" ) ;
+        sh:message "A node loaded from the local packs must have a sensitivity of internal or client-confidential." ] .
+cx:F10FcShape a sh:NodeShape ;
+    cx:checkId "F10" ;
+    sh:severity sh:Violation ;
+    sh:target [ a sh:SPARQLTarget ;
+        sh:select """SELECT ?this WHERE { ?this a ?c . FILTER(STRSTARTS(STR(?c), "https://ranviera.local/fc#")) }""" ] ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F10" ; sh:severity sh:Violation ;
+        sh:path cx:sensitivity ; sh:minCount 1 ; sh:in ( "internal" "client-confidential" ) ;
+        sh:message "A node of the financial crime pack must have a sensitivity of internal or client-confidential." ] .
+
+# F11. A deployed agent has an owner, an intended use, a risk tier and 1 or more approved model versions.
+cx:F11Shape a sh:NodeShape ;
+    cx:checkId "F11" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:DeployedAgent ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F11" ; sh:severity sh:Violation ;
+        sh:path cx:ownedBy ; sh:minCount 1 ; sh:message "A deployed agent must have an owner." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F11" ; sh:severity sh:Violation ;
+        sh:path cx:intendedUse ; sh:minCount 1 ; sh:message "A deployed agent must state its intended use." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F11" ; sh:severity sh:Violation ;
+        sh:path cx:riskTier ; sh:minCount 1 ; sh:message "A deployed agent must have a risk tier." ] ,
+      [ a sh:PropertyShape ; cx:checkId "F11" ; sh:severity sh:Violation ;
+        sh:path cx:drawsOn ;
+        sh:qualifiedValueShape [ sh:class cx:ModelVersion ; sh:property [ sh:path cx:status ; sh:hasValue "approved" ] ] ;
+        sh:qualifiedMinCount 1 ;
+        sh:message "A deployed agent must draw on 1 or more approved model versions." ] .
+
+# F12. A review that overrides a decision gives a reason.
+cx:F12Shape a sh:NodeShape ;
+    cx:checkId "F12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Review ;
+    sh:or ( [ sh:not [ sh:property [ sh:path cx:override ; sh:hasValue true ] ] ]
+            [ sh:property [ sh:path cx:overrideReason ; sh:minCount 1 ] ] ) ;
+    sh:message "A review that overrides a decision must give a reason." .
+
+# F13. A run has a replay status, and a run that cannot be replayed names the missing items.
+cx:F13Shape a sh:NodeShape ;
+    cx:checkId "F13" ;
+    sh:severity sh:Warning ;
+    sh:targetClass cx:Run ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F13" ; sh:severity sh:Warning ;
+        sh:path cx:replayStatus ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "replayable" "not-replayable" ) ;
+        sh:message "A run must have a replay status of replayable or not-replayable." ] .
+cx:F13MissingShape a sh:NodeShape ;
+    cx:checkId "F13" ;
+    sh:severity sh:Warning ;
+    sh:targetClass cx:Run ;
+    sh:or ( [ sh:not [ sh:property [ sh:path cx:replayStatus ; sh:hasValue "not-replayable" ] ] ]
+            [ sh:property [ sh:path cx:missingItem ; sh:minCount 1 ] ] ) ;
+    sh:message "A run that cannot be replayed must name the missing items." .
+
+# F14. A run has 1 or more ledger entries.
+cx:F14Shape a sh:NodeShape ;
+    cx:checkId "F14" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Run ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "F14" ; sh:severity sh:Violation ;
+        sh:path [ sh:inversePath cx:entryOf ] ; sh:minCount 1 ;
+        sh:message "A run must have 1 or more ledger entries." ] .

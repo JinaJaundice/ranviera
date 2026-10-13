@@ -17,6 +17,8 @@ GRAPH_BASE = "https://cortex.local/graph/"
 FINDING_BASE = "https://cortex.local/finding/"
 ACTIVITY_BASE = "https://cortex.local/activity/"
 GRAPH_NAMES = ("ontology", "stated", "ratified", "proposed", "inferred")
+PRIVATE_GRAPH = "private-pack"   # the sixth named graph, written only when include_private_graphs is true
+PRIVATE_ORIGIN = "local-pack"       # the origin of a node loaded from the local packs, which never reaches graph.ttl
 LANG = "en-GB"  # the language tag on every SKOS label and definition
 
 # datatype properties taken from the props of a node, with the kind of literal each one holds
@@ -25,6 +27,17 @@ PROP_KINDS = {
     "event": "string", "matcher": "string", "command": "string", "pattern": "string",
     "memoryType": "string", "bytes": "integer", "indexed": "boolean", "async": "boolean",
     "fingerprint": "string", "tools": "string", "termStatus": "string", "severity": "string",
+    # the agent side properties of docs/ONTOLOGY.md (7 October 2026)
+    "caseRef": "string", "causalStatus": "string", "checksTicked": "string", "endedAt": "dateTime", "hash": "string",
+    "inputHash": "string", "intendedUse": "string", "itemsViewed": "integer", "licence": "string", "modelId": "string",
+    "ordinal": "integer", "outcome": "string", "outputHash": "string", "override": "boolean", "overrideReason": "string",
+    "parameters": "string", "promptHash": "string", "provider": "string", "replayStatus": "string", "reviewer": "string",
+    "riskTier": "string", "snapshotDate": "date", "snapshotHash": "string", "sourceHash": "string", "sourceRef": "string",
+    "startedAt": "dateTime", "stepKind": "string", "ts": "dateTime", "validFrom": "date", "validTo": "date",
+    "verdict": "string", "version": "string", "versionDate": "date",
+    # the mapping and ledger properties of shapes F04 and F14 (12 October 2026)
+    "sourceAnchor": "string", "targetAnchor": "string", "ratifiedOn": "date", "seq": "integer",
+    "recordHash": "string", "prevHash": "string", "entryHash": "string",
 }
 # datatype properties taken from the fields of a node
 FIELD_KINDS = {"status": "string", "path": "string", "date": "date", "summary": "string", "evidence": "string"}
@@ -55,6 +68,8 @@ def _literal(value, kind: str) -> Literal | None:
             return Literal(str(value))
     if kind == "boolean":
         return Literal(bool(value), datatype=XSD.boolean)
+    if kind == "dateTime":
+        return Literal(str(value), datatype=XSD.dateTime)
     if kind == "date":
         s = str(value)
         if len(s) == 10 and s[4] == "-" and s[7] == "-":
@@ -83,6 +98,26 @@ def _edge_parts(e) -> tuple[str, str, str, str]:
     if isinstance(e, dict):
         return e["s"], e["r"], e["t"], e.get("provenance") or ("inferred" if e.get("inferred") else "stated")
     return e.s, e.r, e.t, "stated"
+
+
+def _origin(n) -> str | None:
+    props = n.props if isinstance(n, Node) else (n.get("props") or {})
+    return props.get("origin")
+
+
+def split_private(nodes, edges) -> tuple[list, list, list, list]:
+    """(public nodes, public edges, private nodes, private edges). A node whose origin is local-pack is private, and so is any
+    edge with a private end. The nodes may be a dict by id or a list, and the edges Edge objects or edge rows."""
+    node_list = list(nodes.values()) if isinstance(nodes, dict) else list(nodes)
+    edge_list = list(edges.values()) if isinstance(edges, dict) else list(edges)
+    hidden = {n.id for n in node_list if _origin(n) == PRIVATE_ORIGIN}
+    pub_n = [n for n in node_list if n.id not in hidden]
+    priv_n = [n for n in node_list if n.id in hidden]
+    pub_e, priv_e = [], []
+    for e in edge_list:
+        s, _r, t, _p = _edge_parts(e)
+        (priv_e if s in hidden or t in hidden else pub_e).append(e)
+    return pub_n, pub_e, priv_n, priv_e
 
 
 def _add_nodes(g: Graph, node_list: list[Node], metrics: dict | None, today: str | None) -> None:
@@ -252,8 +287,10 @@ def _describe_graphs(ds: Dataset, generated: dict) -> None:
 
 def to_dataset(nodes: dict[str, Node] | list[Node], edges: list, inferred_edges: list | None = None,
                findings: list | None = None, ontology_path: Path | None = None, metrics: dict | None = None,
-               today: str | None = None, generated: dict | None = None) -> Dataset:
-    """Build the RDF 1.1 dataset behind graph.trig, with the 5 named graphs of docs/CONTRACTS.md. edges are edge rows
+               today: str | None = None, generated: dict | None = None, include_private: bool = False) -> Dataset:
+    """Build the RDF 1.1 dataset behind graph.trig, with the 5 named graphs of docs/CONTRACTS.md, and a sixth, private-pack,
+    where include_private is true and the nodes hold any with the origin local-pack. Those nodes, the edges that touch them and
+    the findings and inferred edges about them never enter the 5 public graphs, and are dropped when include_private is false. edges are edge rows
     with a provenance: stated and computed go to the stated graph, ratified and proposed to their own graphs. The rows
     marked inferred are ignored, because inferred_edges (the full output of the rules) fills the inferred graph, with
     one cx:Finding for each finding. The inferred graph also holds the RDFS subclass and subproperty closure of the
@@ -265,6 +302,12 @@ def to_dataset(nodes: dict[str, Node] | list[Node], edges: list, inferred_edges:
     graphs = {name: ds.graph(URIRef(GRAPH_BASE + name)) for name in GRAPH_NAMES}
     if ontology_path is not None and Path(ontology_path).is_file():
         graphs["ontology"].parse(str(ontology_path), format="turtle")
+    nodes, edges, private_nodes, private_edges = split_private(nodes, edges)
+    hidden = {n.id for n in private_nodes}
+    private_inferred = [e for e in (inferred_edges or []) if _edge_parts(e)[0] in hidden or _edge_parts(e)[2] in hidden]
+    inferred_edges = [e for e in (inferred_edges or []) if e not in private_inferred]
+    private_findings = [f for f in (findings or []) if f.get("node") in hidden]
+    findings = [f for f in (findings or []) if f.get("node") not in hidden]
     by_prov: dict[str, list] = {"stated": [], "ratified": [], "proposed": []}
     for e in edges:
         prov = _edge_parts(e)[3]
@@ -289,6 +332,22 @@ def to_dataset(nodes: dict[str, Node] | list[Node], edges: list, inferred_edges:
         inferred.add((fi, CX.message, Literal(str(f.get("message")))))
         if f.get("node"):
             inferred.add((fi, CX.onNode, node_iri(str(f["node"]))))
+    if include_private and private_nodes:
+        private = ds.graph(URIRef(GRAPH_BASE + PRIVATE_GRAPH))
+        for t in to_rdf(private_nodes, private_edges, metrics, today):
+            private.add(t)
+        for n in private_nodes:
+            private.add((node_iri(n.id), CX.origin, Literal(PRIVATE_ORIGIN)))
+        for e in private_inferred:
+            s, r, t, _p = _edge_parts(e)
+            private.add((node_iri(s), CX[r], node_iri(t)))
+        for i, f in enumerate(private_findings):
+            fi = finding_iri(f, 100000 + i)
+            private.add((fi, RDF.type, CX.Finding))
+            private.add((fi, CX.checkId, Literal(str(f.get("check")))))
+            private.add((fi, CX.findingSeverity, Literal(str(f.get("severity")))))
+            private.add((fi, CX.message, Literal(str(f.get("message")))))
+            private.add((fi, CX.onNode, node_iri(str(f["node"]))))
     if len(graphs["ontology"]):
         # proposed edges stay out of the closure, as they stay out of the rules
         entail(graphs["ontology"], [graphs["stated"], graphs["ratified"], graphs["inferred"]], inferred)
@@ -297,4 +356,4 @@ def to_dataset(nodes: dict[str, Node] | list[Node], edges: list, inferred_edges:
     return ds
 
 
-__all__ = ["CX", "CXI", "GRAPH_BASE", "GRAPH_NAMES", "node_iri", "iri_to_id", "to_rdf", "to_dataset", "serialize_trig", "entail", "CLASSES"]
+__all__ = ["CX", "CXI", "GRAPH_BASE", "GRAPH_NAMES", "PRIVATE_GRAPH", "PRIVATE_ORIGIN", "split_private", "node_iri", "iri_to_id", "to_rdf", "to_dataset", "serialize_trig", "entail", "CLASSES"]

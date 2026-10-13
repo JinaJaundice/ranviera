@@ -1,0 +1,13 @@
+# Invented fixture that follows the shape of a register file: provisions and obligations under another
+# identifier base, linked by expressedIn. None of this content comes from a real register.
+@prefix x: <https://example.test/pack#> .
+@prefix r: <https://example.test/register/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+r:inv-reg-3-1 a x:Paragraph ; rdfs:label "INV2017 reg 3(1) Invented interpretation" ;
+    x:nodeId "L1.REG.INV2017:3(1)" ; x:status "active" ; x:description "Invented interpretation text." ;
+    x:partOf <https://example.test/source/inv-2017> ; x:effectiveDate "2026-07-03"^^xsd:date .
+r:deontic-inv-reg-3-1 a x:Obligation ; rdfs:label "INV2017 reg 3(1) obligation" ;
+    x:nodeId "L1.REG.INV2017:3(1)/D" ; x:status "active" ; x:deonticModality "O" ;
+    x:action "prevent_use_of_system" ; x:expressedIn r:inv-reg-3-1 ; x:effectiveDate "2026-07-03"^^xsd:date .

@@ -1,0 +1,44 @@
+# Invented agent side data that passes every shape F02 to F14. Hashes are invented strings.
+@prefix cx: <https://cortex.local/ont#> .
+@prefix cxi: <https://cortex.local/id/> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+cxi:person_pat a cx:Person ; rdfs:label "Invented owner" ; cx:family "world" ; cx:sensitivity "internal" .
+cxi:person_sam a cx:Person ; rdfs:label "Invented checker" ; cx:family "world" ; cx:sensitivity "internal" .
+
+cxi:model_m1 a cx:ModelVersion ; rdfs:label "Invented model" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:status "approved" ; cx:provider "invented" ; cx:modelId "inv-1" .
+cxi:instr_a1 a cx:InstructionVersion ; rdfs:label "Invented instruction v1" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:status "approved" ; cx:hash "h-instr-1" ; cx:validFrom "2026-09-01"^^xsd:date ; cx:version "1" ;
+    cx:approvedBy cxi:person_sam .
+cxi:dagent_a a cx:DeployedAgent ; rdfs:label "Invented triage agent" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:intendedUse "Invented alert triage" ; cx:riskTier "medium" ; cx:ownedBy cxi:person_pat ;
+    cx:drawsOn cxi:model_m1 ; cx:operatesUnder cxi:instr_a1 .
+cxi:evid_e1 a cx:Evidence ; rdfs:label "Invented evidence" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:hash "h-evid-1" ; cx:sourceRef "invented-source-1" .
+
+cxi:run_r1 a cx:Run ; rdfs:label "Invented run" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:performedBy cxi:dagent_a ; cx:ranOn cxi:model_m1 ; cx:promptHash "h-prompt" ;
+    cx:startedAt "2026-10-01T09:00:00Z"^^xsd:dateTime ; cx:replayStatus "replayable" ;
+    cx:contains cxi:step_r1_0 , cxi:step_r1_1 .
+cxi:step_r1_0 a cx:Step ; rdfs:label "Invented step 0" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:ordinal 0 ; cx:stepKind "start" ; cx:ts "2026-10-01T09:00:00Z"^^xsd:dateTime ; cx:inContext cxi:instr_a1 .
+cxi:step_r1_1 a cx:Step ; rdfs:label "Invented step 1" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:ordinal 1 ; cx:stepKind "decision" ; cx:ts "2026-10-01T09:00:05Z"^^xsd:dateTime ;
+    cx:usedEvidence cxi:evid_e1 ; cx:informedDecision cxi:adec_d1 .
+cxi:adec_d1 a cx:AgentDecision ; rdfs:label "Invented decision" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:outcome "close" ; cx:statesRationale cxi:rationale_q1 ; cx:reviewedBy cxi:review_v1 .
+cxi:rationale_q1 a cx:StatedRationale ; rdfs:label "Invented rationale" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:causalStatus "unverified" ; cx:hash "h-rationale" .
+cxi:review_v1 a cx:Review ; rdfs:label "Invented review" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:override false .
+cxi:ledger_l1 a cx:LedgerEntry ; rdfs:label "Invented ledger entry" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:seq 1 ; cx:recordHash "h-rec" ; cx:prevHash "h-0" ; cx:entryHash "h-e1" ; cx:entryOf cxi:run_r1 .
+
+cxi:map_20261001_001 a cx:Mapping ; rdfs:label "Invented mapping" ; cx:family "agent" ; cx:sensitivity "internal" ;
+    cx:status "ratified" ; cx:ownedBy cxi:person_pat ; cx:proposedBy cxi:person_pat ; cx:approvedBy cxi:person_sam ;
+    cx:sourceAnchor "h-s" ; cx:targetAnchor "h-t" ; cx:ratifiedOn "2026-10-02"^^xsd:date .
+
+cxi:clause_c1 a cx:PolicyClause ; rdfs:label "Invented clause" ; cx:family "obligation" ; cx:sensitivity "internal" ;
+    cx:text "Invented clause text." ; cx:hash "h-clause" .

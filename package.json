@@ -22,6 +22,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "graph": "python cortex.py build && python cortex.py check",
+    "demo": "node scripts/demo/start.mjs",
     "smoke": "node scripts/smoke.mjs",
     "desktop": "electron desktop",
     "desktop:dist": "electron-builder --config electron-builder.yml --win",

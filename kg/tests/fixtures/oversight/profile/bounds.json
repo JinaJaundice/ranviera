@@ -1,0 +1,15 @@
+{
+  "v": 1,
+  "agents": {
+    "dagent:alert-triage": {
+      "override": {
+        "min": null,
+        "max": 150
+      },
+      "review_seconds": {
+        "min": 20,
+        "max": null
+      }
+    }
+  }
+}

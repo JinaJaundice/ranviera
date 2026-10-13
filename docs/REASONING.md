@@ -99,8 +99,56 @@ The `restates` links between the rule files and the reference files are computed
 
 `reason.run` changes the working folder of the process while Nemo runs, because Nemo 0.10.1 does not accept absolute Windows paths in its imports. It is therefore called only from the command line and the build, and never from a threaded server.
 
+## Agent transparency rules
+
+Rules O03 to O07 and O09 to O14 check the integrity of an agent, its instructions, its runs and its mappings, and they read agent side classes only. They are in `ontology/rules/transparency.rls`, and `cortex.rls` is untouched. Rules O01, O02 and O08 read a bank's obligation pack and are supplied with it. The rules read class identifiers and relation identifiers only. A proposed mapping, a rejected mapping and an inferred edge are not read, because the edge facts hold stated, computed and ratified edges only.
+
+### Facts added
+
+The facts of `cortex_kg/reason.py` remain. The reasoning step adds these, each a quoted string or an integer as before and each empty where the graph holds no such data, so that a rule that needs one gives no finding without it.
+
+| Predicate | Meaning |
+|---|---|
+| `today(?Day)` | the run date of the reasoning, as an integer such as 20261007 |
+| `valid_from(?Id, ?Day)` and `valid_to(?Id, ?Day)` | the interval of an instruction version. An open interval has no `valid_to`. |
+| `hash(?Id, ?Hash)` | the current hash of an instruction version, clause, provision or knowledge source snapshot |
+| `approved_hash(?Id, ?Hash)` | the hash recorded when the version was approved |
+| `mapping_end(?M, ?End, ?Node)` and `anchor(?M, ?End, ?Hash)` | the 2 ends of a mapping, with `?End` equal to "s" or "t", and the hash that the mapping recorded at ratification |
+| `end_hash(?M, ?End, ?Hash)` | the current hash of an end of a mapping, computed in the same form as the anchor. A mapping whose end is absent from the graph gives no `end_hash` fact. |
+| `loaded_hash(?Run, ?Instr, ?Hash)` | the hash of an instruction that the running agent reported in its first record |
+| `prompt_hash(?Run, ?Hash)`, `params_hash(?Run, ?Hash)` and `snapshot_hash(?Source, ?Hash)` | the replay inputs of a run, where recorded |
+| `source_hash(?Evid, ?Hash)` | the hash of an evidence item at the time the agent read it |
+| `steps_captured(?Run, ?N)` and `steps_reported(?Run, ?N)` | the steps held in the ledger and the count in the closing record of the run |
+| `ledger_break(?Run)` | a run with a broken hash chain, from the result of `ledger verify` |
+| `measure(?Agent, ?Kind, ?N)`, `bound_max(?Agent, ?Kind, ?N)` and `bound_min(?Agent, ?Kind, ?N)` | a monitoring measure in thousandths (kind `override`) or seconds (kind `review_seconds`) and the bounds that the bank set. Without a bounds file there are no bound facts and rule O13 gives no finding. |
+
+An instruction version is in force on a date when its status is approved, its `valid_from` is on or before that date and its `valid_to` is absent or on or after it.
+
+### Rules O03 to O07 and O09 to O14
+
+| Id | Kind | Reads and reports |
+|---|---|---|
+| O03 | violation | 2 in-force instruction versions of one agent conflict (`conflictsWith`, read in both directions) and neither has an `overrides` edge to the other |
+| O04 | violation | An `AgentDecision` has no informing step that cites an instruction, or no informing step that used evidence, or an informing step that cites an instruction that was not in context for that step |
+| O05 | warning | A ratified `Mapping` has an anchor hash that differs from the current hash of its source or its target (`end_hash`) |
+| O06 | violation | An in-force instruction version has no `approvedBy` edge, has the same person for `approvedBy` and `proposedBy`, or has a hash that differs from the approved hash |
+| O07 | warning | A step has an instruction version in context whose interval ended before the date of the step or began after it |
+| O09 | violation | The hash that a running agent reported for an instruction differs from the approved hash of that version |
+| O10 | warning | A `Run` has no `ranOn` model, no prompt hash or no parameters hash, or has retrieved from a source with no snapshot hash, so it cannot be replayed |
+| O11 | violation | A run has fewer captured steps than its closing record reported, or its ledger chain is broken |
+| O12 | violation | A run used a model version outside the approved model versions of its agent. A model version of status pending, such as a provider change not yet reviewed, counts as unapproved. |
+| O13 | warning | A measure of an agent, namely the override rate or the average review time, is above the maximum that the bank set or below its minimum |
+| O14 | warning | An `Evidence` item has no `sourcedFrom` edge, or its recorded hash differs from the snapshot hash of its source, which flags a possible injection through retrieval |
+
+Rules O13 and O14 compare counts and hashes and do not judge whether a decision was correct. Rule O14 flags a mismatch and does not prevent prompt injection.
+
+### Findings in the graph
+
+A finding of these rules has the class `cx:Finding` with the check `O03` to `O14` and the severity of its kind, as the existing findings do, and `health.json` carries it. A finding that names a Run, Step, Mapping or InstructionVersion appears on that node in the decision trace and the review queue. A bank that runs rules O01, O02 and O08 with its own obligation pack sets `include_private_graphs` (`CONTRACTS.md`) on its own machine.
+
 ## Changes to this document
 
+- 7 October 2026: rules O03 to O07 and O09 to O14 for agent transparency, with the facts that they read.
 - 6 October 2026: first public version, written from the project's internal specification.
 
 ## Non-affiliation

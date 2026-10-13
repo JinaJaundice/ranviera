@@ -1,0 +1,89 @@
+% Agent transparency rules O01 to O14 in the syntax of Nemo. docs/REASONING.md (section "Agent transparency rules") lists them.
+%
+% This file is the second program of the reasoning step. kg/cortex_kg/reason.py runs it after cortex.rls, with the
+% facts of kg/cortex_kg/transparency.py in addition to node, edge, status and day. It does not read the output of
+% cortex.rls. The edge facts hold stated, computed and ratified edges only, so a proposed mapping, a rejected mapping
+% and an inferred edge feed no rule here. The rules read class identifiers and relation identifiers only.
+%
+% The added facts: today(Day), valid_from(Id, Day), valid_to(Id, Day), hash(Id, Hash), approved_hash(Id, Hash),
+% mapping_end(Mapping, End, Node), anchor(Mapping, End, Hash), end_hash(Mapping, End, Hash), loaded_hash(Run, Instr, Hash),
+% prompt_hash(Run, Hash), params_hash(Run, Hash), snapshot_hash(Source, Hash), source_hash(Evid, Hash),
+% steps_captured(Run, N), steps_reported(Run, N), ledger_break(Run), and measure, bound_max and bound_min as (Agent, Kind, N).
+% The bound facts come from the bank's own file and there is no default, so O13 gives no finding without them.
+%
+% Rules O01, O02 and O08 read the bank side classes (Obligation, Typology) and belong to the private pack of section 10 of
+% docs/AGENT_TRANSPARENCY.md. They are in transparency_private.rls, which the public export excludes, and they use the
+% helpers of this file (in_force and expired). Statements before the first
+% header are helpers, and the run names them H01, H02 and so on after the helpers of cortex.rls.
+
+@output violation.
+@output warning.
+@output info.
+
+% ---------------------------------------------------------------- helpers
+
+ended(?I) :- valid_to(?I, ?E), today(?T), ?E < ?T .
+in_force(?I) :- node(?I, "InstructionVersion"), status(?I, "approved"), valid_from(?I, ?F), today(?T), ?F <= ?T, ~ended(?I) .
+expired(?X) :- valid_to(?X, ?E), today(?T), ?E < ?T .
+overridden(?A, ?B) :- edge(?A, "overrides", ?B) .
+conflict(?A, ?B) :- edge(?A, "conflictsWith", ?B) .
+conflict(?A, ?B) :- edge(?B, "conflictsWith", ?A) .
+has_clause_link(?I) :- edge(?I, "implementsClause", ?K) .
+has_approver(?I) :- edge(?I, "approvedBy", ?P) .
+informed(?S, ?D) :- edge(?S, "informedDecision", ?D) .
+has_cited(?D) :- informed(?S, ?D), edge(?S, "citesInstruction", ?I) .
+has_evidence(?D) :- informed(?S, ?D), edge(?S, "usedEvidence", ?E) .
+approved_model(?A, ?M) :- edge(?A, "drawsOn", ?M), node(?M, "ModelVersion"), status(?M, "approved") .
+ran_on(?R) :- edge(?R, "ranOn", ?M) .
+has_prompt(?R) :- prompt_hash(?R, ?H) .
+has_params(?R) :- params_hash(?R, ?H) .
+has_snapshot(?K) :- snapshot_hash(?K, ?H) .
+retrieves(?R, ?K) :- edge(?R, "contains", ?S), edge(?S, "usedEvidence", ?E), edge(?E, "sourcedFrom", ?K) .
+sourced(?E) :- edge(?E, "sourcedFrom", ?K) .
+
+% ---------------------------------------------------------------- rules
+
+%% O03 | violation | Two in-force instructions of one agent conflict and neither overrides the other.
+violation("O03", ?A) :- edge(?G, "operatesUnder", ?A), edge(?G, "operatesUnder", ?B), conflict(?A, ?B), in_force(?A), in_force(?B), ~overridden(?A, ?B), ~overridden(?B, ?A) .
+
+%% O04 | violation | A decision has no cited instruction or no evidence, or a cited instruction was not in context.
+violation("O04", ?D) :- node(?D, "AgentDecision"), ~has_cited(?D) .
+violation("O04", ?D) :- node(?D, "AgentDecision"), ~has_evidence(?D) .
+violation("O04", ?D) :- informed(?S, ?D), edge(?S, "citesInstruction", ?I), ~edge(?S, "inContext", ?I) .
+
+%% O05 | warning | A ratified mapping has a recorded hash that differs from the current hash of one of its ends.
+warning("O05", ?M) :- node(?M, "Mapping"), status(?M, "ratified"), anchor(?M, "s", ?H), end_hash(?M, "s", ?G), ?H != ?G .
+warning("O05", ?M) :- node(?M, "Mapping"), status(?M, "ratified"), anchor(?M, "t", ?H), end_hash(?M, "t", ?G), ?H != ?G .
+
+%% O06 | violation | An in-force instruction has no approver, has its maker as approver, or differs from the hash approved.
+violation("O06", ?I) :- in_force(?I), ~has_approver(?I) .
+violation("O06", ?I) :- in_force(?I), edge(?I, "approvedBy", ?P), edge(?I, "proposedBy", ?P) .
+violation("O06", ?I) :- in_force(?I), hash(?I, ?H), approved_hash(?I, ?G), ?H != ?G .
+
+%% O07 | warning | A step ran with an instruction version whose interval had ended or had not begun.
+warning("O07", ?S) :- edge(?S, "inContext", ?I), day(?S, ?D), valid_to(?I, ?E), ?E < ?D .
+warning("O07", ?S) :- edge(?S, "inContext", ?I), day(?S, ?D), valid_from(?I, ?F), ?D < ?F .
+
+%% O09 | violation | The instruction hash reported by a running agent differs from the approved version.
+violation("O09", ?R) :- loaded_hash(?R, ?I, ?H), approved_hash(?I, ?G), ?H != ?G .
+
+%% O10 | warning | A run lacks a pinned model, prompt hash, retrieval snapshot or parameters, so it cannot be replayed.
+warning("O10", ?R) :- node(?R, "Run"), ~ran_on(?R) .
+warning("O10", ?R) :- node(?R, "Run"), ~has_prompt(?R) .
+warning("O10", ?R) :- node(?R, "Run"), ~has_params(?R) .
+warning("O10", ?R) :- retrieves(?R, ?K), ~has_snapshot(?K) .
+
+%% O11 | violation | A run has fewer captured steps than the agent reported, or a ledger hash chain is broken.
+violation("O11", ?R) :- steps_captured(?R, ?C), steps_reported(?R, ?N), ?C < ?N .
+violation("O11", ?R) :- ledger_break(?R) .
+
+%% O12 | violation | A run used a model version other than an approved model version of its agent.
+violation("O12", ?R) :- edge(?R, "performedBy", ?A), edge(?R, "ranOn", ?M), ~approved_model(?A, ?M) .
+
+%% O13 | warning | The override rate or the average review time of an agent is outside the bounds set by the bank.
+warning("O13", ?A) :- measure(?A, ?K, ?N), bound_max(?A, ?K, ?M), ?M < ?N .
+warning("O13", ?A) :- measure(?A, ?K, ?N), bound_min(?A, ?K, ?M), ?N < ?M .
+
+%% O14 | warning | A retrieved item has no recorded source, or its hash differs from the snapshot of its source.
+warning("O14", ?E) :- node(?E, "Evidence"), ~sourced(?E) .
+warning("O14", ?E) :- edge(?E, "sourcedFrom", ?K), source_hash(?E, ?H), hash(?K, ?G), ?H != ?G .

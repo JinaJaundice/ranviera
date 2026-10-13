@@ -7,7 +7,7 @@ import path from "node:path";
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { REPO_ROOT, loadConfig, type Config } from "./config.ts";
 import { createApp, type App } from "./main.ts";
-import { claudeState } from "./setup.ts";
+import { claudeState, setupState } from "./setup.ts";
 
 let app: App;
 let base = "";
@@ -231,5 +231,15 @@ describe("compiler failures", () => {
     const r = await post("/api/compile");
     cfg.kg_cmd = saved;
     expect(r.status).toBe(500);
+  });
+});
+
+describe("the demonstrator flag of the set-up state", () => {
+  it("is true only where the configuration opens the demonstrator", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "ranviera-demo-flag-"));
+    const base = { claude_home: path.join(root, "claude"), projects_root: null, memory_dir: null, data_dir: root, port: 0, python_cmd: "python",
+      include_sensitivity: ["public", "internal", "client-confidential"], log_prompt_snippets: false, repo_root: REPO_ROOT } as unknown as Config;
+    expect(setupState(base, null).demo).toBe(false);
+    expect(setupState({ ...base, oversight_demo: true }, null).demo).toBe(true);
   });
 });

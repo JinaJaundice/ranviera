@@ -34,6 +34,10 @@ export interface Config {
   static_dir?: string | null;
   ontology_dir?: string | null;
   profile_dir?: string | null;
+  /** the people file of the oversight views, the person who uses this installation, and the demonstration switch (docs/CONTRACTS.md, "Identity and roles") */
+  oversight_people?: string | null;
+  oversight_actor?: string | null;
+  oversight_demo?: boolean;
   /** the configuration file that was read, or would be written */
   config_file?: string;
 }
@@ -54,6 +58,9 @@ const DEFAULTS = {
   log_prompt_snippets: false,
   missions_use_api_key: false,
   brain_domains: null as Partial<BrainDomains> | null,
+  oversight_people: null as string | null,
+  oversight_actor: null as string | null,
+  oversight_demo: false,
 };
 
 /** True when the server runs from the packaged app, which names its web and ontology folders. */
@@ -90,6 +97,9 @@ function parseKgCmd(v: unknown): string[] | null {
   if (Array.isArray(v) && v.length > 0 && v.every((x) => typeof x === "string" && x)) return v as string[];
   return null;
 }
+
+const isTrue = (v: unknown): boolean => v === true || (typeof v === "string" && /^(1|true|yes)$/i.test(v.trim()));
+const text = (v: unknown): string | null => (typeof v === "string" && v.trim() ? v.trim() : null);
 
 /** The configuration file. A packaged app reads CORTEX_CONFIG only, and with none set it reads no file, so nothing beside the bundle is read or written. */
 export function configPath(env: NodeJS.ProcessEnv = process.env): string {
@@ -130,6 +140,12 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     static_dir: env.CORTEX_STATIC ? norm(env.CORTEX_STATIC) : null,
     ontology_dir: env.CORTEX_ONTOLOGY ? norm(env.CORTEX_ONTOLOGY) : null,
     profile_dir: norm(c.profile_dir || path.join(dataDir, "profile")),
+    oversight_people: (() => {
+      const v = text(env.CORTEX_OVERSIGHT_PEOPLE) ?? text(c.oversight_people);
+      return v ? norm(v) : null;
+    })(),
+    oversight_actor: text(env.RANVIERA_ACTOR) ?? text(c.oversight_actor),
+    oversight_demo: env.RANVIERA_DEMO !== undefined && env.RANVIERA_DEMO !== "" ? isTrue(env.RANVIERA_DEMO) : isTrue(c.oversight_demo),
     config_file: file ? file.replace(/\\/g, "/") : undefined,
   };
 }

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Button } from "../../components/Button";
 import { api } from "../../lib/api";
+import { bus } from "../../lib/bus";
 import { useStore } from "../../lib/store";
 import { toast } from "../../shell/toastStore";
 import { ClaudeConnect } from "./ClaudeConnect";
@@ -11,13 +12,16 @@ import { STEPS } from "./model";
 import { ReadPanel } from "./ReadPanel";
 import { applySetup, closeFirstRun, refreshHooks, setFirstRunStep, useSetupStore } from "./state";
 
-function Welcome({ onAgree, busy }: { onAgree: () => void; busy: boolean }) {
+function Welcome({ onAgree, busy, demo }: { onAgree: () => void; busy: boolean; demo: boolean }) {
   const name = useProductName();
   return (
     <div className="min-w-0">
       <p className="text-body text-ink">
         {name} reads the Claude Code set-up on this computer, which is your instructions, rules, skills, agents, settings and memory, and draws it as a graph that you can search, check and replay as Claude Code works.
       </p>
+      {demo ? (
+        <p className="mt-3 text-body text-ink">This installation shows the synthetic Northgate Synthetic Bank demonstrator, with invented agent runs, policies and people.</p>
+      ) : null}
       <h4 className="mb-1 mt-4 text-ui font-medium text-ink">Independence from Anthropic</h4>
       <p className="text-body text-ink-soft">{nonAffiliation(name)}</p>
       <h4 className="mb-1 mt-4 text-ui font-medium text-ink">Privacy</h4>
@@ -53,8 +57,15 @@ export function FirstRun() {
   const agree = async () => {
     setBusy(true);
     try {
-      applySetup(await api.acceptSetup());
-      setFirstRunStep(1);
+      const next = await api.acceptSetup();
+      applySetup(next);
+      if (next.demo) {
+        // the demonstrator has no Claude Code set-up to read, so the first run ends here and the Oversight window opens
+        closeFirstRun();
+        bus.emit("open", { app: "oversight" });
+      } else {
+        setFirstRunStep(1);
+      }
     } catch (e) {
       toast(`Your agreement could not be recorded. ${e instanceof Error ? e.message : ""}`.trim(), "error");
     } finally {
@@ -138,7 +149,7 @@ export function FirstRun() {
             </p>
             <h2 className="mb-3 font-display text-title font-medium text-ink">{current.title}</h2>
             {current.id !== "welcome" && current.id !== "done" ? <p className="mb-4 text-body text-ink-soft">{current.id === "read" && hasRead ? INTRO_READ_DONE : INTRO[current.id]}</p> : null}
-            {current.id === "welcome" ? <Welcome onAgree={() => void agree()} busy={busy} /> : null}
+            {current.id === "welcome" ? <Welcome onAgree={() => void agree()} busy={busy} demo={setup?.demo === true} /> : null}
             {current.id === "read" ? <ReadPanel labelAction={hasRead ? "Read again" : "Agree and read my set-up"} /> : null}
             {current.id === "hooks" ? <HooksPanel /> : null}
             {current.id === "claude" ? <ClaudeConnect /> : null}

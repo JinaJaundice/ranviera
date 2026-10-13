@@ -1,0 +1,37 @@
+{
+  "v": 1,
+  "people": [
+    {
+      "id": "ana-reyes",
+      "name": "Ana Reyes",
+      "roles": [
+        "maker"
+      ]
+    },
+    {
+      "id": "bob-chen",
+      "name": "Bob Chen",
+      "roles": [
+        "checker",
+        "approver",
+        "reviewer"
+      ]
+    },
+    {
+      "id": "carla-diaz",
+      "name": "Carla Diaz",
+      "roles": [
+        "reviewer",
+        "viewer"
+      ]
+    },
+    {
+      "id": "dan-ng",
+      "name": "Dan Ng",
+      "roles": [
+        "maker",
+        "approver"
+      ]
+    }
+  ]
+}

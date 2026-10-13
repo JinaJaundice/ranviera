@@ -12,7 +12,7 @@ export function Dock() {
       {APPS.map((app) => {
         const win = set.wins.find((w) => w.app === app.id);
         const focused = set.focused === app.id && !!win && !win.minimised;
-        const label = `${app.title} (Alt ${app.key})`;
+        const label = app.key ? `${app.title} (Alt ${app.key})` : app.title;
         return (
           <div key={app.id} className="relative flex h-9 w-full items-center justify-center">
             <span

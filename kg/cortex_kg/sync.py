@@ -455,7 +455,13 @@ def merge_settings(dst: Path, template_out: bytes, data_dir: Path | None = None)
 def _link(src: Path, dst: Path) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     if os.name == "nt":
-        r = subprocess.run(["cmd", "/c", "mklink", "/J", str(dst), str(src)], capture_output=True, text=True)
+        try:  # a junction made in process needs no console, so it holds where a cmd child fails
+            import _winapi
+            _winapi.CreateJunction(str(src), str(dst))
+            return
+        except (ImportError, OSError):
+            pass
+        r = subprocess.run(["cmd", "/c", "mklink", "/J", str(dst), str(src)], capture_output=True, text=True, stdin=subprocess.DEVNULL)
         if r.returncode != 0:
             raise OSError(r.stderr.strip() or r.stdout.strip())
     else:

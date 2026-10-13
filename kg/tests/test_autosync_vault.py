@@ -30,7 +30,7 @@ def make_cfg(tmp_path, vault_on=False):
 
 
 def git(repo, *args):
-    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
+    return subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True, stdin=subprocess.DEVNULL)
 
 
 def test_the_vault_round_trips_and_does_not_reseal_unchanged_content(tmp_path):
@@ -154,7 +154,7 @@ class FakeGit:
 
 def with_remote(tmp_path, cfg, push_first=True):
     bare = tmp_path / "remote.git"
-    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(bare)], check=True)
+    subprocess.run(["git", "init", "-q", "--bare", "-b", "main", str(bare)], check=True, capture_output=True, stdin=subprocess.DEVNULL)
     git(cfg.repo_root, "remote", "add", "origin", str(bare))
     if push_first:
         assert autosync.run_sync(cfg, push=False)["committed"]
@@ -190,7 +190,7 @@ def test_a_remote_that_is_ahead_is_never_overwritten(tmp_path):
     cfg = repo_with_sync(tmp_path)
     bare = with_remote(tmp_path, cfg)
     other = tmp_path / "other"
-    subprocess.run(["git", "clone", "-q", str(bare), str(other)], check=True)
+    subprocess.run(["git", "clone", "-q", str(bare), str(other)], check=True, capture_output=True, stdin=subprocess.DEVNULL)
     git(other, "config", "user.email", "o@example.com")
     git(other, "config", "user.name", "o")
     (other / "harness" / "extra.md").write_text("from the other machine\n", encoding="utf-8")

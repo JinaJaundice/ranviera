@@ -236,6 +236,8 @@ export interface SetupState extends SetupFile {
   memory_dirs: string[];
   graph_built: string | null;
   counts: { nodes: number; edges: number } | null;
+  /** true when the configuration opens the demonstrator (oversight_demo), so the first run shows only the welcome step */
+  demo: boolean;
 }
 
 /** One hook entry that Cortex adds to ~/.claude/settings.json. */
@@ -351,3 +353,217 @@ export type StreamMessage =
   | { type: "graph"; built: string }
   | { type: "mission"; id: string; state: MissionState; step?: number; line?: MissionLine }
   | { type: "heartbeat"; ts: string };
+
+// Agent transparency: the oversight views (docs/CONTRACTS.md, "View shapes", 7 October 2026)
+
+export type MappingStatus = "proposed" | "ratified" | "rejected" | "superseded";
+
+export interface MappingRecord {
+  id: string;
+  relation: "implementsClause" | "realises" | "satisfies" | "notDischargedBy" | "detects" | "appliesTo";
+  s: string;
+  t: string;
+  status: MappingStatus;
+  basis: string;
+  origin: "reviewer" | "suggested" | "imported";
+  owner: string;
+  maker: string;
+  checker: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  anchors: { s_hash: string | null; t_hash: string | null };
+  reason: string | null;
+  superseded_by: string | null;
+  history: { ts: string; action: "propose" | "ratify" | "reject" | "edit" | "supersede" | "reassign"; by: string; note: string | null }[];
+  /** the mapping file that holds the record, added by the list command */
+  scope?: string;
+}
+
+export interface InstructionVersionRecord {
+  id: string;
+  version: number;
+  text: string;
+  hash: string;
+  status: "draft" | "approved" | "withdrawn";
+  maker: string;
+  approver: string | null;
+  approved_hash: string | null;
+  valid_from: string | null;
+  valid_to: string | null;
+  conflicts_with?: string[];
+  overrides?: string[];
+  history: { ts: string; action: "draft" | "approve" | "withdraw"; by: string; note: string | null }[];
+}
+
+export interface RunSummary {
+  run: string;
+  agent: string;
+  case_ref: string | null;
+  ts: string;
+  outcome: string | null;
+  reviewed: boolean;
+  override: boolean;
+  findings: number;
+  replayable: boolean;
+}
+
+export interface InstrRef {
+  id: string;
+  label: string;
+  version: number | null;
+  status: string | null;
+  in_force: boolean;
+  /** who made and who approved the version, from the instruction store, and the day of the approval */
+  maker: string | null;
+  approver: string | null;
+  approved_on: string | null;
+  /** the approver is also the maker */
+  self_approved: boolean;
+}
+
+export interface ChainLink {
+  mapping: string | null;
+  relation: string;
+  from: string;
+  to: string;
+  to_label: string;
+  to_type: string;
+  status: "stated" | "ratified" | "proposed" | "missing";
+  /** from the mapping record, absent on a missing link */
+  maker?: string | null;
+  checker?: string | null;
+  since?: string | null;
+}
+
+export interface TraceFinding {
+  check: string;
+  severity: "violation" | "warning" | "info";
+  node: string;
+  message: string;
+  proof: unknown | null;
+}
+
+export interface DecisionTrace {
+  run: string;
+  agent: { id: string; label: string };
+  model: { id: string; status: string | null; approved: boolean };
+  case_ref: string | null;
+  decision: { id: string; outcome: string; step: number; ts: string } | null;
+  review: {
+    reviewer: string;
+    verdict: string | null;
+    override: boolean;
+    override_reason: string | null;
+    time_open_s: number | null;
+    items_viewed: number | null;
+    checks_ticked: string[];
+  } | null;
+  steps: {
+    id: string;
+    step: number;
+    kind: string;
+    ts: string;
+    tool: string | null;
+    evidence: { id: string; label: string; hash: string | null; source: string | null }[];
+    in_context: InstrRef[];
+    cited: InstrRef[];
+    rationale: { hash: string; content_ref: string | null; text: string | null } | null;
+    findings: TraceFinding[];
+  }[];
+  chains: Record<string, ChainLink[]>;
+  findings: TraceFinding[];
+  ledger: { entries: number; verified: boolean | null; breaks: number; reported?: number; notes?: { seq: number | null; step: number | null; reason: string }[] };
+  replayable: boolean;
+  labels: { recorded: "recorded"; loaded: "loaded"; stated: "stated by the agent, cause unverified" };
+}
+
+export interface CoverageMatrix {
+  agent: string | null;
+  columns: { id: string; label: string; type: "Control" | "PolicyClause" | "InstructionVersion" }[];
+  rows: {
+    obligation: string;
+    label: string;
+    provision: { id: string; label: string } | null;
+    state: "covered" | "partial" | "gap" | "exempt";
+    cells: Record<string, "ratified" | "proposed" | "stated">;
+  }[];
+  findings: TraceFinding[];
+  /** 13 October 2026: approved versions no longer in force, with no ratified clause, that past decisions cited */
+  earlier_versions?: { id: string; label: string; runs: number }[];
+}
+
+export interface InstructionSummary {
+  id: string;
+  label: string;
+  agent: string;
+  file: string;
+  versions: number;
+  latest: string;
+  in_force: string | null;
+  findings: number;
+}
+
+export interface InstructionDetail {
+  id: string;
+  label: string;
+  agent: string;
+  file: string;
+  versions: (InstructionVersionRecord & { in_force: boolean })[];
+  diff: { from: string; to: string; lines: { op: "same" | "add" | "remove"; text: string }[] } | null;
+  mappings: MappingRecord[];
+  findings: TraceFinding[];
+  impact: { stale_mappings: string[]; decisions: { run: string; decision: string; ts: string }[] };
+}
+
+export interface MonitoringReport {
+  from: string | null;
+  to: string | null;
+  agents: {
+    id: string;
+    label: string;
+    decisions: number;
+    reviewed: number;
+    override_per_mille: number | null;
+    review_seconds_mean: number | null;
+    agreement_by_version: Record<string, { sampled: number; agree: number }>;
+    bounds: Record<string, { min: number | null; max: number | null }>;
+    drift: { kind: "instruction" | "model" | "snapshot" | "override"; detail: string; since: string }[];
+    backtests: { id: string; version: string; n: number; agreement: number; false_closures: number; false_escalations: number }[];
+  }[];
+  findings: TraceFinding[];
+}
+
+export type OversightRole = "maker" | "checker" | "approver" | "reviewer" | "viewer";
+
+export interface PeopleFile {
+  v: 1;
+  people: { id: string; name: string; roles: OversightRole[] }[];
+}
+
+/** The answer of GET /api/oversight/status. `actor` is the person id who acts, or null where none is configured. */
+export interface OversightStatus {
+  available: boolean;
+  actor: string | null;
+  demo: boolean;
+  people: PeopleFile["people"];
+}
+
+/** A sample of runs that a reviewer draws, as `sample draw` prints it. */
+export interface SampleRecord {
+  v: 1;
+  id: string;
+  agent: string;
+  requested: number;
+  size: number;
+  seed: number | null;
+  risk_weighted: boolean;
+  pool: number;
+  drawn_by: string;
+  drawn_at: string;
+  runs: { run: string; weight: number; verdict: "agree" | "disagree" | null; reason: string | null; by: string | null; at: string | null }[];
+}
+
+export interface PackResult {
+  path: string;
+  manifest: { v: 1; created: string; files: { path: string; sha256: string; bytes: number }[] };
+}

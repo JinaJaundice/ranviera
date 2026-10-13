@@ -507,8 +507,8 @@ def test_the_dl_check_finds_what_it_is_meant_to_find(cortex):
 
 def test_the_ontology_has_a_version(cortex):
     ont = URIRef("https://cortex.local/ont")
-    assert str(next(cortex.objects(ont, OWL.versionInfo))) == "0.2.0"
-    assert str(next(cortex.objects(ont, OWL.versionIRI))) == "https://cortex.local/ont/0.2.0"
+    assert str(next(cortex.objects(ont, OWL.versionInfo))) == "0.3.0"
+    assert str(next(cortex.objects(ont, OWL.versionIRI))) == "https://cortex.local/ont/0.3.0"
 
 
 def test_the_classes_are_disjoint_except_parent_and_child(cortex):
@@ -691,8 +691,8 @@ def test_relation_shapes_reject_the_audit_mutations(shapes, cortex):
 
 def test_shapes_carry_a_version(shapes):
     ont = URIRef("https://cortex.local/shapes")
-    assert str(next(shapes.objects(ont, OWL.versionInfo))) == "0.3.0"
-    assert str(next(shapes.objects(ont, OWL.versionIRI))) == "https://cortex.local/shapes/0.3.0"
+    assert str(next(shapes.objects(ont, OWL.versionInfo))) == "0.4.0"
+    assert str(next(shapes.objects(ont, OWL.versionIRI))) == "https://cortex.local/shapes/0.4.0"
 
 
 # ---- the axioms under a reasoner (rigour audit, standards-F01 and F08) ----

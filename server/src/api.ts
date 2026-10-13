@@ -9,6 +9,7 @@ import { ontologyDir, productOf, versionOf, type Config } from "./config.ts";
 import { makeEvent, type EventHub } from "./events.ts";
 import { NOT_BUILT, REBUILD_HINT, parseSensitivity, type GraphStore } from "./graph.ts";
 import { claudeStatus, findClaude, type MissionManager } from "./missions.ts";
+import { handleOversight } from "./oversight.ts";
 import { plan as makePlan } from "./plan.ts";
 import { lastLine, runPython } from "./python.ts";
 import { registerDays } from "./register.ts";
@@ -209,6 +210,9 @@ export async function handleApi(ctx: Context, req: IncomingMessage, res: ServerR
       const exe = findClaude();
       if (!exe && !ctx.login) throw new HttpError(409, "The claude command is not installed. Install Claude Code, then try again.");
       return sendJson(res, 200, (ctx.login ?? defaultLoginLauncher)(exe ?? "claude"));
+    }
+    if (p.startsWith("/api/oversight/")) {
+      return sendJson(res, 200, await handleOversight(ctx, req, p, q));
     }
     if (p === "/api/graph") {
       needMethod(req, "GET");

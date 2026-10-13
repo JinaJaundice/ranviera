@@ -155,15 +155,16 @@ def facts(graph_json: dict, today: str | None = None, observed: int | None = Non
     return "\n".join(out) + "\n"
 
 
-def _csv_program(rows: dict[str, list[tuple]], folder: str) -> str:
+def _csv_program(rows: dict[str, list[tuple]], folder: str, formats: dict[str, str] | None = None) -> str:
     """Write each fact predicate to a CSV file in the folder and return the @import lines. Nemo reads a file much faster
     than the same facts as program text, and traces them faster too."""
     import csv
+    formats = formats or FACT_FORMATS
     imports = []
     for pred, preds_rows in rows.items():
         with open(os.path.join(folder, f"{pred}.csv"), "w", newline="", encoding="utf-8") as fh:
             csv.writer(fh).writerows(preds_rows)
-        fmt = ",".join("string" if c == "s" else "int" for c in FACT_FORMATS[pred])
+        fmt = ",".join("string" if c == "s" else "int" for c in formats[pred])
         imports.append(f'@import {pred} :- csv{{resource="{pred}.csv", format=({fmt})}} .')
     return "\n".join(imports) + "\n"
 
@@ -207,11 +208,11 @@ def validate_statements(statements: list[dict]) -> None:
             raise ValueError(f"The statement '{s['text'][:60]}' derives the output {pred} but has no rule header.")
 
 
-def helper_rules(statements: list[dict]) -> list[dict]:
+def helper_rules(statements: list[dict], start: int = 1) -> list[dict]:
     """The helper rules, in order, as {id, text} with the identifiers H01, H02 and so on. A directive such as @output is not
-    a rule, so it is left out."""
+    a rule, so it is left out. A second program continues the numbering from start."""
     texts = [s["text"] for s in statements if not s["header"] and not s["text"].startswith("@")]
-    return [{"id": f"H{i:02d}", "text": t} for i, t in enumerate(texts, 1)]
+    return [{"id": f"H{i:02d}", "text": t} for i, t in enumerate(texts, start)]
 
 
 def _source(path_or_text) -> str:
@@ -276,7 +277,9 @@ def _split_args(text: str) -> list[str]:
 
 
 def _rule_files(cfg: Config) -> list[Path]:
-    return sorted((cfg.ontology_dir / "rules").glob("*.rls"))
+    """The rule files of the first program. The files transparency*.rls are the second program (_second_program)."""
+    from . import transparency
+    return transparency.rule_files(cfg, False)
 
 
 def weights(cfg: Config) -> dict[str, float]:
@@ -411,15 +414,42 @@ def _run(cfg: Config, graph_json: dict, today: str) -> tuple[dict, list[dict], l
         # so run() is for the command line and the build only and must not be called from a threaded server
         os.chdir(folder)
         try:
-            return _reason_in(nmo, rows, texts, statements, headers, folder)
+            first = _reason_in(nmo, rows, texts, statements, headers, folder)
+            return _second_program(cfg, nmo, graph_json, today, rows, first, folder)
         finally:
             os.chdir(cwd)
 
 
-def _reason_in(nmo, fact_data, texts, statements, headers, folder):
+def _second_program(cfg: Config, nmo, graph_json: dict, today: str, base_rows: dict, first: tuple, folder: str):
+    """Run the transparency rules (ontology/rules/transparency*.rls) after cortex.rls, on the same graph with the facts of
+    transparency.py, and merge their facts, proofs, rules, helpers and findings into the result of the first program.
+    The helper identifiers continue after those of the first program, and the CSV files of this program are written in
+    a folder of its own, which becomes the working folder."""
+    from . import transparency
+    files = transparency.rule_files(cfg, True)
+    if not files:
+        return first
+    texts = [p.read_text(encoding="utf-8") for p in files]
+    statements = [s for t in texts for s in _statements(t)]
+    validate_statements(statements)
+    headers = [r for t in texts for r in parse_rules(t)]
+    rows, meta = transparency.fact_rows(cfg, graph_json, base_rows, today)
+    sub = os.path.join(folder, "transparency")
+    os.makedirs(sub)
+    os.chdir(sub)
+    inferred, edges, findings = first
+    second, edges2, findings2 = _reason_in(nmo, rows, texts, statements, headers, sub, len(inferred["helpers"]) + 1,
+                                           {**FACT_FORMATS, **transparency.FACT_FORMATS})
+    for k in ("rules", "helpers", "facts"):
+        inferred[k] = inferred[k] + second[k]
+    inferred["transparency"] = meta
+    return inferred, edges + edges2, findings + findings2
+
+
+def _reason_in(nmo, fact_data, texts, statements, headers, folder, helper_start=1, formats=None):
     by_id = {h["id"]: h for h in headers}
-    helpers = helper_rules(statements)
-    program = _csv_program(fact_data, folder) + "\n" + "\n".join(texts)
+    helpers = helper_rules(statements, helper_start)
+    program = _csv_program(fact_data, folder, formats) + "\n" + "\n".join(texts)
     engine = nmo.NemoEngine(nmo.load_string(program))
     engine.reason()
     version = getattr(nmo, "__version__", None) or _nemo_version()

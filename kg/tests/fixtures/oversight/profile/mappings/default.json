@@ -1,0 +1,118 @@
+{
+  "v": 1,
+  "scope": "default",
+  "mappings": [
+    {
+      "id": "map:20260901-001",
+      "relation": "implementsClause",
+      "s": "instr:alert-triage-escalate-match-v1",
+      "t": "clause:escalate-1",
+      "status": "ratified",
+      "basis": "Invented basis for the fixture.",
+      "origin": "reviewer",
+      "owner": "person:ana-reyes",
+      "maker": "ana-reyes",
+      "checker": "bob-chen",
+      "valid_from": "2026-09-02",
+      "valid_to": null,
+      "anchors": {
+        "s_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "t_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "reason": null,
+      "superseded_by": null,
+      "history": [
+        {
+          "ts": "2026-09-01T10:00:00Z",
+          "action": "propose",
+          "by": "ana-reyes",
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "map:20260901-002",
+      "relation": "realises",
+      "s": "clause:escalate-1",
+      "t": "control:screen-1",
+      "status": "ratified",
+      "basis": "Invented basis for the fixture.",
+      "origin": "reviewer",
+      "owner": "person:ana-reyes",
+      "maker": "ana-reyes",
+      "checker": "bob-chen",
+      "valid_from": "2026-09-02",
+      "valid_to": null,
+      "anchors": {
+        "s_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "t_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "reason": null,
+      "superseded_by": null,
+      "history": [
+        {
+          "ts": "2026-09-01T10:00:00Z",
+          "action": "propose",
+          "by": "ana-reyes",
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "map:20260901-003",
+      "relation": "satisfies",
+      "s": "control:screen-1",
+      "t": "obligation:o1",
+      "status": "ratified",
+      "basis": "Invented basis for the fixture.",
+      "origin": "reviewer",
+      "owner": "person:ana-reyes",
+      "maker": "ana-reyes",
+      "checker": "bob-chen",
+      "valid_from": "2026-09-02",
+      "valid_to": null,
+      "anchors": {
+        "s_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "t_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "reason": null,
+      "superseded_by": null,
+      "history": [
+        {
+          "ts": "2026-09-01T10:00:00Z",
+          "action": "propose",
+          "by": "ana-reyes",
+          "note": null
+        }
+      ]
+    },
+    {
+      "id": "map:20260901-004",
+      "relation": "satisfies",
+      "s": "control:review-1",
+      "t": "obligation:o2",
+      "status": "proposed",
+      "basis": "Invented basis for the fixture.",
+      "origin": "reviewer",
+      "owner": "person:ana-reyes",
+      "maker": "ana-reyes",
+      "checker": null,
+      "valid_from": null,
+      "valid_to": null,
+      "anchors": {
+        "s_hash": null,
+        "t_hash": null
+      },
+      "reason": null,
+      "superseded_by": null,
+      "history": [
+        {
+          "ts": "2026-09-01T10:00:00Z",
+          "action": "propose",
+          "by": "ana-reyes",
+          "note": null
+        }
+      ]
+    }
+  ]
+}
