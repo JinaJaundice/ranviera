@@ -189,6 +189,8 @@
    "type": "ModelVersion",
    "label": "model-a",
    "props": {
+    "approvedBy": "person:ana-reyes",
+    "approvedOn": "2026-08-01",
     "modelId": "model-a",
     "parameters": "{\"temperature\":0}",
     "promptHash": "sha256:1111111111111111111111111111111111111111111111111111111111111111"

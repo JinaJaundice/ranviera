@@ -29,7 +29,7 @@ describe("wording of the trace", () => {
   });
 
   it("locates the break in the ledger", () => {
-    expect(ledgerNote({ entries: 8, verified: false, breaks: 1, notes: [{ step: 3 }] }, 9)).toBe("The ledger holds 8 of the 9 steps. Step 3 is missing from it. The check found no other break, so the entries it does hold chain correctly.");
+    expect(ledgerNote({ entries: 8, verified: false, breaks: 1, notes: [{ step: 3 }] }, 9)).toBe("The ledger holds 8 of the 9 steps. Step 3 is missing from it. The check found no other break, and each entry it holds is linked correctly to the one before.");
     expect(ledgerNote({ entries: 8, verified: true, breaks: 0 }, 9)).toBeNull();
     expect(ledgerNote({ entries: 8, verified: false, breaks: 2 }, 9)).toBe("The ledger chain of this run is broken at 2 points.");
   });

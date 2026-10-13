@@ -7,6 +7,12 @@
   "approved_models": [
     "model:model-a"
   ],
+  "model_approvals": {
+    "model:model-a": {
+      "approver": "person:ana-reyes",
+      "approved_on": "2026-08-01"
+    }
+  },
   "instructions": [
     {
       "id": "instr:alert-triage-escalate-match",

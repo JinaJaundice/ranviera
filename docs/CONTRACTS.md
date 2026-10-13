@@ -509,11 +509,12 @@ interface RunSummary { run: string; agent: string; case_ref: string | null; ts: 
 interface InstrRef { id: string; label: string; version: number | null; status: string | null; in_force: boolean
                      maker: string | null; approver: string | null; approved_on: string | null; self_approved: boolean }   // 13 October 2026: the people and the day of the approval, from the instruction store
 interface ChainLink { mapping: string | null; relation: string; from: string; to: string; to_label: string; to_type: string; status: "stated" | "ratified" | "proposed" | "missing"
-                    maker?: string | null; checker?: string | null; since?: string | null }   // 13 October 2026: from the mapping record, absent on a missing link
+                    maker?: string | null; checker?: string | null; since?: string | null
+                    clause_ref?: string | null; policy?: string | null }   // 13 October 2026: from the mapping record, absent on a missing link. clause_ref and policy are on a link to a policy clause (the clause number and the policy that holds it)
 interface DecisionTrace {
   run: string
   agent: { id: string; label: string }
-  model: { id: string; status: string | null; approved: boolean }
+  model: { id: string; status: string | null; approved: boolean; approver?: string | null; approved_on?: string | null }   // 13 October 2026: who approved the model version and on what day, from the instruction store (model_approvals), null where the version is not approved
   case_ref: string | null
   decision: { id: string; outcome: string; step: number; ts: string } | null
   review: { reviewer: string; verdict: string | null; override: boolean; override_reason: string | null; time_open_s: number | null; items_viewed: number | null; checks_ticked: string[] } | null
@@ -550,7 +551,7 @@ interface InstructionDetail {
 }
 interface MonitoringReport {
   from: string | null; to: string | null
-  agents: { id: string; label: string; decisions: number; reviewed: number
+  agents: { id: string; label: string; runs?: number; runs_recorded?: number; decisions: number; reviewed: number   // 13 October 2026: the runs inside the period and all the runs recorded for the agent
             override_per_mille: number | null; review_seconds_mean: number | null
             agreement_by_version: Record<string, { sampled: number; agree: number }>
             bounds: Record<string, { min: number | null; max: number | null }>
@@ -561,7 +562,7 @@ interface MonitoringReport {
 }
 ```
 
-Presentation of the view shapes, 13 October 2026. No shape changed. The Oversight window shows the data as follows: the agent by `agent.label` with the prefix `dagent:` removed and the first letter capitalised, a person by the name in the people file that `GET /api/oversight/status` returns, an outcome as Closed, Escalated or Information requested, a relation in plain words (`implementsClause` as 'implements the clause', `realises` as 'realises the control', `satisfies` as 'satisfies the obligation'), and a date as '12 August 2026'. The identifier stays in a title attribute. The decision trace shows the findings of the run and the basis of the decision (the instructions cited at the decision step with their chains, the evidence read and the rationale reference) under the decision, and lists the instructions in context once, at the first step, with later steps noting only what changed. Second pass, 13 October 2026: `CoverageMatrix.earlier_versions` is new (optional for a reader of an older server). `pack.json` carries `names`, a map from identifier to name that the readable document uses, so that `pack.html` shows names, dates in the form 12 August 2026 and the facts of a proof in sentences, while `pack.json` keeps the identifiers.
+Presentation of the view shapes, 13 October 2026. No shape changed. The Oversight window shows the data as follows: the agent by `agent.label` with the prefix `dagent:` removed and the first letter capitalised, a person by the name in the people file that `GET /api/oversight/status` returns, an outcome as Closed, Escalated or Information requested, a relation in plain words (`implementsClause` as 'implements the clause', `realises` as 'realises the control', `satisfies` as 'satisfies the obligation'), and a date as '12 August 2026'. The identifier stays in a title attribute. The decision trace shows the findings of the run and the basis of the decision (the instructions cited at the decision step with their chains, the evidence read and the rationale reference) under the decision, and lists the instructions in context once, at the first step, with later steps noting only what changed. Second pass, 13 October 2026: `CoverageMatrix.earlier_versions` is new (optional for a reader of an older server). `pack.json` carries `names`, a map from identifier to name that the readable document uses, so that `pack.html` shows names, dates in the form 12 August 2026 and the facts of a proof in sentences, while `pack.json` keeps the identifiers. Later on 13 October 2026 the view shapes gained fields. `DecisionTrace.model` gains `approver` and `approved_on` (optional), `ChainLink` gains `clause_ref` and `policy` on a link to a policy clause, and `MonitoringReport.agents[]` gains `runs` and `runs_recorded` (optional), which the readable pack uses to say how many of the recorded runs its monitoring summary covers. The instruction store gains `model_approvals`, a map from model version to `{ approver, approved_on }`, and the model node carries `approvedBy` and `approvedOn` as properties. The finding code stays in the data and no longer appears on screen.
 
 
 ### Evidence pack
@@ -604,6 +605,7 @@ As built on 7 October 2026 (`server/src/oversight.ts`), the routes differ from t
 
 - 7 October 2026: agent transparency contracts. The configuration keys for oversight, the mapping file, the run record `ranviera.run.v1`, the run ledger, the instruction store, the policy pack, identity and roles, the oversight commands, the view shapes, the evidence pack, the oversight routes (provisional), the signed bundle and its verifier, the bounds file and the conflict scan command.
 - 12 October 2026: the compiler writes what shapes F02 to F04, F06, F08 and F14 read. A mapping node gains `sourceAnchor`, `targetAnchor` and `ratifiedOn` (ratified only) and the edges `ownedBy`, `proposedBy` and `approvedBy` (the last for a ratified mapping only) to Person nodes of the stated provenance, with the evidence `mappings/<scope>.json#<id>`. A Run node gains `promptHash`, a decision node gains a `statesRationale` edge to the last stated rationale before it (a rationale serves one decision), and the transparency stage writes a `ledger:<seq>` LedgerEntry node (`seq`, `recordHash`, `prevHash`, `entryHash`) with an `entryOf` edge to its run for each ledger entry that names a run. Check P08 also accepts `instructions/<agent>.json` and `instructions/<agent>.json#<version id>`, resolved in the profile folder and checked for the version, and resolves a bare vocabulary file name in `<profile>/vocab`.
+- 13 October 2026: the views answer the review of three second-line roles. `ChainLink` gains `clause_ref` and `policy` on a link to a policy clause, `DecisionTrace.model` gains `approver` and `approved_on` from the new `model_approvals` of the instruction store, and an agent of `MonitoringReport` gains `runs` and `runs_recorded`. The demonstrator records the approver and the day of each approved model version.
 
 ## Non-affiliation
 

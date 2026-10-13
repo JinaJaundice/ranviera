@@ -30,7 +30,7 @@ function Measures({ a }: { a: Agent }) {
   ];
   return (
     <table className="w-full min-w-0 table-fixed border-collapse text-small">
-      <caption className="sr-only">Measures of {a.label} against the bounds that the bank set</caption>
+      <caption className="sr-only">Measures of {agentName(a.label)} against the bounds that the bank set</caption>
       <thead>
         <tr className="border-b border-rule text-left text-ink-faint">
           <th scope="col" className="w-1/4 px-2 py-1.5 font-medium">Measure</th>

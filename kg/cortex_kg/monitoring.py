@@ -267,7 +267,8 @@ def report(cfg: Config, agent: str | None = None, frm: str | None = None, to: st
         m = measures.get(aid, {})
         b = {k: {"min": x.get("min"), "max": x.get("max")} for k, x in bounds.get(aid, {}).items()}
         agents.append({
-            "id": aid, "label": v.label(aid), "decisions": len(decisions), "reviewed": reviewed,
+            "id": aid, "label": v.label(aid), "runs": len(mine), "runs_recorded": len(all_runs),
+            "decisions": len(decisions), "reviewed": reviewed,
             "override_per_mille": m.get("override"), "review_seconds_mean": m.get("review_seconds"),
             "agreement_by_version": _agreement(v, cfg.profile_dir, aid), "bounds": b,
             "drift": detect_drift(v, all_runs, frm, to), "backtests": backtest.summaries(cfg, aid),

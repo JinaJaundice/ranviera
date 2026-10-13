@@ -1,9 +1,9 @@
 // Small pieces that the sections of the Oversight window share.
 import { useState, type ReactNode } from "react";
 import type { MonitoringReport, TraceFinding } from "@shared/types";
+import { Loader2 } from "lucide-react";
 import { Button } from "../../components/Button";
 import { Chip } from "../../components/Chip";
-import { Empty } from "../../components/Empty";
 import { NodeChip } from "../../components/NodeChip";
 import { StatusDot } from "../../components/StatusDot";
 import { useStore } from "../../lib/store";
@@ -51,7 +51,14 @@ export function ErrorLine({ children }: { children: ReactNode }) {
 /** Shows the state of a load, and the content when there is data. */
 export function Loading<T>({ load, what, children }: { load: Loaded<T>; what: string; children: (data: T) => ReactNode }) {
   if (load.error) return <ErrorLine>{load.error}</ErrorLine>;
-  if (!load.data) return <Empty>{`Loading ${what}.`}</Empty>;
+  if (!load.data) {
+    return (
+      <p role="status" className="flex items-center justify-center gap-2 px-3 py-6 text-body text-ink-faint">
+        <Loader2 size={14} aria-hidden="true" className="shrink-0 animate-spin" />
+        {`Loading ${what}.`}
+      </p>
+    );
+  }
   return <>{children(load.data)}</>;
 }
 
@@ -88,8 +95,7 @@ export function FindingRow({ f, subject = null, ledgerNote = null, detail = null
         <div className="min-w-0">
           <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-body text-ink">
             <StatusDot tone={severityTone(f.severity)} />
-            <span className="font-medium" title={`Check ${f.check}`}>{checkTitle(f.check)}</span>
-            <span className="text-caption text-ink-faint">{f.check}</span>
+            <span className="font-medium">{checkTitle(f.check)}</span>
             <span className="text-ink-soft" title={SEVERITY_NOTE[f.severity]}>{severityWord(f.severity)}</span>
           </p>
           <p className="text-body text-ink">{lead ?? plainMessage(f.message)}</p>

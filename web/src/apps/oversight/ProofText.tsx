@@ -91,18 +91,22 @@ function factIds(fact: string): string[] {
   return f ? [...new Set(f.args.filter((a) => /^[a-z]+:\S+$/.test(a)))] : [];
 }
 
-function Level({ node, label }: { node: ProofNode; label: Label }) {
-  const sentence = factSentence(node.fact, label);
+/** The sentences already shown in one proof, so that a fact stated twice by two rules is shown once. */
+type Seen = Set<string>;
+
+function Level({ node, label, seen }: { node: ProofNode; label: Label; seen: Seen }) {
+  const sentence = factSentence(node.fact, label)?.replace(/(.)The obligation\b/g, "$1the obligation") ?? null;
   const kids = node.children.filter((c) => c);
-  if (!sentence) {
-    return <>{kids.map((c, i) => <Level key={i} node={c} label={label} />)}</>;
+  if (!sentence || seen.has(sentence)) {
+    return <>{kids.map((c, i) => <Level key={i} node={c} label={label} seen={seen} />)}</>;
   }
+  seen.add(sentence);
   return (
     <li className="min-w-0">
-      <p className="text-body text-ink" title={[node.rule ? `Rule ${node.rule}` : "", ...factIds(node.fact)].filter(Boolean).join(". ") || undefined}>{sentence}.</p>
+      <p className="text-body text-ink" title={factIds(node.fact).join(". ") || undefined}>{sentence}.</p>
       {kids.length ? (
         <ul className="ml-3 mt-1 space-y-1 border-l border-rule pl-3">
-          {kids.map((c, i) => <Level key={i} node={c} label={label} />)}
+          {kids.map((c, i) => <Level key={i} node={c} label={label} seen={seen} />)}
         </ul>
       ) : null}
     </li>
@@ -113,7 +117,14 @@ function Level({ node, label }: { node: ProofNode; label: Label }) {
 export function ProofText({ proof }: { proof: ProofNode }) {
   const byId = useStore((s) => s.byId);
   const people = usePeople();
+  const seen: Seen = new Set();
+  const named = new Set<string>();
   const label: Label = (id) => {
+    // a long obligation name is given in full once and is then called the obligation, so that each line is short to scan
+    if (byId.get(id)?.type === "Obligation") {
+      if (named.has(id)) return "The obligation";
+      named.add(id);
+    }
     if (/^adec:/.test(id)) return "The decision";
     if (/^run:/.test(id)) return "The run";
     if (/^dagent:/.test(id)) return agentName(byId.get(id)?.label ?? id);
@@ -130,10 +141,10 @@ export function ProofText({ proof }: { proof: ProofNode }) {
       <p className="mb-1 text-small text-ink-soft">What the record shows</p>
       {kids.length ? (
         <ul className="min-w-0 space-y-1">
-          {kids.map((c, i) => <Level key={i} node={c} label={label} />)}
+          {kids.map((c, i) => <Level key={i} node={c} label={label} seen={seen} />)}
         </ul>
       ) : (
-        <p className="text-small text-ink-faint">The check recorded this finding from the ledger and holds no further steps.</p>
+        <p className="text-small text-ink-faint">The check holds no further steps for this finding.</p>
       )}
     </div>
   );

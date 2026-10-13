@@ -6,7 +6,7 @@ import { NodeChip } from "../../components/NodeChip";
 import { api } from "../../lib/api";
 import { toast } from "../../shell/toastStore";
 import { useLoad } from "./load";
-import { ageLine, ownersOf, personName, queueRows, relationWord, type QueueRow } from "./model";
+import { ageLine, longDate, ownersOf, personName, queueRows, relationWord, type QueueRow } from "./model";
 import { NO_ACTOR_DEMO, NO_ACTOR_FIXED } from "./model";
 import { queueBlock } from "./wording";
 import { ErrorLine, INPUT, Loading, Person, StateChip } from "./parts";
@@ -16,10 +16,26 @@ type Mode = "reject" | "reassign" | null;
 type Actor = OversightStatus["people"][number] | null;
 
 const ORIGIN: Record<MappingRecord["origin"], string> = {
-  reviewer: "Entered by a reviewer",
+  reviewer: "Entered by",
   suggested: "Suggested by the automatic matching tool from the source records",
   imported: "Imported from an existing register",
 };
+
+/** How the mapping came to be, naming the reviewer and the day of entry where the record holds them. */
+function originLine(m: MappingRecord, people: OversightStatus["people"]): string {
+  const first = m.history.find((h) => h.action === "propose") ?? m.history[0];
+  const day = first?.ts ? ` on ${longDate(first.ts)}` : "";
+  if (m.origin === "reviewer") return `${ORIGIN.reviewer} ${personName(people, first?.by ?? m.maker)}${day}.`;
+  return `${ORIGIN[m.origin] ?? m.origin}${day}.`;
+}
+
+/** Who ratified a mapping and on what day, for a stale mapping, or null where the record holds no ratification. */
+function ratifiedLine(m: MappingRecord, people: OversightStatus["people"]): string | null {
+  const r = [...m.history].reverse().find((h) => h.action === "ratify");
+  if (!r && !m.checker) return null;
+  const day = r?.ts ?? m.valid_from;
+  return `Ratified by ${personName(people, r?.by ?? m.checker)}${day ? ` on ${longDate(day)}` : ""}.`;
+}
 
 function Row({ row, people, done, actor, demo, shared }: { row: QueueRow; people: OversightStatus["people"]; done: () => void; actor: Actor; demo: boolean; shared: boolean }) {
   const m = row.mapping;
@@ -57,7 +73,7 @@ function Row({ row, people, done, actor, demo, shared }: { row: QueueRow; people
         <NodeChip id={m.t} />
       </div>
       <p className="mt-1 text-body text-ink">{m.basis || "No basis is recorded."}</p>
-      <p className="text-small text-ink-faint">{ORIGIN[m.origin] ?? m.origin}.</p>
+      <p className="text-small text-ink-faint">{originLine(m, people)}{row.kind === "stale" ? ` ${ratifiedLine(m, people) ?? ""}` : ""}</p>
       <p className="mt-1 flex min-w-0 flex-wrap gap-x-4 text-small text-ink-soft">
         <span>Owner <Person id={m.owner} /></span>
         <span>Proposed by <Person id={m.maker} /></span>
@@ -141,7 +157,7 @@ export function QueueTab({ people, acting }: { people: OversightStatus["people"]
                     <option key={o} value={o}>{personName(people, o)}</option>
                   ))}
                 </select>
-                <span className="num text-small text-ink-soft">{shown.length} of {rows.length} mappings</span>
+                <span className="text-small text-ink-soft">{shown.length} of {rows.length} mappings</span>
               </div>
               {shared ? (
                 <div className="flex min-w-0 flex-wrap items-center gap-2 border-b border-rule bg-sunken px-4 py-2">
@@ -152,7 +168,7 @@ export function QueueTab({ people, acting }: { people: OversightStatus["people"]
                 </div>
               ) : null}
               <p className="border-b border-rule px-4 py-2 text-small text-ink-soft">
-                A proposed mapping takes effect when a checker other than its maker ratifies it. {checkers.length ? `The checkers on the list of people are ${checkers.join(", ")}.` : "The list of people names no checker."} Only a checker may ratify, reject or reassign a mapping, and the server refuses anyone else.
+                A proposed mapping takes effect when a checker other than its maker ratifies it. {checkers.length ? `The checkers on the list of people are ${checkers.join(", ")}.` : "The list of people names no checker."} Only a checker may ratify, reject or reassign a mapping, and the action of any other person is refused.
               </p>
               {shown.length ? (
                 <ul>

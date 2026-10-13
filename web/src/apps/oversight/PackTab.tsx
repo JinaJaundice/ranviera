@@ -116,10 +116,12 @@ export function PackTab({ preset }: { preset: { kind: ScopeKind; value: string }
             <label className="text-small text-ink-soft">
               From
               <input type="date" className={`${INPUT} mt-0.5 block`} value={from} onChange={(e) => setFrom(e.target.value)} />
+              <span className="mt-0.5 block text-caption text-ink-soft">{from ? longDate(from) : "No date chosen"}</span>
             </label>
             <label className="text-small text-ink-soft">
               To
               <input type="date" className={`${INPUT} mt-0.5 block`} value={to} onChange={(e) => setTo(e.target.value)} />
+              <span className="mt-0.5 block text-caption text-ink-soft">{to ? longDate(to) : "No date chosen"}</span>
             </label>
           </>
         ) : (
@@ -179,7 +181,7 @@ export function PackTab({ preset }: { preset: { kind: ScopeKind; value: string }
         <section aria-label="Exported pack" className="mt-4 min-w-0 rounded-md border border-rule-strong p-3">
           <h3 className="text-ui font-medium text-ink">Pack written on {longDate(pack.manifest.created)}</h3>
           <p className="mt-1 text-body text-ink-soft">
-            The pack holds {pack.manifest.files.length === 1 ? "1 file" : `${pack.manifest.files.length} files`}. Open the readable pack to read it, or save the data file for an audit tool.
+            The pack holds {pack.manifest.files.length === 1 ? "1 file" : `${pack.manifest.files.length} files`} and a list of their fingerprints, which is kept inside the pack folder. Open the readable pack to read it, or save the data file for an audit tool.
           </p>
           <div className="mt-2 flex min-w-0 flex-wrap items-center gap-2">
             <Button variant="primary" onClick={() => void open()}>Open the readable pack</Button>
@@ -203,13 +205,14 @@ export function PackTab({ preset }: { preset: { kind: ScopeKind; value: string }
           </table>
           <details className="mt-2 text-small text-ink-soft">
             <summary className="cursor-pointer">Where the pack is kept, and its fingerprints</summary>
-            <p className="mt-1">Saved on the server in the folder</p>
-            <p className="addr select-all break-all">{pack.path}</p>
+            <p className="mt-1">Saved in the packs folder of this installation, in the folder named {folder}. The path and the file names are for audit use.</p>
             <ul className="mt-1 space-y-0.5">
               {pack.manifest.files.map((f) => (
                 <li key={f.path} className="min-w-0 break-all">{f.path} <span className="addr">{f.sha256}</span></li>
               ))}
             </ul>
+            <p className="mt-1">Path on the server</p>
+            <p className="addr select-all break-all">{pack.path}</p>
           </details>
         </section>
       ) : null}

@@ -27,12 +27,14 @@ export function unplacedFindings(all: TraceFinding[], steps: { findings: TraceFi
   return all.filter((f) => !placed.has(key(f)));
 }
 
-/** Whole days from an ISO date or timestamp to now, or null where the date cannot be read. */
+/** Calendar days from the date of an ISO date or timestamp to the date of now, or null where the date cannot be read.
+ * The time of day is ignored, so a row dated by a timestamp and a row dated by a day count the same way. */
 export function ageDays(iso: string | null | undefined, now: number): number | null {
-  if (!iso) return null;
-  const t = Date.parse(iso);
-  if (Number.isNaN(t)) return null;
-  return Math.max(0, Math.floor((now - t) / 86_400_000));
+  if (!iso || !/^\d{4}-\d{2}-\d{2}/.test(iso)) return null;
+  const day = Date.parse(iso.slice(0, 10));
+  if (Number.isNaN(day)) return null;
+  const today = Date.parse(new Date(now).toISOString().slice(0, 10));
+  return Math.max(0, Math.round((today - day) / 86_400_000));
 }
 
 export function ageText(days: number | null): string {

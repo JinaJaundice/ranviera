@@ -8,7 +8,8 @@ import { NodeChip } from "../../components/NodeChip";
 import { StatusDot } from "../../components/StatusDot";
 import { api } from "../../lib/api";
 import { useLoad } from "./load";
-import { LIMITS_NOTE, agentName, contextNotes, evidenceUpTo, longDate, nodeTypeWord, outcomeWord, plural, relationWord, shortHash, statusWord, when, type ContextNote } from "./model";
+import { LIMITS_NOTE, agentName, contextNotes, evidenceUpTo, longDate, nodeTypeWord, outcomeWord, personName, plural, relationWord, shortHash, statusWord, when, type ContextNote } from "./model";
+import { usePeople } from "./people";
 import { AgentName, Fact, FindingList, LabelTag, Loading, Person, StateChip } from "./parts";
 import { LINK_LEGEND, WORKED_OUT, basisSentences, chainState, checkTitle, evidenceName, ledgerNote, missingSteps, modelName, plainRationale, stepWord, toolName, type ChainState } from "./wording";
 
@@ -36,6 +37,9 @@ function Chain({ links }: { links: ChainLink[] }) {
             <>
               <NodeChip id={l.to} label={l.to_label} />
               <span className="text-ink-faint">{nodeTypeWord(l.to_type)}</span>
+              {l.to_type === "PolicyClause" && (l.policy || l.clause_ref) ? (
+                <span className="text-ink-soft">{[l.policy, l.clause_ref ? `clause ${l.clause_ref}` : ""].filter(Boolean).join(", ")}</span>
+              ) : null}
             </>
           )}
           <StateChip tone={LINK_TONE[l.status]}>{statusWord(l.status)}</StateChip>
@@ -64,7 +68,14 @@ function Approval({ r }: { r: InstrRef }) {
   );
 }
 
+/** Who made and who approved an instruction version, and when, in one line. */
+function approvalLine(r: InstrRef, people: ReturnType<typeof usePeople>): string {
+  const made = `Made by ${personName(people, r.maker)}`;
+  return r.approver ? `${made}. Approved by ${personName(people, r.approver)}${r.approved_on ? ` on ${longDate(r.approved_on)}` : ""}.` : `${made}. Not approved.`;
+}
+
 function InstructionRow({ ref_, chains, startOpen }: { ref_: InstrRef; chains: Record<string, ChainLink[]>; startOpen: boolean }) {
+  const people = usePeople();
   const [open, setOpen] = useState(startOpen);
   return (
     <li className="min-w-0">
@@ -76,6 +87,7 @@ function InstructionRow({ ref_, chains, startOpen }: { ref_: InstrRef; chains: R
         {ref_.self_approved ? (
           <StateChip tone="block">Approved by its own maker</StateChip>
         ) : null}
+        <span className="basis-full pl-5 text-caption text-ink-faint">{approvalLine(ref_, people)}</span>
       </button>
       {open ? (
         <div className="ml-5 mt-1 min-w-0 space-y-1 border-l border-rule pl-3">
@@ -111,7 +123,7 @@ function Review({ trace }: { trace: Trace }) {
           <Fact label="Override">{r.override ? `Yes. ${r.override_reason ?? "No reason recorded."}` : "No"}</Fact>
           <Fact label="Time open">{r.time_open_s === null ? "Not recorded" : `${r.time_open_s} seconds`}</Fact>
           <Fact label="Items viewed">{r.items_viewed ?? "Not recorded"}</Fact>
-          <Fact label="Checks ticked">{r.checks_ticked.length ? r.checks_ticked.join(", ") : "None"}</Fact>
+          <Fact label="Checks ticked">{r.checks_ticked.length ? r.checks_ticked.map((c) => c.replace(/[-_]/g, " ")).join(", ") : "None"}</Fact>
         </dl>
       ) : (
         <p className="text-body text-ink-soft">No human review is recorded for this run.</p>
@@ -162,7 +174,14 @@ function CitedRow({ r, links, day }: { r: InstrRef; links: ChainLink[]; day: str
             "Not approved"
           )}
         </td>
-        <td className="min-w-0 px-2 py-1.5"><StateChip tone={policy.tone}>{policy.text}</StateChip></td>
+        <td className="min-w-0 px-2 py-1.5">
+          <StateChip tone={policy.tone}>{policy.text}</StateChip>
+          {links.filter((l) => l.status === "proposed" || (l.status === "missing" && links.length > 1)).map((l, i) => (
+            <span key={i} className="mt-0.5 block text-caption text-ink-faint">
+              {l.status === "proposed" ? `${nodeTypeWord(l.to_type)} ${l.to_label} is proposed` : `No ${nodeTypeWord(l.to_type).toLowerCase()} is linked to ${links.find((x) => x.to === l.from)?.to_label ?? "the item above"}`}
+            </span>
+          ))}
+        </td>
       </tr>
       {open ? (
         <tr className="border-b border-rule">
@@ -307,6 +326,25 @@ function NoCitationDetail({ trace }: { trace: Trace }) {
   );
 }
 
+/** The proof of an incomplete record: each step of the run against its entry in the ledger. */
+function LedgerSteps({ trace, absent }: { trace: Trace; absent: number[] }) {
+  const held = trace.steps.filter((s) => !absent.includes(s.step)).length;
+  return (
+    <div className="min-w-0">
+      <p className="mb-1 text-small text-ink-soft">The run records {plural(trace.steps.length, "step")} and the ledger holds {plural(held, "entry", "entries")}. Each step is listed with its entry.</p>
+      <ul className="space-y-0.5">
+        {trace.steps.map((s) => (
+          <li key={s.id} className="flex min-w-0 flex-wrap items-center gap-1.5 text-body text-ink">
+            <StatusDot tone={absent.includes(s.step) ? "block" : "pass"} />
+            <span>Step {s.step}, {s.tool ? toolName(s.tool) : stepWord(s.kind)}</span>
+            <span className={absent.includes(s.step) ? "text-block" : "text-ink-soft"}>{absent.includes(s.step) ? "no ledger entry" : "ledger entry present"}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 function ContextBlock({ note, refs, chains, label }: { note: ContextNote; refs: InstrRef[]; chains: Record<string, ChainLink[]>; label: Trace["labels"]["loaded"] }) {
   const [open, setOpen] = useState(false);
   const title = "The instruction versions that the agent loaded. It does not show that the model weighed them.";
@@ -372,7 +410,13 @@ function TraceView({ trace, onExport }: { trace: Trace; onExport: (run: string) 
           <Fact label="Model version">
             <span className="block" title={trace.model.id}>{modelName(trace.model.id)}</span>
             <StateChip tone={trace.model.approved ? "pass" : "block"}>{trace.model.approved ? "On the approved list of the agent" : "Not on the approved list of the agent"}</StateChip>
-            <span className="mt-0.5 block text-small text-ink-faint">The record holds the list of approved models and not who approved each model.</span>
+            <span className="mt-0.5 block text-small text-ink-faint">
+              {trace.model.approved && trace.model.approver
+                ? <>Approved by <Person id={trace.model.approver} />{trace.model.approved_on ? ` on ${longDate(trace.model.approved_on)}` : ""}.</>
+                : trace.model.approved
+                  ? "The record shows that the model is approved and does not say who approved it."
+                  : "No approval of this model version is recorded for the agent."}
+            </span>
           </Fact>
           <Fact label="Record of the steps">
             {trace.ledger.verified === null ? "Not verified" : trace.ledger.verified ? `Verified, ${plural(trace.ledger.entries, "entry", "entries")}` : broken ?? "Not verified"}
@@ -387,7 +431,7 @@ function TraceView({ trace, onExport }: { trace: Trace; onExport: (run: string) 
           Findings of this run
           <span className="num text-small text-ink-faint">{trace.findings.length}</span>
         </h3>
-        <FindingList findings={trace.findings} none={unlinked ? "No finding is open for this run. The basis below notes cited instructions that lack a ratified link to policy." : "No finding is open for this run."} subject={subject} ledgerNote={broken} detailFor={(f) => (f.check === "O04" && uncited ? <NoCitationDetail trace={trace} /> : null)} />
+        <FindingList findings={trace.findings} none={unlinked ? "No finding is open for this run. The basis below notes cited instructions that lack a ratified link to policy." : "No finding is open for this run."} subject={subject} ledgerNote={broken} detailFor={(f) => (f.check === "O04" && uncited ? <NoCitationDetail trace={trace} /> : f.check === "O11" ? <LedgerSteps trace={trace} absent={absent} /> : null)} />
       </section>
 
       <Basis trace={trace} />
@@ -402,7 +446,7 @@ function TraceView({ trace, onExport }: { trace: Trace; onExport: (run: string) 
               <p className="flex min-w-0 flex-wrap items-center gap-1.5 text-body text-ink">
                 <span className="num font-medium">Step {s.step}</span>
                 <span title={s.tool ? `${stepWord(s.kind)}. ${s.tool}` : s.kind}>{s.tool ? toolName(s.tool) : stepWord(s.kind)}</span>
-                {s.tool ? <LabelTag title="The tool call was recorded by the hook or the gateway.">{L.recorded}</LabelTag> : null}
+                {s.tool ? <LabelTag title="The tool call was recorded by the hook or the gateway.">{L.recorded}</LabelTag> : <LabelTag title="The step was recorded in the run record. What the agent wrote at the step is marked separately.">{L.recorded}</LabelTag>}
                 <span className="text-small text-ink-faint">{when(s.ts)}</span>
                 {absent.includes(s.step) ? <StateChip tone="block">Missing from the ledger</StateChip> : null}
               </p>

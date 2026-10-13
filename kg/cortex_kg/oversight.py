@@ -267,9 +267,13 @@ def chain(v: View, vid: str) -> list[dict]:
 
     def link(e: dict, frm: str, to: str) -> dict:
         rec = v.mapping_records.get(e.get("mapping") or "") or {}
-        return {"mapping": e.get("mapping"), "relation": e["r"], "from": frm, "to": to, "to_label": v.label(to),
-                "to_type": v.type_of(to), "status": link_status(e), "maker": rec.get("maker"),
-                "checker": rec.get("checker"), "since": rec.get("valid_from")}
+        out = {"mapping": e.get("mapping"), "relation": e["r"], "from": frm, "to": to, "to_label": v.label(to),
+               "to_type": v.type_of(to), "status": link_status(e), "maker": rec.get("maker"),
+               "checker": rec.get("checker"), "since": rec.get("valid_from")}
+        if v.type_of(to) == "PolicyClause":   # the policy document and the clause number, for a reader who holds the policy
+            out["clause_ref"] = v.prop(to, "section")
+            out["policy"] = v.prop(to, "pack")
+        return out
 
     def missing(rel: str, frm: str, to_type: str) -> dict:
         return {"mapping": None, "relation": rel, "from": frm, "to": "", "to_label": "", "to_type": to_type,
@@ -348,7 +352,9 @@ def trace(cfg: Config, run_ref: str, view: View | None = None) -> dict:
                   "checks_ticked": list(v.prop(rv, "checksTicked") or [])}
     return {
         "run": rid, "agent": {"id": agent, "label": v.label(agent) if agent else ""},
-        "model": {"id": mid or "", "status": (v.nodes.get(mid) or {}).get("status") if mid else None, "approved": approved},
+        "model": {"id": mid or "", "status": (v.nodes.get(mid) or {}).get("status") if mid else None, "approved": approved,
+                  "approver": (v.prop(mid, "approvedBy") if approved else None) if mid else None,
+                  "approved_on": (v.prop(mid, "approvedOn") if approved else None) if mid else None},
         "case_ref": v.prop(rid, "caseRef"),
         "decision": {"id": d[0], "outcome": v.prop(d[0], "outcome"), "step": int(v.prop(d[1], "ordinal") or 0),
                      "ts": v.prop(d[1], "ts") or ""} if d else None,

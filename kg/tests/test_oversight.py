@@ -27,7 +27,7 @@ def test_trace_labels_steps_and_chains(tmp_path):
     cfg, _ = make_env(tmp_path)
     t = ov.trace(cfg, R3)
     assert t["labels"] == {"recorded": "recorded", "loaded": "loaded", "stated": "stated by the agent, cause unverified"}
-    assert t["model"] == {"id": "model:model-b", "status": "pending", "approved": False}
+    assert t["model"] == {"id": "model:model-b", "status": "pending", "approved": False, "approver": None, "approved_on": None}
     assert t["decision"]["outcome"] == "close" and t["review"] is None
     decision_step = next(s for s in t["steps"] if s["kind"] == "decision")
     assert [c["id"] for c in decision_step["cited"]] == [NAR]
@@ -50,6 +50,7 @@ def test_trace_of_a_reviewed_run_and_references(tmp_path):
     cfg, _ = make_env(tmp_path)
     t = ov.trace(cfg, "r2")                                   # the run name is accepted
     assert t["run"] == R2 and t["model"]["approved"] is True and t["agent"]["id"] == AGENT
+    assert t["model"]["approver"] == "person:ana-reyes" and t["model"]["approved_on"] == "2026-08-01"   # round 4: who approved the model
     assert t["review"]["override"] is True and t["review"]["override_reason"] == "The date of birth differs."
     assert t["review"]["checks_ticked"] == ["name", "dob"] and t["review"]["time_open_s"] == 15
     assert t["steps"][2]["rationale"]["hash"].startswith("sha256:") and t["steps"][2]["rationale"]["content_ref"]

@@ -7,6 +7,7 @@ import { useStore } from "../lib/store";
 import { THEMES, setTheme, useTheme } from "./useTheme";
 import { productName } from "../apps/setup/copy";
 import { claudeSummary } from "../apps/setup/model";
+import { useWindows } from "./windows";
 import { refreshClaude, useSetupStore } from "../apps/setup/state";
 
 const hhmm = (d: Date) => d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit" });
@@ -68,6 +69,8 @@ function ThemeMenu() {
 
 export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
   const status = useStore((s) => s.status);
+  // financial crime staff read the Oversight window, so the graph counts give way to the time of the record
+  const oversightFocus = useWindows().focused === "oversight";
   const graph = useStore((s) => s.graph);
   const health = useStore((s) => s.health);
   const connected = useStore((s) => s.connected);
@@ -109,7 +112,7 @@ export function TopBar({ onOpenPalette }: { onOpenPalette: () => void }) {
         <span className="font-display text-lead font-medium text-ink">{product ?? ""}</span>
         <StatusDot tone={tone} label={toneLabel} />
         <span className="num truncate text-small text-ink-soft">
-          {nodes} nodes, {edges} edges, built {built}
+          {oversightFocus ? `Record as at ${built}` : `${nodes} nodes, ${edges} edges, built ${built}`}
         </span>
       </div>
       <button

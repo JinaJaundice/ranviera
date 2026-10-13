@@ -433,6 +433,9 @@ export interface ChainLink {
   maker?: string | null;
   checker?: string | null;
   since?: string | null;
+  /** on a link to a policy clause: the clause number and the name of the policy that holds it (13 October 2026) */
+  clause_ref?: string | null;
+  policy?: string | null;
 }
 
 export interface TraceFinding {
@@ -446,7 +449,7 @@ export interface TraceFinding {
 export interface DecisionTrace {
   run: string;
   agent: { id: string; label: string };
-  model: { id: string; status: string | null; approved: boolean };
+  model: { id: string; status: string | null; approved: boolean; approver?: string | null; approved_on?: string | null };
   case_ref: string | null;
   decision: { id: string; outcome: string; step: number; ts: string } | null;
   review: {
@@ -521,6 +524,9 @@ export interface MonitoringReport {
   agents: {
     id: string;
     label: string;
+    /** the runs of the agent in the period, and all its recorded runs (13 October 2026) */
+    runs?: number;
+    runs_recorded?: number;
     decisions: number;
     reviewed: number;
     override_per_mille: number | null;

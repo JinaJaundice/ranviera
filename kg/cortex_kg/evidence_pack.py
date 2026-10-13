@@ -248,10 +248,36 @@ def render_html(pack: dict) -> str:
             for r in cov["rows"]], [15, 25, 18, 42]))
     out.append("<h2>Monitoring summary</h2>")
     mon = pack["monitoring"]
+    def bound_words(b: dict | None, unit: str) -> str:
+        b = b or {}
+        parts = ([f"at least {b['min']}{unit}"] if b.get("min") is not None else []) + (
+            [f"at most {b['max']}{unit}"] if b.get("max") is not None else [])
+        return " and ".join(parts) or "No bound set by the bank"
+
+    def result_words(val, b: dict | None) -> str:
+        b = b or {}
+        if b.get("min") is None and b.get("max") is None:
+            return "Not checked"
+        if val is None:
+            return "No value"
+        return "Outside" if (b.get("min") is not None and val < b["min"]) or (b.get("max") is not None and val > b["max"]) else "Within"
+
     out.append(_table(["Agent", "Decisions", "Reviewed by a person", "Overridden in every 1,000 reviewed decisions",
-                       "Mean review time in seconds", "Changes recorded"],
-                      [[nm(a["id"]), a["decisions"], a["reviewed"], a["override_per_mille"], a["review_seconds_mean"],
-                        len(a["drift"])] for a in mon["agents"]], [22, 12, 16, 22, 16, 12]))
+                       "Bound of the bank for the override rate", "Result", "Mean review time in seconds",
+                       "Bound of the bank for review time", "Result", "Changes recorded"],
+                      [[nm(a["id"]), a["decisions"], a["reviewed"], a["override_per_mille"],
+                        bound_words(a["bounds"].get("override"), " in 1,000"), result_words(a["override_per_mille"], a["bounds"].get("override")),
+                        a["review_seconds_mean"], bound_words(a["bounds"].get("review_seconds"), " seconds"),
+                        result_words(a["review_seconds_mean"], a["bounds"].get("review_seconds")), len(a["drift"])]
+                       for a in mon["agents"]], [14, 8, 10, 12, 12, 8, 10, 12, 8, 6]))
+    for a in mon["agents"]:
+        if a.get("runs") is not None and a.get("runs_recorded") is not None:
+            window = ""
+            if mon.get("from") or mon.get("to"):
+                window = ", being the runs started" + (f" from {pw.long_date(mon['from'])}" if mon.get("from") else "") + (
+                    f" to {pw.long_date(mon['to'])}" if mon.get("to") else "")
+            out.append(f"<p>The figures for {_e(nm(a['id']))} cover {a['runs']} of the {a['runs_recorded']} runs recorded for the agent"
+                       f"{_e(window)}. The Monitoring tab of the window reads every recorded run unless a period is set, so its figures can differ from these.</p>")
     for a in mon["agents"]:
         for d in a["drift"]:
             out.append(f"<p>{_e(pw.DRIFT_KIND.get(d['kind'], d['kind']))}, from {_e(pw.long_date(d['since']))}. "

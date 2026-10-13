@@ -118,3 +118,14 @@ def test_coverage_lists_earlier_versions_as_a_list(tmp_path):
     from cortex_kg import oversight
     cfg, _ = make_env(tmp_path)
     assert isinstance(oversight.coverage(cfg)["earlier_versions"], list)
+
+
+def test_monitoring_summary_gives_the_runs_it_covers_and_the_result(tmp_path):
+    cfg, _ = make_env(tmp_path)
+    period = ep.build_pack(cfg, "period:2026-10-02..2026-10-03", NOW)
+    a = period["monitoring"]["agents"][0]
+    assert a["runs"] == 2 and a["runs_recorded"] == 3
+    html = ep.render_html(period)
+    summary = html[html.index("Monitoring summary"):html.index("Decision traces")]
+    assert "cover 2 of the 3 runs recorded for the agent" in summary
+    assert "Bound of the bank for the override rate" in summary and "Result" in summary

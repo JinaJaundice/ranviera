@@ -289,8 +289,10 @@ def graph_parts(profile_dir: str | Path) -> tuple[list[dict], list[dict]]:
             edges.append({"s": aid, "r": "ownedBy", "t": person(data["owner"]), "evidence": ev_agent,
                           "provenance": "stated", "weight": 1.0})
         for mid in data.get("approved_models", []):
+            appr = (data.get("model_approvals") or {}).get(mid) or {}
             nodes[mid] = {"id": mid, "type": "ModelVersion", "label": mid.split(":", 1)[-1], "status": "approved",
-                          "evidence": ev_agent, "sensitivity": "internal", "props": {}}
+                          "evidence": ev_agent, "sensitivity": "internal",
+                          "props": {k: v for k, v in (("approvedBy", appr.get("approver")), ("approvedOn", appr.get("approved_on"))) if v}}
             edges.append({"s": aid, "r": "drawsOn", "t": mid, "evidence": ev_agent, "provenance": "stated",
                           "weight": 1.0})
         for ins in data["instructions"]:

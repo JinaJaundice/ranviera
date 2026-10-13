@@ -26,6 +26,10 @@ describe("the review queue", () => {
     expect(ageLine("proposed", 20)).toBe("Proposed 20 days ago");
     expect(ageLine("stale", 1)).toBe("Ratified 1 day ago");
     expect(ageText(ageDays("nonsense", NOW))).toBe("Age not known");
+    // a timestamp late in the day and a plain date count calendar days the same way (13 October 2026)
+    const later = Date.parse("2026-10-13T14:00:00Z");
+    expect(ageDays("2026-09-24T15:00:00Z", later)).toBe(19);
+    expect(ageDays("2026-09-22", later)).toBe(21);
   });
 });
 

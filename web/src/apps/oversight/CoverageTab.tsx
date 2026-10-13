@@ -43,7 +43,7 @@ function Matrix({ m }: { m: CoverageMatrix }) {
               <td className="px-2 py-2">
                 <StateChip tone={STATE_TONE[r.state]}>{STATE_WORD[r.state]}</StateChip>
                 {r.state === "covered" && Object.values(r.cells).includes("proposed") ? (
-                  <span className="mt-1 block text-caption text-ink-faint">Rests on the ratified links only. A proposed link in the row is not counted.</span>
+                  <span className="mt-1 block text-caption text-ink-faint">Rests on the ratified links only. Not counted, because it is only proposed: {m.columns.filter((c) => r.cells[c.id] === "proposed").map((c) => c.label).join(", ")}.</span>
                 ) : null}
               </td>
               {GROUPS.map((g) => {
@@ -96,7 +96,7 @@ export function CoverageTab() {
       <Loading load={cov} what="the coverage matrix">
         {(m) => (
           <>
-            <Section title="Findings" note="Three checks run on this tab. O01, a violation: an obligation that applies to the agent has no ratified link to a control, a policy clause and an instruction in force. O02, a warning: an instruction in force has no ratified link to a policy clause. O08, a note: a typology in scope has no instruction in force that detects it.">
+            <Section title="Findings" note="Three checks run on this tab. A violation is raised where an obligation that applies to the agent has no ratified link to a control, a policy clause and an instruction in force. A warning is raised where an instruction in force has no ratified link to a policy clause. A note is raised where a typology in scope has no instruction in force that detects it.">
               <FindingList findings={m.findings} none="No coverage finding is open." />
             </Section>
             {m.earlier_versions && m.earlier_versions.length ? (

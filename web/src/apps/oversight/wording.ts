@@ -176,7 +176,7 @@ export function ledgerNote(l: { entries: number; verified: boolean | null; break
   if (l.verified !== false) return null;
   const missing = (l.notes ?? []).flatMap((n) => (n.step === null ? [] : [n.step]));
   if (missing.length) {
-    const only = l.breaks === missing.length ? " The check found no other break, so the entries it does hold chain correctly." : "";
+    const only = l.breaks === missing.length ? " The check found no other break, and each entry it holds is linked correctly to the one before." : "";
     return `The ledger holds ${l.entries} of the ${steps} steps. ${missing.length === 1 ? `Step ${missing[0]} is` : `Steps ${missing.join(" and ")} are`} missing from it.${only}`;
   }
   return `The ledger chain of this run is broken at ${plural(l.breaks, "point")}.`;
