@@ -1,5 +1,5 @@
 // The controls of the traced path in the thought trail panel (docs/BRAIN.md, "The thought trail panel and the line"): play and pause,
-// the scrubber with a track coloured by the runs of the route, Show the whole path, Follow the path and the previous path.
+// the scrubber with a track coloured by the runs of the route, Show the whole path, Watch close up and the previous path.
 import { Pause, Play, Route } from "lucide-react";
 import { Button } from "../components/Button";
 import { REGION_BG } from "./brain/trail";
@@ -77,7 +77,7 @@ export function PathControls(p: PathControlsProps) {
       ) : null}
       <label className="flex min-w-0 cursor-pointer items-center gap-2 text-body text-ink">
         <input type="checkbox" className="accent-signal" checked={p.follow} onChange={(e) => p.onFollow(e.target.checked)} />
-        Follow the path
+        Watch close up
       </label>
       <label className={`flex min-w-0 items-center gap-2 text-body ${p.canPrevious ? "cursor-pointer text-ink" : "text-ink-faint"}`}>
         <input type="checkbox" className="accent-signal" checked={p.previous} disabled={!p.canPrevious} onChange={(e) => p.onPrevious(e.target.checked)} />

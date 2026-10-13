@@ -149,6 +149,7 @@ The view draws each prompt, and each recorded agent run, as one ordered path thr
 
 ## Changes to this document
 
+- 13 October 2026 (watching): Watch close up, on by default, moves the camera once a step to the step that plays and the 2 before it. While a path is drawn the brain does not turn on its own and the neurons off the path fade.
 - 13 October 2026 (final): the pieces of the line between the nodes of one step are faint unless the step plays or is selected, region leaders are neutral and dashed while a path is drawn, the route strip never scrolls, and a tool label that is already a sentence is used as it is.
 - 13 October 2026: the traced path, with the line, the head and the trail, waypoints and branches, the route strip, the panel controls, the agent run entry from the Oversight window, findings as markers, grouping above 40 steps and reduced motion.
 - 6 October 2026: first public version, written from the project's internal specification.

@@ -49,7 +49,7 @@ import { loadBrainAsset, type BrainAsset } from "./asset";
 import { EXPAND_ZOOM, expandKey, expandOffsets, type RegionCentre } from "./expand";
 import { curvePoint, curveSegments } from "./curves";
 import { convexHull, keepOutBoxes, layoutCallouts, layoutFocusCallout, type CalloutRequest, type PlacedCallout, type Pt } from "./callouts";
-import { badgeInk, calloutRegions, FOCUS_FADE, PATH_HOVER_PLATES_MAX, HOP_PLATES_MAX, FOCUS_SHRINK, glowOf, PATH_BLOOM_MOVING, PATH_CALLOUT_VISITED, PATH_EASE_MS, PATH_END_EPS, PATH_FRAME_MARGIN, pathCalloutRegions, regionTint, STEP_LABELS_MAX } from "./look";
+import { badgeInk, calloutRegions, FOCUS_FADE, PATH_HOVER_PLATES_MAX, HOP_PLATES_MAX, FOCUS_SHRINK, glowOf, PATH_BLOOM_MOVING, PATH_CALLOUT_VISITED, PATH_EASE_MS, PATH_END_EPS, PATH_FRAME_MARGIN, PATH_WATCH_FADE, PATH_WATCH_GLOW, PATH_WATCH_MIN_DISTANCE, PATH_WATCH_STEPS, PATH_WATCH_SURFACE, pathCalloutRegions, regionTint, STEP_LABELS_MAX } from "./look";
 import { leaderEnd, placeLabels, type LabelRequest } from "./labelplace";
 import { fitFocusFrame } from "./focusframe";
 import { labelLevel, MAX_CLUSTER_LABELS, MAX_FOCUS_CLUSTER_LABELS, pickClusters } from "./lod";
@@ -287,6 +287,12 @@ export class BrainEngine implements CanvasEngine {
   private pathHead: RegionId | null = null;
   private pathHover: number | null = null;
   private pathMoving = false;
+  /** the ids of the nodes on the path, which stay bright while the rest of the brain fades (13 October 2026) */
+  private pathOn: Set<string> | null = null;
+  /** the step that the close-up view last framed, so that it moves once a step */
+  private watchedStep = 0;
+  /** the clusters that hold a node on the path, the only clusters whose labels show while a path is drawn */
+  private pathClusters: Set<string> | null = null;
   private pathSent = { at: 0, key: "" };
   private pathInk = new Map<RegionId, "void" | "ink">();
 
@@ -911,7 +917,8 @@ export class BrainEngine implements CanvasEngine {
     color[b.i * 3 + 1] = c.g;
     color[b.i * 3 + 2] = c.b;
     size[b.i] = this.neuronPx(b) * (b.id === this.hovered ? HOVER_GROW : b.id === this.selected ? 1.3 : this.focused === b.region ? FOCUS_GROW : this.focused ? FOCUS_SHRINK : 1);
-    const outside = this.highlight && !this.highlight.has(b.id) ? 0.15 : 1;
+    const offPath = this.pathOn && !this.pathOn.has(b.id) ? PATH_WATCH_FADE : 1;
+    const outside = Math.min(this.highlight && !this.highlight.has(b.id) ? 0.15 : 1, offPath);
     const dim = this.focused && b.region !== this.focused ? Math.min(outside, FOCUS_FADE) : outside;
     // the neurons of the step that is playing stand out over a focus and a highlight
     alpha[b.i] = b.visible && !this.hidden.has(b.region) ? (this.stepSet?.has(b.id) ? 1 : dim) : 0;
@@ -926,7 +933,7 @@ export class BrainEngine implements CanvasEngine {
   /** The strength of each surface: the Surface slider, and over a focus a lighter tint on the regions that are not focused, so that the neurons of the focus stay clear. */
   private applySurfaceLevels(): void {
     for (const [id, mat] of this.surfaces) {
-      mat.uniforms.uSurface.value = this.surface * (!this.focused || id === "shell" ? 1 : id === this.focused ? FOCUS_OWN_SURFACE : FOCUS_SURFACE);
+      mat.uniforms.uSurface.value = this.surface * (this.pathGeo ? PATH_WATCH_SURFACE : 1) * (!this.focused || id === "shell" ? 1 : id === this.focused ? FOCUS_OWN_SURFACE : FOCUS_SURFACE);
       // a region is tinted only while it is focused (or firing, through uGlow): at rest the brain is one neutral silhouette
       mat.uniforms.uTint.value = regionTint(id as RegionId | "shell", this.focused);
     }
@@ -992,6 +999,8 @@ export class BrainEngine implements CanvasEngine {
     const g = this.pathGeo;
     if (g && step.n >= 1 && step.n <= g.steps) {
       this.pathSelected = null;
+      // a step that plays ends the view of the whole path, so the close-up view takes over again (13 October 2026)
+      this.pathWhole = false;
       this.pathProgress = step.n;
       this.pathAnim = { n: step.n, t0: performance.now(), ms: stepMs(step) / this.pathSpeed };
       this.pathHeld = 0;
@@ -1019,7 +1028,7 @@ export class BrainEngine implements CanvasEngine {
     const glow = e.predicted ? e.a * 0.6 : e.a;
     const half = e.predicted ? PREVIEW_HALF_LIFE_MS : HALF_LIFE_MS;
     this.tracker.add(e.id, glow, half);
-    this.regionGlow.add(b.region, glow, half);
+    this.regionGlow.add(b.region, this.pathGeo ? glow * PATH_WATCH_GLOW : glow, half);
     if (reducedMotion()) return;
     if (e.pulse && e.via) {
       const v = this.byId.get(e.via);
@@ -1235,6 +1244,12 @@ export class BrainEngine implements CanvasEngine {
       this.pathLayer.setGeometry(null);
       this.pathLayer.setPrevious(null);
       this.pathBadges.clear();
+      if (this.pathOn) {
+        this.pathOn = null;
+        this.pathClusters = null;
+        this.watchedStep = 0;
+        this.paintAll();
+      }
       return;
     }
     const g = buildPath(p.steps, this.pathLookup, { anchor: this.pathAnchor, volume: this.pathVolume() });
@@ -1245,6 +1260,33 @@ export class BrainEngine implements CanvasEngine {
     this.pathVisitedArc = -2;
     const prev = this.pathShowPrev ? this.prevData : null;
     this.pathLayer.setPrevious(prev && prev.steps.length ? buildPath(prev.steps, this.pathLookup, { anchor: this.pathAnchor, volume: this.pathVolume() }) : null);
+    this.pathOn = new Set(p.steps.flatMap((s) => s.activation.map((a) => a.id)));
+    this.pathClusters = new Set([...this.pathOn].map((id) => this.byId.get(id)?.cluster).filter((c): c is string => !!c));
+    this.watchedStep = 0;
+    this.paintAll();
+  }
+
+  /** The close-up view (13 October 2026): frame the step that plays and the PATH_WATCH_STEPS - 1 steps before it, so the flow is seen
+   * from near and the camera moves on with each step. */
+  private watchStep(n: number): void {
+    const g = this.pathGeo;
+    if (!g || n < 1 || n > g.steps) return;
+    this.watchedStep = n;
+    const first = Math.max(1, n - PATH_WATCH_STEPS + 1);
+    const pts: Vector3[] = [];
+    for (let k = first; k <= n; k += 1) {
+      const w = g.waypoints[k - 1];
+      if (w) pts.push(this.vec(w.pos));
+      for (const kn of g.knots) if (kn.step === k) pts.push(this.vec(kn.pos));
+    }
+    if (!pts.length) return;
+    const all: V3[] = pts.map((q) => ({ x: q.x, y: q.y, z: q.z }));
+    const e = g.line.ends;
+    for (let i = 0; i < g.line.count; i += 1) {
+      const s = g.line.step[i];
+      if (s >= first && s <= n) all.push({ x: e[i * 6], y: e[i * 6 + 1], z: e[i * 6 + 2] }, { x: e[i * 6 + 3], y: e[i * 6 + 4], z: e[i * 6 + 5] });
+    }
+    this.fitTo(all, this.dirOf(pts), PATH_EASE_MS, PATH_WATCH_MIN_DISTANCE);
   }
 
   /** The half extents of the box of the nodes on screen, which no curve of a path leaves. */
@@ -1330,12 +1372,12 @@ export class BrainEngine implements CanvasEngine {
   }
 
   /** Fly the camera to the distance and target at which every point lies in the free area of the canvas, 48 pixels from its edges. */
-  private fitTo(all: V3[], dir: Vector3, ms: number): void {
+  private fitTo(all: V3[], dir: Vector3, ms: number, minDist = FOCUS_MIN_DISTANCE): void {
     if (!all.length || this.width <= 0) return;
     const { s, cx, cy } = this.framing(this.width, this.height);
     const f = this.height / (2 * Math.tan((this.camera.fov * Math.PI) / 360));
     const free = { left: Math.max(60, this.leftInset + 8), top: FRAME_TOP, right: this.width - BAR_ROOM, bottom: this.height - FRAME_BOTTOM };
-    const fit = fitPathCamera(all, { x: dir.x, y: dir.y, z: dir.z }, { sf: s * f, cx, cy }, free, { margin: PATH_FRAME_MARGIN, minDist: FOCUS_MIN_DISTANCE, maxDist: MAX_DISTANCE * this.draw() });
+    const fit = fitPathCamera(all, { x: dir.x, y: dir.y, z: dir.z }, { sf: s * f, cx, cy }, free, { margin: PATH_FRAME_MARGIN, minDist, maxDist: MAX_DISTANCE * this.draw() });
     this.flyTo(dir, fit.dist, this.vec(fit.target), ms);
     this.pauseOrbit();
   }
@@ -1411,9 +1453,11 @@ export class BrainEngine implements CanvasEngine {
     if (region !== this.pathHead) {
       this.pathHead = region;
       // the camera turns to a region when the head enters it, and only while the path is followed
-      if (region && this.pathMoving && this.pathFollow && !this.pathWhole && this.pathSelected === null && !reduced) this.turnTo(region);
     }
-    if (region && this.pathMoving) this.regionGlow.add(region, 0.7, 220);
+    // the close-up view moves on once a step while the head plays and Watch close up is on
+    const playing = stepOfProgress(g, p).n;
+    if (this.pathMoving && this.pathFollow && !this.pathWhole && this.pathSelected === null && !reduced && playing !== this.watchedStep) this.watchStep(playing);
+    if (region && this.pathMoving) this.regionGlow.add(region, 0.7 * PATH_WATCH_GLOW, 220);
     if (arc !== this.pathVisitedArc) {
       this.pathVisitedArc = arc;
       this.visitedAt(arc);
@@ -1689,7 +1733,7 @@ export class BrainEngine implements CanvasEngine {
   }
 
   private applyOrbit(): void {
-    this.controls.autoRotate = this.ambient && !this.selected && !reducedMotion() && performance.now() >= this.orbitPausedUntil && !this.tween;
+    this.controls.autoRotate = this.ambient && !this.selected && !this.pathGeo && !reducedMotion() && performance.now() >= this.orbitPausedUntil && !this.tween;
   }
 
   private pauseOrbit(): void {
@@ -2046,7 +2090,7 @@ export class BrainEngine implements CanvasEngine {
 
     // The cluster labels: at most 18, the largest clusters first, each at the centre of its neurons on the side facing the camera.
     if (closeRegions.size) {
-      const facing = this.clusters.filter((c) => closeRegions.has(c.region) && (!this.focused || c.region === this.focused) && c.at.x * camPos.x + c.at.y * camPos.y + c.at.z * camPos.z > 0);
+      const facing = this.clusters.filter((c) => closeRegions.has(c.region) && (!this.focused || c.region === this.focused) && (!this.pathClusters || this.pathClusters.has(c.key)) && c.at.x * camPos.x + c.at.y * camPos.y + c.at.z * camPos.z > 0);
       for (const c of pickClusters(facing, this.focused ? MAX_FOCUS_CLUSTER_LABELS : MAX_CLUSTER_LABELS)) {
         const len = Math.hypot(c.at.x, c.at.y, c.at.z) || 1;
         const p = new Vector3(c.at.x * (1 + 4 / len), c.at.y * (1 + 4 / len), c.at.z * (1 + 4 / len)).project(this.camera);
@@ -2364,7 +2408,8 @@ export class BrainEngine implements CanvasEngine {
     this.stepTurn();
     this.stepTween(now);
     this.stepPath(now);
-    if (!this.tween && !this.selected && this.ambient && now >= this.orbitPausedUntil && !reducedMotion()) this.controls.autoRotate = true;
+    if (!this.tween && !this.selected && !this.pathGeo && this.ambient && now >= this.orbitPausedUntil && !reducedMotion()) this.controls.autoRotate = true;
+    if (this.pathGeo && this.controls.autoRotate) this.controls.autoRotate = false;
     this.controls.update();
 
     // the far side of the brain is the part beyond the distance of the point that the camera looks at

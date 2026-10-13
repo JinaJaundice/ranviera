@@ -89,6 +89,14 @@ export const PATH_PREVIOUS_OPACITY = 0.3;
 export const PATH_UNSELECTED_OPACITY = 0.55;
 /** The pieces of the line inside one step (the hops of a chain), unless the step plays or is selected (13 October 2026). */
 export const PATH_INNER_OPACITY = 0.22;
+/** The close-up view of a playing path (13 October 2026): the steps it frames at once, the opacity of the neurons off the path and the
+ * strength of the brain surface while a path is shown, so that the path reads as a scene of its own. */
+export const PATH_WATCH_STEPS = 3;
+export const PATH_WATCH_FADE = 0.22;
+export const PATH_WATCH_SURFACE = 0.55;
+/** The share of the region glow kept while a path is drawn, and the nearest the close-up view comes, in scene units (13 October 2026). */
+export const PATH_WATCH_GLOW = 0.25;
+export const PATH_WATCH_MIN_DISTANCE = 95;
 /** The part of the line on the far side of the brain, as for the neurons. */
 export const PATH_FAR_OPACITY = 0.55;
 /** The comet behind the head, in scene units, and the head sprite in pixels. */

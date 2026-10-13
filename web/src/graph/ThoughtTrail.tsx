@@ -215,8 +215,8 @@ export function ThoughtTrail() {
       setHeld(null);
       setNote("");
       setOpenGroups(new Set());
-      // the whole route is framed first, so the camera stays still while the head travels
-      setGraphView({ pathFollow: false });
+      // the whole route is framed first, and the close-up view takes over as the steps play, unless the person has switched
+      // Watch close up off (13 October 2026)
       show(path, { progress: 0, frame: true });
       dispatch("cortex:path-play", { playing: true, speed: Number(speedRef.current) });
       path.steps.forEach((s) => q.push(s));
@@ -365,7 +365,7 @@ export function ThoughtTrail() {
     setPhase("idle");
     setHeld(null);
     setSelected(null);
-    setGraphView({ pathFollow: false });
+    // the view of the whole path ends when a step plays again, so Watch close up keeps the person's choice (13 October 2026)
     dispatch("cortex:path-play", { playing: true, speed: 1 });
     dispatch("cortex:path-frame", {});
   };
