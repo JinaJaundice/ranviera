@@ -98,7 +98,9 @@ def test_skill_folder_is_portable():
     assert "references/data-format.md" in text
     licence = (SKILL_SRC / "LICENSE").read_text(encoding="utf-8")
     assert "Apache License" in licence and "Version 2.0" in licence
-    assert licence == (REPO / "public" / "LICENSE").read_text(encoding="utf-8")
+    # the private tree keeps the product licence in public/, and the public export moves it to the root
+    root_licence = next(p for p in (REPO / "public" / "LICENSE", REPO / "LICENSE") if p.exists())
+    assert licence == root_licence.read_text(encoding="utf-8")
     for path in (SKILL_SRC / "scripts").glob("*.py"):
         compile(path.read_text(encoding="utf-8"), str(path), "exec", dont_inherit=True)
         body = path.read_text(encoding="utf-8")
