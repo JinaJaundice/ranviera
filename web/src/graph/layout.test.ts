@@ -7,10 +7,12 @@ import { makeGraph } from "./fixtures";
 const dist = (a: Vec3, b: Vec3) => Math.hypot(a.x - b.x, a.y - b.y, a.z - b.z);
 
 describe("family anchors", () => {
-  it("places 6 anchors on a sphere of the given radius", () => {
+  it("places the 6 families of the set-up on a sphere of the given radius and the knowledge family on the corner point", () => {
     const anchors = familyAnchors(260);
-    expect(Object.keys(anchors)).toHaveLength(6);
-    for (const f of FAMILIES) expect(Math.hypot(anchors[f].x, anchors[f].y, anchors[f].z)).toBeCloseTo(260, 6);
+    expect(Object.keys(anchors)).toHaveLength(7);
+    for (const f of FAMILIES.filter((x) => x !== "knowledge")) expect(Math.hypot(anchors[f].x, anchors[f].y, anchors[f].z)).toBeCloseTo(260, 6);
+    expect(anchors.knowledge).toEqual({ x: 260, y: 260, z: 260 });
+    expect(Math.hypot(anchors.knowledge.x, anchors.knowledge.y, anchors.knowledge.z)).toBeCloseTo(260 * Math.sqrt(3), 6);
   });
 
   it("keeps every pair of anchors apart by at least radius times root 2", () => {
@@ -35,7 +37,7 @@ describe("family anchors", () => {
 
 describe("filtering", () => {
   const graph = makeGraph(400, 800);
-  const view = { families: { instruction: true, machinery: true, record: true, work: true, world: true, language: true }, cap: "client-confidential" as const };
+  const view = { families: { instruction: true, machinery: true, record: true, work: true, world: true, language: true, knowledge: true }, cap: "client-confidential" as const };
 
   it("keeps all nodes at the widest cap", () => {
     expect(filterNodes(graph.nodes, view)).toHaveLength(graph.nodes.length);

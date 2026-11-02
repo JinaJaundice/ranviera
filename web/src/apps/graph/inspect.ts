@@ -80,6 +80,7 @@ export const PROVENANCE_WORDS: Record<Provenance, string> = {
   ratified: "reviewed",
   proposed: "not yet reviewed",
   inferred: "derived by a rule",
+  extracted: "extracted from a linked source, not yet reviewed",
 };
 
 // When two edges join the same pair under one label, the better established source is shown.

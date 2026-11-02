@@ -400,3 +400,16 @@ def test_the_skills_the_claude_app_syncs_from_claude_ai_are_left_out_of_the_mirr
     sync.export(cfg)
     assert not (cfg.harness_dir / "skills" / "synced").exists()
     assert sync.doctor(cfg)["missing_in_mirror"] == []
+
+
+def test_a_skill_that_a_package_installer_writes_is_left_out_of_the_mirror(cfg):
+    # Impeccable's browser script names a page token in a way that the secret scan reads as a key (13 October 2026).
+    d = cfg.claude_home / "skills" / "impeccable" / "scripts"
+    d.mkdir(parents=True)
+    (d / "live-browser.js").write_text("const TOKEN = window.__IMPECCABLE_TOKEN__;\n", encoding="utf-8")
+    (d.parent / "SKILL.md").write_text("---\nname: impeccable\n---\n", encoding="utf-8")
+    assert "impeccable" not in sync.skill_names(cfg.claude_home)
+    assert not any(r.startswith("skills/impeccable/") for r in sync.managed_files(cfg.claude_home))
+    sync.export(cfg)
+    assert not (cfg.harness_dir / "skills" / "impeccable").exists()
+    assert sync.doctor(cfg)["missing_in_mirror"] == []

@@ -1,0 +1,4 @@
+{"sourceId":"src_111111111111","rootId":"root_11111111","path":"notes/settlement.final.md","state":"pending","sha256":"00"}
+{"sourceId":"src_111111111111","rootId":"root_11111111","path":"notes/settlement.final.md","state":"current","sha256":"11","lastExtractedAt":"2026-10-01T08:30:00.000Z"}
+{"sourceId":"src_222222222222","rootId":"root_11111111","path":"notes/secret.md","state":"refused","reason":"sensitivity"}
+{"sourceId":"src_333333333333","rootId":"root_11111111","path":"notes/odd.md","state":"unknown-state"}

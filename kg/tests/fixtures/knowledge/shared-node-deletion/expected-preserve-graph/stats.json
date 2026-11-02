@@ -1,0 +1,14 @@
+{
+	"first": {
+		"nodesRemoved": 0,
+		"chainsRemoved": 0,
+		"coverageRemoved": 1,
+		"checkpointsRemoved": 1
+	},
+	"second": {
+		"nodesRemoved": 0,
+		"chainsRemoved": 0,
+		"coverageRemoved": 0,
+		"checkpointsRemoved": 0
+	}
+}

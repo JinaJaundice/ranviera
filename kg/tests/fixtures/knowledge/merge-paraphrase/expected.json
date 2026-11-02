@@ -1,0 +1,354 @@
+{
+	"nodes": [
+		{
+			"id": "n_a00000000001",
+			"name": "Heat flow",
+			"statement": "Heat flows from hot to cold.",
+			"kind": "proposition"
+		},
+		{
+			"id": "n_a00000000002",
+			"name": "Heat engines",
+			"statement": "Heat engines turn a heat flow into work.",
+			"kind": "proposition"
+		},
+		{
+			"id": "n_a00000000003",
+			"name": "Entropy",
+			"statement": "Entropy measures how spread out energy is.",
+			"kind": "proposition"
+		},
+		{
+			"id": "n_b00000000001",
+			"name": "Second law",
+			"statement": "Entropy of an isolated system never decreases.",
+			"kind": "proposition"
+		},
+		{
+			"id": "n_b00000000002",
+			"name": "Carnot limit",
+			"statement": "No engine can beat the Carnot efficiency.",
+			"kind": "proposition"
+		},
+		{
+			"id": "n_b00000000003",
+			"name": "Carnot efficiency",
+			"statement": "Carnot efficiency depends only on the two reservoir temperatures.",
+			"kind": "proposition"
+		},
+		{
+			"id": "n_b00000000004",
+			"name": "Cold reservoir",
+			"statement": "A heat engine must reject heat to a cold reservoir.",
+			"kind": "proposition"
+		},
+		{
+			"id": "arg_a00000000002",
+			"name": "⇒",
+			"statement": "Heat flow, Second law → Carnot limit",
+			"kind": "junction"
+		}
+	],
+	"propositions": [
+		{
+			"id": "n_a00000000001",
+			"name": "Heat flow",
+			"statement": "Heat flows from hot to cold.",
+			"aliases": [
+				"Thermal energy moves from warmer to cooler bodies.",
+				"Heat moves downhill"
+			],
+			"createdAt": "2026-10-01T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "chat_a0000001",
+					"messageId": "msg_01"
+				},
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal",
+			"metrics": {
+				"support": 2,
+				"held": "unknown",
+				"lastTested": null,
+				"calibration": null
+			}
+		},
+		{
+			"id": "n_a00000000002",
+			"name": "Heat engines",
+			"statement": "Heat engines turn a heat flow into work.",
+			"aliases": [
+				"Engines convert heat to work"
+			],
+			"createdAt": "2026-10-01T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "chat_a0000001",
+					"messageId": "msg_01"
+				},
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal",
+			"metrics": {
+				"support": 2,
+				"held": "unknown",
+				"lastTested": null,
+				"calibration": null
+			}
+		},
+		{
+			"id": "n_a00000000003",
+			"name": "Entropy",
+			"statement": "Entropy measures how spread out energy is.",
+			"aliases": [],
+			"createdAt": "2026-10-02T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "chat_a0000001",
+					"messageId": "msg_02"
+				}
+			],
+			"sensitivity": "internal",
+			"metrics": {
+				"support": 1,
+				"held": "unknown",
+				"lastTested": null,
+				"calibration": null
+			}
+		},
+		{
+			"id": "n_b00000000001",
+			"name": "Second law",
+			"statement": "Entropy of an isolated system never decreases.",
+			"aliases": [],
+			"createdAt": "2026-10-04T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal",
+			"metrics": {
+				"support": 1,
+				"held": "unknown",
+				"lastTested": null,
+				"calibration": null
+			}
+		},
+		{
+			"id": "n_b00000000002",
+			"name": "Carnot limit",
+			"statement": "No engine can beat the Carnot efficiency.",
+			"aliases": [],
+			"createdAt": "2026-10-04T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal",
+			"metrics": {
+				"support": 1,
+				"held": "unknown",
+				"lastTested": null,
+				"calibration": null
+			}
+		},
+		{
+			"id": "n_b00000000003",
+			"name": "Carnot efficiency",
+			"statement": "Carnot efficiency depends only on the two reservoir temperatures.",
+			"aliases": [],
+			"createdAt": "2026-10-04T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal",
+			"metrics": {
+				"support": 1,
+				"held": "unknown",
+				"lastTested": null,
+				"calibration": null
+			}
+		},
+		{
+			"id": "n_b00000000004",
+			"name": "Cold reservoir",
+			"statement": "A heat engine must reject heat to a cold reservoir.",
+			"aliases": [],
+			"createdAt": "2026-10-04T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal",
+			"metrics": {
+				"support": 1,
+				"held": "unknown",
+				"lastTested": null,
+				"calibration": null
+			}
+		}
+	],
+	"edges": [
+		{
+			"from": "n_a00000000003",
+			"to": "n_b00000000001"
+		},
+		{
+			"from": "n_b00000000001",
+			"to": "arg_a00000000002"
+		},
+		{
+			"from": "n_a00000000001",
+			"to": "arg_a00000000002"
+		},
+		{
+			"from": "arg_a00000000002",
+			"to": "n_b00000000002"
+		}
+	],
+	"logicalEdges": [
+		{
+			"from": "n_a00000000003",
+			"to": "n_b00000000001"
+		},
+		{
+			"from": "n_b00000000001",
+			"to": "n_b00000000002"
+		},
+		{
+			"from": "n_a00000000001",
+			"to": "n_b00000000002"
+		}
+	],
+	"impLinks": [
+		{
+			"id": "arg_a00000000002",
+			"premises": [
+				"n_b00000000001",
+				"n_a00000000001"
+			],
+			"conclusion": "n_b00000000002"
+		}
+	],
+	"chains": [
+		{
+			"id": "arg_a00000000001",
+			"premises": [
+				"n_a00000000003"
+			],
+			"conclusion": "n_b00000000001",
+			"createdAt": "2026-10-05T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "chat_a0000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal"
+		},
+		{
+			"id": "arg_a00000000002",
+			"premises": [
+				"n_b00000000001",
+				"n_a00000000001"
+			],
+			"conclusion": "n_b00000000002",
+			"createdAt": "2026-10-05T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				},
+				{
+					"chatId": "chat_a0000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal"
+		},
+		{
+			"id": "arg_a00000000004",
+			"premises": [
+				"n_missing00001"
+			],
+			"conclusion": "n_b00000000003",
+			"createdAt": "2026-10-06T10:00:00.000Z",
+			"provenance": [
+				{
+					"chatId": "src_b00000000001",
+					"messageId": ""
+				}
+			],
+			"sensitivity": "internal"
+		}
+	],
+	"sessions": {
+		"chat_a0000001": "Thermodynamics lecture"
+	},
+	"fileSources": {
+		"src_b00000000001": "Physics/Entropy notes.md"
+	},
+	"nodeSessions": {
+		"n_a00000000001": [
+			"chat_a0000001",
+			"src_b00000000001"
+		],
+		"n_a00000000002": [
+			"chat_a0000001",
+			"src_b00000000001"
+		],
+		"n_a00000000003": [
+			"chat_a0000001"
+		],
+		"n_b00000000001": [
+			"src_b00000000001"
+		],
+		"n_b00000000002": [
+			"src_b00000000001"
+		],
+		"n_b00000000003": [
+			"src_b00000000001"
+		],
+		"n_b00000000004": [
+			"src_b00000000001"
+		]
+	},
+	"clusters": [
+		{
+			"id": "src_b00000000001",
+			"label": "Entropy notes",
+			"members": [
+				"n_b00000000001",
+				"n_b00000000002",
+				"n_b00000000003",
+				"n_b00000000004",
+				"arg_a00000000002"
+			]
+		},
+		{
+			"id": "chat_a0000001",
+			"label": "Thermodynamics lecture",
+			"members": [
+				"n_a00000000001",
+				"n_a00000000002",
+				"n_a00000000003"
+			]
+		}
+	]
+}

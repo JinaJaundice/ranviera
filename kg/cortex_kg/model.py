@@ -78,6 +78,11 @@ CLASSES: dict[str, tuple[str, str | None, str]] = {
     # the typologies and risk indicators of a bank's own scheme (docs/ONTOLOGY.md, 7 October 2026)
     "typology": ("Typology", None, "obligation"),
     "riskind": ("RiskIndicator", None, "obligation"),
+    # the knowledge family: what the learning folder holds (docs/ONTOLOGY.md, 1 November 2026)
+    "claim": ("Claim", None, "knowledge"),
+    "argument": ("Argument", None, "knowledge"),
+    "source": ("Source", None, "knowledge"),
+    "learnsession": ("LearnSession", None, "knowledge"),
 }
 
 CLASS_TO_PREFIX = {cls: prefix for prefix, (cls, _p, _f) in CLASSES.items()}
@@ -94,6 +99,8 @@ RELATIONS = (
     "operatesUnder", "drawsOn", "performedBy", "ranOn", "inContext", "citesInstruction", "usedEvidence",
     "sourcedFrom", "informedDecision", "reviewedBy", "sampledFrom", "testedAgainst", "approvedBy", "proposedBy",
     "statesRationale", "entryOf",
+    # the knowledge family (docs/ONTOLOGY.md, 1 November 2026)
+    "premiseOf", "concludes", "discussedIn",
 )
 
 SENSITIVITY = ("public", "internal", "client-confidential")
@@ -187,6 +194,12 @@ class Harvest:
         self.refs: list[Ref] = []
         # the text of each file a harvester read, keyed by node id, for vocabulary matching (mentions edges)
         self.texts: dict[str, str] = {}
+        # the keys of the edges that were read from the learning ledgers. They carry the provenance extracted, draw at
+        # half weight and feed no rule until a person ratifies them (docs/ONTOLOGY.md, 1 November 2026)
+        self.extracted: set[tuple[str, str, str]] = set()
+        # the derived metrics of the knowledge nodes (support, held, lastTested, calibration), by node id. The compiler
+        # writes them to metrics.knowledge in graph.json and never to the RDF files
+        self.knowledge: dict[str, dict] = {}
 
     def add_node(self, node: Node) -> Node:
         if prefix_of(node.id) not in CLASSES:
@@ -227,6 +240,8 @@ class Harvest:
         self.refs.extend(other.refs)
         for k, v in other.texts.items():
             self.texts.setdefault(k, v)
+        self.extracted |= other.extracted
+        self.knowledge.update(other.knowledge)
 
 
 @dataclass

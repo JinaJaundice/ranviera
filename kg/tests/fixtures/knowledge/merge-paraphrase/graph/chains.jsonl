@@ -1,0 +1,4 @@
+{"id":"arg_a00000000001","premises":["n_a00000000003"],"conclusion":"n_b00000000001","createdAt":"2026-10-05T10:00:00.000Z","provenance":[{"chatId":"chat_a0000001","messageId":""}]}
+{"id":"arg_a00000000002","premises":["n_b00000000001","n_a00000000001"],"conclusion":"n_b00000000002","createdAt":"2026-10-05T10:00:00.000Z","provenance":[{"chatId":"src_b00000000001","messageId":""}]}
+{"id":"arg_a00000000003","premises":["n_a00000000001","n_b00000000001"],"conclusion":"n_b00000000002","createdAt":"2026-10-06T10:00:00.000Z","provenance":[{"chatId":"chat_a0000001","messageId":""}]}
+{"id":"arg_a00000000004","premises":["n_missing00001"],"conclusion":"n_b00000000003","createdAt":"2026-10-06T10:00:00.000Z","provenance":[{"chatId":"src_b00000000001","messageId":""}]}

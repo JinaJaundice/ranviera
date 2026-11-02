@@ -6,14 +6,15 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-# Version 0.4.0 of 7 October 2026 (0.3.0 of 6 October 2026 held S01 to S26, and 0.4.0 adds the shapes F01 to F14). The SHACL shapes S01 to S09 and S11 to S26 of docs/ONTOLOGY.md (S10 was removed). Each shape and each property shape in it carries its check
+# Version 0.5.0 of 1 November 2026 (0.4.0 of 7 October 2026 added the shapes F01 to F14, and 0.5.0 adds the shapes K01 to K06 of the knowledge family, with K07 deferred).
+# 0.3.0 of 6 October 2026 held S01 to S26. The SHACL shapes S01 to S09 and S11 to S26 of docs/ONTOLOGY.md (S10 was removed). Each shape and each property shape in it carries its check
 # identifier as cx:checkId, so that a result can be traced to the check by walking sh:sourceShape.
 # The path checks P01 to P08 and the checks that SHACL cannot express are made by kg/cortex_kg/validate.py.
 
 <https://cortex.local/shapes> a owl:Ontology ;
     rdfs:label "Cortex shapes" ;
-    owl:versionIRI <https://cortex.local/shapes/0.4.0> ;
-    owl:versionInfo "0.4.0" ;
+    owl:versionIRI <https://cortex.local/shapes/0.5.0> ;
+    owl:versionInfo "0.5.0" ;
     sh:declare [ sh:prefix "cx" ; sh:namespace "https://cortex.local/ont#"^^xsd:anyURI ] ,
                [ sh:prefix "skos" ; sh:namespace "http://www.w3.org/2004/02/skos/core#"^^xsd:anyURI ] ,
                [ sh:prefix "rdf" ; sh:namespace "http://www.w3.org/1999/02/22-rdf-syntax-ns#"^^xsd:anyURI ] ,
@@ -35,7 +36,8 @@ cx:S01Shape a sh:NodeShape ;
         cx:Organisation , cx:Person , cx:Instrument , cx:ConceptScheme , cx:Concept ,
         cx:DeployedAgent , cx:InstructionVersion , cx:ModelVersion , cx:KnowledgeSource , cx:PolicyClause , cx:Mapping ,
         cx:Run , cx:Step , cx:ToolCall , cx:Evidence , cx:StatedRationale , cx:AgentDecision , cx:Review , cx:Sample ,
-        cx:BackTest , cx:LedgerEntry , cx:TestScript , cx:TestStep , cx:Requirement ;
+        cx:BackTest , cx:LedgerEntry , cx:TestScript , cx:TestStep , cx:Requirement ,
+        cx:Claim , cx:Argument , cx:Source , cx:LearnSession ;
     sh:message "Every node must have 1 label, 1 family and 1 sensitivity from the 3 allowed values." ;
     sh:or ( [ sh:class owl:Class ]
             [ sh:property cx:S01Label , cx:S01Family , cx:S01Sensitivity ] ) .
@@ -44,8 +46,8 @@ cx:S01Label a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
     sh:message "Every node must have exactly 1 label." .
 cx:S01Family a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
     sh:path cx:family ; sh:minCount 1 ; sh:maxCount 1 ;
-    sh:in ( "instruction" "machinery" "record" "work" "world" "language" "agent" "obligation" ) ;
-    sh:message "Every node must have exactly 1 family from the 8 allowed values." .
+    sh:in ( "instruction" "machinery" "record" "work" "world" "language" "agent" "obligation" "knowledge" ) ;
+    sh:message "Every node must have exactly 1 family from the 9 allowed values." .
 cx:S01Sensitivity a sh:PropertyShape ; cx:checkId "S01" ; sh:severity sh:Violation ;
     sh:path cx:sensitivity ; sh:minCount 1 ; sh:maxCount 1 ;
     sh:in ( "public" "internal" "client-confidential" ) ;
@@ -202,6 +204,13 @@ cx:S12WorldShape a sh:NodeShape ;
     sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
         sh:path cx:family ; sh:minCount 1 ; sh:hasValue "world" ;
         sh:message "Every node must carry the world family of its class." ] .
+cx:S12KnowledgeShape a sh:NodeShape ;
+    cx:checkId "S12" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Claim , cx:Argument , cx:Source , cx:LearnSession ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "S12" ; sh:severity sh:Violation ;
+        sh:path cx:family ; sh:minCount 1 ; sh:hasValue "knowledge" ;
+        sh:message "Every node must carry the knowledge family of its class." ] .
 cx:S12LanguageShape a sh:NodeShape ;
     cx:checkId "S12" ;
     sh:severity sh:Violation ;
@@ -259,17 +268,24 @@ cx:S16Shape a sh:NodeShape ;
         sh:path cx:triggers ; sh:class cx:TaskType ;
         sh:message "A route must trigger a task type." ] .
 
-# S17. A project is documented in a memory file, a backlog section or a history file.
+# S17. A project is documented in a memory file, a backlog section or a history file. A claim of the knowledge family is also
+# documented in a source or in the node of its file (1 November 2026), and the check K01 reads that edge.
 cx:S17Shape a sh:NodeShape ;
     cx:checkId "S17" ;
     sh:severity sh:Violation ;
     sh:targetSubjectsOf cx:documentedIn ;
-    sh:class cx:Project ;
-    sh:message "Only a project is documented in a record." ;
-    sh:property [ a sh:PropertyShape ; cx:checkId "S17" ; sh:severity sh:Violation ;
-        sh:path cx:documentedIn ;
-        sh:or ( [ sh:class cx:MemoryFile ] [ sh:class cx:BacklogSection ] [ sh:class cx:HistoryFile ] ) ;
-        sh:message "A project must be documented in a memory file, a backlog section or a history file." ] .
+    sh:message "Only a project or a claim is documented in a record." ;
+    sh:or ( [ sh:class cx:Project ;
+              sh:property [ a sh:PropertyShape ; cx:checkId "S17" ; sh:severity sh:Violation ;
+                  sh:path cx:documentedIn ;
+                  sh:or ( [ sh:class cx:MemoryFile ] [ sh:class cx:BacklogSection ] [ sh:class cx:HistoryFile ] ) ;
+                  sh:message "A project must be documented in a memory file, a backlog section or a history file." ] ]
+            [ sh:class cx:Claim ;
+              sh:property [ a sh:PropertyShape ; cx:checkId "S17" ; sh:severity sh:Violation ;
+                  sh:path cx:documentedIn ;
+                  sh:or ( [ sh:class cx:Source ] [ sh:class cx:InstructionFile ] [ sh:class cx:MemoryFile ] [ sh:class cx:HistoryFile ]
+                          [ sh:class cx:BacklogSection ] [ sh:class cx:Deliverable ] ) ;
+                  sh:message "A claim must be documented in a source or in the node of the file it came from." ] ] ) .
 
 # S18. A deliverable and a backlog section belong to a project, and an open item belongs to a backlog section.
 cx:S18Shape a sh:NodeShape ;
@@ -611,3 +627,59 @@ cx:F14Shape a sh:NodeShape ;
     sh:property [ a sh:PropertyShape ; cx:checkId "F14" ; sh:severity sh:Violation ;
         sh:path [ sh:inversePath cx:entryOf ] ; sh:minCount 1 ;
         sh:message "A run must have 1 or more ledger entries." ] .
+
+# ---- The knowledge family (1 November 2026, docs/ONTOLOGY.md "Shapes K01 to K07") ----
+# The shapes read the union of the stated, ratified and extracted graphs (validate.load_asserted). K03 (the sensitivity of
+# a node is at least that of its sources), K04 (the evidence of an extracted edge), K05 (an unlocated claim), the edge counts
+# of K01 and the conclusion test of K02 are checks in kg/cortex_kg/validate.py, because SHACL cannot compare two nodes or
+# read a file.
+
+# K01. A claim has 1 label, 1 statement and 1 learnId.
+cx:K01Shape a sh:NodeShape ;
+    cx:checkId "K01" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Claim ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "K01" ; sh:severity sh:Violation ;
+        sh:path rdfs:label ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A claim must have exactly 1 label." ] ,
+      [ a sh:PropertyShape ; cx:checkId "K01" ; sh:severity sh:Violation ;
+        sh:path cx:statement ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A claim must have exactly 1 statement." ] ,
+      [ a sh:PropertyShape ; cx:checkId "K01" ; sh:severity sh:Violation ;
+        sh:path cx:learnId ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A claim must have exactly 1 ledger identifier." ] .
+
+# K02. An argument has at least 1 premise and exactly 1 conclusion.
+cx:K02Shape a sh:NodeShape ;
+    cx:checkId "K02" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Argument ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "K02" ; sh:severity sh:Violation ;
+        sh:path [ sh:inversePath cx:premiseOf ] ; sh:minCount 1 ;
+        sh:message "An argument must have at least 1 premise." ] ,
+      [ a sh:PropertyShape ; cx:checkId "K02" ; sh:severity sh:Violation ;
+        sh:path cx:concludes ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "An argument must have exactly 1 conclusion." ] .
+
+# K06. A source has a kind, a root and a path, and a learning session has a kind.
+cx:K06SourceShape a sh:NodeShape ;
+    cx:checkId "K06" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:Source ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "K06" ; sh:severity sh:Violation ;
+        sh:path cx:sourceKind ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:in ( "notes" "pdf" "claude-memory" "claude-transcripts" "claude-instructions" "projects-md" "learnharness" ) ;
+        sh:message "A source must have exactly 1 kind from the 7 allowed values." ] ,
+      [ a sh:PropertyShape ; cx:checkId "K06" ; sh:severity sh:Violation ;
+        sh:path cx:rootId ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A source must name the linked root that it belongs to." ] ,
+      [ a sh:PropertyShape ; cx:checkId "K06" ; sh:severity sh:Violation ;
+        sh:path cx:path ; sh:minCount 1 ; sh:maxCount 1 ;
+        sh:message "A source must have a path." ] .
+cx:K06SessionShape a sh:NodeShape ;
+    cx:checkId "K06" ;
+    sh:severity sh:Violation ;
+    sh:targetClass cx:LearnSession ;
+    sh:property [ a sh:PropertyShape ; cx:checkId "K06" ; sh:severity sh:Violation ;
+        sh:path cx:sessionKind ; sh:minCount 1 ; sh:maxCount 1 ; sh:in ( "teach" "practice" ) ;
+        sh:message "A learning session must have a kind of teach or practice." ] .

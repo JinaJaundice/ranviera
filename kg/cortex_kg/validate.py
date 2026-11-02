@@ -40,9 +40,9 @@ def _check_id(shapes, shape) -> str | None:
 
 
 def load_asserted(cfg: Config):
-    """The graph that the shapes read: the union of the stated and ratified graphs of graph.trig, so that a shape over a
-    relation sees a ratified edge, which graph.ttl no longer holds. A proposed edge and an inferred edge are left out,
-    because neither is asserted. Where graph.trig is missing the stated graph alone, graph.ttl, is read."""
+    """The graph that the shapes read: the union of the stated, ratified and extracted graphs of graph.trig, so that a shape
+    over a relation sees a ratified edge, which graph.ttl no longer holds, and the nodes of the family knowledge, which live
+    in the extracted graph. A proposed edge and an inferred edge are left out, because neither is asserted. Where graph.trig is missing the stated graph alone, graph.ttl, is read."""
     from rdflib import Dataset, Graph, URIRef
     trig, ttl = cfg.data_dir / "graph.trig", cfg.data_dir / "graph.ttl"
     if trig.is_file():
@@ -51,7 +51,7 @@ def load_asserted(cfg: Config):
             warnings.simplefilter("ignore", DeprecationWarning)
             ds.parse(trig, format="trig")
         data = Graph()
-        for name in ("stated", "ratified"):
+        for name in ("stated", "ratified", "extracted"):
             for triple in ds.graph(URIRef(GRAPH_BASE + name)):
                 data.add(triple)
         return data
@@ -453,6 +453,60 @@ def check_p08(cfg: Config, nodes, edges) -> list[dict]:
     return out
 
 
+_SENS_RANK = {"public": 0, "internal": 1, "client-confidential": 2}
+
+
+def check_knowledge(cfg: Config, nodes, edges) -> list[dict]:
+    """K01 to K05 for the family knowledge, from graph.json (docs/ONTOLOGY.md, "Shapes K01 to K07"). SHACL holds the counts
+    of K01 and K02 and the whole of K06, and these checks cover what it cannot: the discussedIn or documentedIn edge of a claim,
+    the conclusion that is also a premise, the sensitivity of a node against its sources, the evidence of an extracted edge and
+    the claim with no located passage."""
+    by_id = {n["id"]: n for n in nodes}
+    if not any(n["id"].startswith(("claim:", "argument:")) for n in nodes):
+        return []
+    out: list[dict] = []
+    linked: dict[str, list[str]] = {}
+    premises: dict[str, list[str]] = {}
+    concludes: dict[str, list[str]] = {}
+    for e in edges or []:
+        if e.get("inferred") or e.get("provenance") == "inferred":
+            continue
+        s, r, t = e.get("s"), e.get("r"), e.get("t")
+        if r in ("documentedIn", "discussedIn") and str(s).startswith("claim:"):
+            linked.setdefault(s, []).append(t)
+        elif r == "premiseOf":
+            premises.setdefault(t, []).append(s)
+        elif r == "concludes":
+            concludes.setdefault(s, []).append(t)
+        if e.get("provenance") == "extracted":
+            ev = e.get("evidence")
+            if not ev:
+                out.append(_f("K04", "warning", f"The extracted edge {s} {r} {t} carries no evidence, so it cannot be traced to a file.", s))
+            else:
+                raw = _EVIDENCE_LINE.match(str(ev).strip())
+                if _resolve_evidence(cfg, raw.group("path") if raw else str(ev).strip(), s) is None:
+                    out.append(_f("K04", "warning", f"The evidence of the extracted edge {s} {r} {t} names a file that does not exist.", s, str(ev)))
+    for n in nodes:
+        nid = n["id"]
+        if nid.startswith("claim:"):
+            if not linked.get(nid):
+                out.append(_f("K01", "violation", f"The claim {nid} has no documentedIn or discussedIn edge, so nothing shows where it came from.", nid))
+            if (n.get("props") or {}).get("unlocated"):
+                out.append(_f("K05", "warning", f"The claim {nid} has no located passage, so it cannot be opened at a line of its source.", nid,
+                              (n.get("props") or {}).get("evidence")))
+            for t in linked.get(nid, []):
+                if t in by_id and _SENS_RANK[n.get("sensitivity") or "internal"] < _SENS_RANK[by_id[t].get("sensitivity") or "internal"]:
+                    out.append(_f("K03", "violation", f"The claim {nid} is {n.get('sensitivity')}, which is lower than its source {t}.", nid))
+        elif nid.startswith("argument:"):
+            concl = concludes.get(nid, [])
+            if any(c in premises.get(nid, []) for c in concl):
+                out.append(_f("K02", "violation", f"The conclusion of the argument {nid} is also one of its premises.", nid))
+            for c in [*premises.get(nid, []), *concl]:
+                if c in by_id and _SENS_RANK[n.get("sensitivity") or "internal"] < _SENS_RANK[by_id[c].get("sensitivity") or "internal"]:
+                    out.append(_f("K03", "violation", f"The argument {nid} is {n.get('sensitivity')}, which is lower than its claim {c}.", nid))
+    return out
+
+
 def _outside_home(cfg: Config, node: dict | None) -> bool:
     if not node or not node.get("path"):
         return False
@@ -465,7 +519,7 @@ def _outside_home(cfg: Config, node: dict | None) -> bool:
 # B03 (the reasoning engine Nemo is missing) is a warning on a developer machine and a violation in CI, because a CI run
 # that skips the rules would pass a graph that the rules never read (6 October 2026). S12 (the family of the class) and S23
 # (a node with no class) block because the compiler guarantees them and a failure means that the graph is malformed.
-CI_BLOCKING = {"S01", "S02", "S03", "S04", "S06", "S09", "S12", "S23", "P03", "P05", "P06", "P07", "B01", "B03"}
+CI_BLOCKING = {"S01", "S02", "S03", "S04", "S06", "S09", "S12", "S23", "K03", "P03", "P05", "P06", "P07", "B01", "B03"}
 
 # the roots under ~/.claude that a CI machine has, through the installed harness mirror
 _HOME_ROOTS = ("~/.claude", ".claude/", "rules/", "agents/", "skills/", "tools/", "output-styles/", "references/")
@@ -514,6 +568,7 @@ def check(cfg: Config, strict: bool = False, ci: bool = False) -> dict:
                 f["severity"] = "violation"
     else:  # the files that the evidence names are not in a CI checkout
         findings += check_p08(cfg, nodes, graph.get("edges", []))
+    findings += check_knowledge(cfg, nodes, graph.get("edges", []))
     findings += check_p07(cfg, nodes, harvest_findings)
 
     counts = Counter(f["severity"] for f in findings)

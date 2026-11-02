@@ -16,7 +16,7 @@ CXI = Namespace("https://cortex.local/id/")
 GRAPH_BASE = "https://cortex.local/graph/"
 FINDING_BASE = "https://cortex.local/finding/"
 ACTIVITY_BASE = "https://cortex.local/activity/"
-GRAPH_NAMES = ("ontology", "stated", "ratified", "proposed", "inferred")
+GRAPH_NAMES = ("ontology", "stated", "ratified", "proposed", "inferred", "extracted")
 PRIVATE_GRAPH = "private-pack"   # the sixth named graph, written only when include_private_graphs is true
 PRIVATE_ORIGIN = "local-pack"       # the origin of a node loaded from the local packs, which never reaches graph.ttl
 LANG = "en-GB"  # the language tag on every SKOS label and definition
@@ -38,6 +38,9 @@ PROP_KINDS = {
     # the mapping and ledger properties of shapes F04 and F14 (12 October 2026)
     "sourceAnchor": "string", "targetAnchor": "string", "ratifiedOn": "date", "seq": "integer",
     "recordHash": "string", "prevHash": "string", "entryHash": "string",
+    # the knowledge family (docs/ONTOLOGY.md, 1 November 2026). The derived metrics are never written here
+    "statement": "string", "alias": "string", "learnId": "string", "unlocated": "boolean", "sourceKind": "string",
+    "rootId": "string", "sessionKind": "string", "phase": "string",
 }
 # datatype properties taken from the fields of a node
 FIELD_KINDS = {"status": "string", "path": "string", "date": "date", "summary": "string", "evidence": "string"}
@@ -118,6 +121,14 @@ def split_private(nodes, edges) -> tuple[list, list, list, list]:
         s, _r, t, _p = _edge_parts(e)
         (priv_e if s in hidden or t in hidden else pub_e).append(e)
     return pub_n, pub_e, priv_n, priv_e
+
+
+KNOWLEDGE_FAMILY = "knowledge"
+
+
+def is_knowledge(node_id: str) -> bool:
+    """Whether the node belongs to the family knowledge, whose nodes live in the extracted graph and never in graph.ttl."""
+    return prefix_of(node_id) in CLASSES and class_of(node_id)[1] == KNOWLEDGE_FAMILY
 
 
 def _add_nodes(g: Graph, node_list: list[Node], metrics: dict | None, today: str | None) -> None:
@@ -308,14 +319,21 @@ def to_dataset(nodes: dict[str, Node] | list[Node], edges: list, inferred_edges:
     inferred_edges = [e for e in (inferred_edges or []) if e not in private_inferred]
     private_findings = [f for f in (findings or []) if f.get("node") in hidden]
     findings = [f for f in (findings or []) if f.get("node") not in hidden]
-    by_prov: dict[str, list] = {"stated": [], "ratified": [], "proposed": []}
+    by_prov: dict[str, list] = {"stated": [], "ratified": [], "proposed": [], "extracted": []}
     for e in edges:
         prov = _edge_parts(e)[3]
         if prov == "inferred":
             continue
-        by_prov[prov if prov in ("ratified", "proposed") else "stated"].append(e)
-    for t in to_rdf(nodes, by_prov["stated"], metrics, today):
+        by_prov[prov if prov in ("ratified", "proposed", "extracted") else "stated"].append(e)
+    plain = [n for n in nodes if not is_knowledge(n.id)]
+    for t in to_rdf(plain, by_prov["stated"], metrics, today):
         graphs["stated"].add(t)
+    # the nodes of the family knowledge and the edges read from the learning ledgers (docs/ONTOLOGY.md, 1 November 2026)
+    for t in to_rdf([n for n in nodes if is_knowledge(n.id)], [], metrics, today):
+        graphs["extracted"].add(t)
+    for e in by_prov["extracted"]:
+        s, r, t, _p = _edge_parts(e)
+        graphs["extracted"].add((node_iri(s), CX[r], node_iri(t)))
     for name in ("ratified", "proposed"):
         for e in by_prov[name]:
             s, r, t, _p = _edge_parts(e)

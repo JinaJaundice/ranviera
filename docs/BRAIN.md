@@ -59,12 +59,25 @@ The classes of a deployed agent and of a bank's obligations, added for agent tra
 | Region | Classes |
 |---|---|
 | `prefrontal` | InstructionVersion, PolicyClause, Mapping, AgentDecision, Obligation, PolicyException and Policy |
-| `language` | StatedRationale, Typology and RiskIndicator |
+| `language` | StatedRationale, Typology, RiskIndicator, Claim and Argument |
 | `motor` | ToolCall |
 | `parietal` | LegislativeProvision and OrganisationalRole |
-| `memory` | KnowledgeSource, Evidence and LedgerEntry |
+| `memory` | KnowledgeSource, Evidence, LedgerEntry, Source and LearnSession |
 | `basal` | Review, Sample, BackTest, TestScript, TestStep, Requirement, Control and ControlFramework |
 | `cerebellum` | DeployedAgent, ModelVersion, Run and Step |
+
+### The knowledge classes (2 November 2026)
+
+The classes of the knowledge family, added for the learning upgrade, take regions that already exist, and the brain asset does not change. `shared/brain.ts` holds them in `CLASS_REGION`, and the table above lists them in the rows for the Writing and vocabulary region and the Memory and history region.
+
+| Class | Region | Reason |
+|---|---|---|
+| Claim | `language` (Writing and vocabulary) | a claim is a statement in words, and it links to the concepts that the region already holds |
+| Argument | `language` | an argument is a set of statements |
+| Source | `memory` (Memory and history) | a source is a record that the person keeps |
+| LearnSession | `memory` | a session is a record of what the person did |
+
+The knowledge family has its own colour in the Graph window. The token is `--color-fam-knowledge` in `web/src/index.css`, with the value `#f59ad0` in the dark theme and `#a3216b` in the light theme. The maintainers chose the hue to be the farthest from every other family colour and status colour under simulated deuteranopia and protanopia. The colour of a node in the Network layout is the colour of its family, and the colour of a neuron in the brain view stays the colour of its region.
 
 ## Placement
 
@@ -149,6 +162,7 @@ The view draws each prompt, and each recorded agent run, as one ordered path thr
 
 ## Changes to this document
 
+- 2 November 2026: the knowledge classes Claim and Argument are placed in the Writing and vocabulary region, Source and LearnSession in the Memory and history region, and the knowledge family has its own colour in the Network layout.
 - 13 October 2026 (watching): Watch close up, on by default, moves the camera once a step to the step that plays and the 2 before it. While a path is drawn the brain does not turn on its own and the neurons off the path fade.
 - 13 October 2026 (final): the pieces of the line between the nodes of one step are faint unless the step plays or is selected, region leaders are neutral and dashed while a path is drawn, the route strip never scrolls, and a tool label that is already a sentence is used as it is.
 - 13 October 2026: the traced path, with the line, the head and the trail, waypoints and branches, the route strip, the panel controls, the agent run entry from the Oversight window, findings as markers, grouping above 40 steps and reduced motion.

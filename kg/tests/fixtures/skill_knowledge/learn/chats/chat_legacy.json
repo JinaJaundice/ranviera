@@ -1,0 +1,1 @@
+{"id": "chat_legacy", "title": "Older dialect", "createdAt": "2025-01-01T00:00:00.000Z", "updatedAt": "2025-01-01T00:00:00.000Z", "messages": [{"role": "user", "id": "m1", "parts": [{"type": "text", "text": "hi"}]}]}

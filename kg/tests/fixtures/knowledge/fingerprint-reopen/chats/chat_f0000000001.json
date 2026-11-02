@@ -1,0 +1,94 @@
+{
+	"id": "chat_f0000000001",
+	"title": "Gravity",
+	"createdAt": "2026-10-01T10:00:00.000Z",
+	"updatedAt": "2026-10-02T10:00:00.000Z",
+	"version": 1,
+	"messages": [
+		{
+			"role": "user",
+			"id": "msg_u1",
+			"content": "Explain gravity."
+		},
+		{
+			"role": "assistant",
+			"id": "msg_m1",
+			"content": [
+				{
+					"type": "text",
+					"text": "  Gravity is attraction between masses.  "
+				}
+			]
+		},
+		{
+			"role": "assistant",
+			"id": "msg_m2",
+			"content": [
+				{
+					"type": "thinking",
+					"thinking": "private"
+				},
+				{
+					"type": "text",
+					"text": "Orbits are falling that keep missing."
+				}
+			]
+		},
+		{
+			"role": "assistant",
+			"id": "msg_m3",
+			"content": [
+				{
+					"type": "toolCall",
+					"id": "tc1",
+					"name": "send_to_user",
+					"arguments": {
+						"message": "Escape velocity depends on mass."
+					}
+				}
+			]
+		},
+		{
+			"role": "toolResult",
+			"id": "msg_r1",
+			"toolCallId": "tc1",
+			"toolName": "send_to_user",
+			"content": [],
+			"isError": false
+		},
+		{
+			"role": "assistant",
+			"id": "msg_m4",
+			"content": [
+				{
+					"type": "toolCall",
+					"id": "tc2",
+					"name": "send_to_user",
+					"arguments": {
+						"message": "Never shown to the person."
+					}
+				}
+			]
+		},
+		{
+			"role": "toolResult",
+			"id": "msg_r2",
+			"toolCallId": "tc2",
+			"toolName": "send_to_user",
+			"content": [],
+			"isError": true
+		},
+		{
+			"role": "assistant",
+			"id": "msg_m5",
+			"content": [
+				{
+					"type": "toolCall",
+					"id": "tc3",
+					"name": "quiz",
+					"arguments": {}
+				}
+			]
+		}
+	]
+}

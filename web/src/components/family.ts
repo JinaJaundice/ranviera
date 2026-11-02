@@ -7,4 +7,5 @@ export const FAMILY_DOT: Record<Family, string> = {
   work: "bg-fam-work",
   world: "bg-fam-world",
   language: "bg-fam-language",
+  knowledge: "bg-fam-knowledge",
 };

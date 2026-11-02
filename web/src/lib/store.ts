@@ -14,6 +14,7 @@ import type {
   StreamMessage,
 } from "@shared/types";
 import type { RegionId } from "@shared/brain";
+import type { LearnEventName } from "@shared/learn/events";
 import { api } from "./api";
 import { bus } from "./bus";
 
@@ -32,7 +33,11 @@ export interface GraphView {
   captions: boolean; // the captions of the regions and the labels of the clusters; on by default
   pathPrevious: boolean; // draw the prompt before as a dimmed line beside the current path; off by default (not sent to the server)
   pathFollow: boolean; // the camera follows the head of the path; on by default (not sent to the server)
+  layer: "harness" | "knowledge"; // the structure of the set-up, or the propositions and arguments of the learning upgrade
 }
+
+/** How many times each learning stream event has arrived. A window refetches when the count for its event changes (notify, then fetch). */
+export type LearnSignals = Partial<Record<LearnEventName, number>>;
 
 export interface CortexState {
   graphView: GraphView;
@@ -45,11 +50,12 @@ export interface CortexState {
   health: HealthFile | null;
   connected: boolean;
   selected: string | null;
+  learnSignals: LearnSignals;
 }
 
 let state: CortexState = {
   graphView: {
-    families: { instruction: true, machinery: true, record: true, work: true, world: true, language: true },
+    families: { instruction: true, machinery: true, record: true, work: true, world: true, language: true, knowledge: true },
     cap: "client-confidential",
     sizeBy: "heat",
     labels: false,
@@ -62,6 +68,7 @@ let state: CortexState = {
     captions: true,
     pathPrevious: false,
     pathFollow: true,
+    layer: "harness",
   },
   graph: null,
   byId: new Map(),
@@ -72,6 +79,7 @@ let state: CortexState = {
   health: null,
   connected: false,
   selected: null,
+  learnSignals: {},
 };
 
 const listeners = new Set<() => void>();
@@ -160,11 +168,15 @@ export function connectStream(): void {
         bus.emit("mission", { id: msg.id, state: msg.state, step: msg.step, line: msg.line });
         void api.missions().then((r) => setState({ missions: r.missions })).catch(() => undefined);
         break;
+      case "learn":
+        // the message carries the fact and never the data, so a window that cares fetches after it
+        setState({ learnSignals: { ...state.learnSignals, [msg.event]: (state.learnSignals[msg.event] ?? 0) + 1 } });
+        break;
       case "heartbeat":
         break;
     }
   };
-  for (const type of ["hello", "fire", "graph", "mission", "heartbeat"]) {
+  for (const type of ["hello", "fire", "graph", "mission", "learn", "heartbeat"]) {
     source.addEventListener(type, handle as EventListener);
   }
   source.onmessage = handle;

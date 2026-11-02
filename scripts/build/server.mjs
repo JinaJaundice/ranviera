@@ -9,6 +9,7 @@ import net from "node:net";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { copyPromptFragments } from "./learn-prompts.mjs";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..");
 const OUT = path.join(ROOT, "build", "app", "server");
@@ -20,6 +21,11 @@ const workerReference = {
   setup(b) {
     b.onLoad({ filter: /sparql\.ts$/ }, (args) => {
       const text = fs.readFileSync(args.path, "utf8").replace('"./sparql.worker.ts"', '"./sparql.worker.mjs"');
+      return { contents: text, loader: "ts", resolveDir: path.dirname(args.path) };
+    });
+    // the image resize worker of the learning upgrade is a third file of the bundle, beside server.mjs
+    b.onLoad({ filter: /images[\\/]resize\.ts$/ }, (args) => {
+      const text = fs.readFileSync(args.path, "utf8").replace('"./resize-worker.ts"', '"./resize-worker.mjs"');
       return { contents: text, loader: "ts", resolveDir: path.dirname(args.path) };
     });
   },
@@ -35,6 +41,31 @@ const banner = [
   "const __dirname = __dn(__filename);",
 ].join("\n");
 
+// Packages that load a native binary or a WebAssembly file from their own folder at run time. esbuild cannot bundle
+// them, so they stay outside the bundle and their folders are copied to build/app/server/node_modules, together with
+// the platform package that npm installed for this machine (2 November 2026). The installer carries build/app as an
+// extra resource, so the server finds them beside server.mjs.
+export const NATIVE_PACKAGES = ["@napi-rs/canvas", "@silvia-odwyer/photon-node"];
+
+/** Copies each native package and its installed platform packages into <out>/node_modules. Returns the copied names. */
+export function copyNativePackages(out, root = ROOT) {
+  const copied = [];
+  const copyOne = (name) => {
+    const from = path.join(root, "node_modules", ...name.split("/"));
+    if (!fs.existsSync(from)) return;
+    fs.cpSync(from, path.join(out, "node_modules", ...name.split("/")), { recursive: true, dereference: true });
+    copied.push(name);
+  };
+  for (const name of NATIVE_PACKAGES) {
+    const pkgFile = path.join(root, "node_modules", ...name.split("/"), "package.json");
+    if (!fs.existsSync(pkgFile)) throw new Error(`${name} is not installed, so the server bundle cannot ship it.`);
+    copyOne(name);
+    const optional = Object.keys(JSON.parse(fs.readFileSync(pkgFile, "utf8")).optionalDependencies ?? {});
+    for (const platformPackage of optional) copyOne(platformPackage);
+  }
+  return copied;
+}
+
 export async function bundleServer() {
   fs.rmSync(OUT, { recursive: true, force: true });
   fs.mkdirSync(OUT, { recursive: true });
@@ -42,6 +73,7 @@ export async function bundleServer() {
     entryPoints: {
       server: path.join(ROOT, "server", "src", "main.ts"),
       "sparql.worker": path.join(ROOT, "server", "src", "sparql.worker.ts"),
+      "resize-worker": path.join(ROOT, "server", "src", "learn", "images", "resize-worker.ts"),
     },
     outdir: OUT,
     outExtension: { ".js": ".mjs" },
@@ -49,7 +81,7 @@ export async function bundleServer() {
     platform: "node",
     target: "node24",
     format: "esm",
-    external: ["vite", "electron"],
+    external: ["vite", "electron", ...NATIVE_PACKAGES],
     plugins: [workerReference],
     define: { "process.env.CORTEX_BUILD_VERSION": JSON.stringify(JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8")).version) },
     banner: { js: banner },
@@ -57,8 +89,10 @@ export async function bundleServer() {
     legalComments: "none",
   });
   fs.copyFileSync(path.join(ROOT, "node_modules", "oxigraph", "node_bg.wasm"), path.join(OUT, "node_bg.wasm"));
+  const native = copyNativePackages(OUT);
+  const fragments = copyPromptFragments(OUT);
   const size = fs.statSync(path.join(OUT, "server.mjs")).size;
-  console.log(`Bundled the server into ${path.relative(ROOT, OUT)} (server.mjs ${Math.round(size / 1024)} KB).`);
+  console.log(`Bundled the server into ${path.relative(ROOT, OUT)} (server.mjs ${Math.round(size / 1024)} KB, ${fragments.length} prompt fragments, native packages ${native.join(", ")}).`);
 }
 
 const fwd = (p) => p.split(path.sep).join("/");

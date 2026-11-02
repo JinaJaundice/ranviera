@@ -19,6 +19,8 @@ Runtime data is machine-local and must not be committed. It is kept in the data 
 | `setup.json` | server | server |
 | `profile/` | the compiler and the person | the compiler |
 | `bin/` | the packaged application | the hook entries |
+| `auth.json` | server (the keys store) | server |
+| `learn/` | server (the learning runtime) | server, `python -m cortex_kg build` (the knowledge harvester), the skill `skills/cortex-knowledge/` |
 
 The configuration file `cortex.config.json` is found in the repository root, or at the path in the environment variable `CORTEX_CONFIG`. Each path may start with `~`.
 
@@ -651,12 +653,361 @@ As built on 7 October 2026 (`server/src/oversight.ts`), the routes differ from t
 
 ## Changes to this document
 
+- 2 November 2026: learning and knowledge. The section "Learning and knowledge" fixes the learning folder in LearnHarness format version 1 with the Ranviera extension files in `learn/cortex/`, the keys file `auth.json`, the configuration keys `learn_dir`, `auth_file`, `learn_enabled` and `claude_cmd`, the sensitivity gate, the file tools, 51 routes under `/api/learn/`, the error codes, the turn stream, the stream message `learn`, the event kinds `learn.turn`, `learn.answer` and `learn.extract`, the derived metrics and the limits.
 - 13 October 2026: the traced path of the brain view. `TrailStep` gains the mode `recorded` and the optional fields `label`, `markers` and `absent`, `TracePath` is new, `DecisionTrace` gains the optional ids `review.id`, `steps[].rationale.id` and `steps[].tool_id`, `BusEvents` gains `path-open` and `path-progress`, and the Graph window opens on a run. No route or stream message is new.
 - 13 October 2026: the mapping store accepts the relation `expressedIn`, from an Obligation to a LegislativeProvision. `MappingRecord.relation` gains the value, the store refuses `expressedIn` between any other classes, and the Oversight views word it as 'is expressed in the provision'.
 - 13 October 2026: the model suggester of conflicts. The command `suggest-conflicts`, the key `conflict_suggest_cmd` (null by default, environment variable `CORTEX_CONFLICT_SUGGEST_CMD`), the shape `ConflictSuggestion`, the relation `conflictsWith` in the mapping store and the optional key `suggestion` of a mapping record.
 - 7 October 2026: agent transparency contracts. The configuration keys for oversight, the mapping file, the run record `ranviera.run.v1`, the run ledger, the instruction store, the policy pack, identity and roles, the oversight commands, the view shapes, the evidence pack, the oversight routes (provisional), the signed bundle and its verifier, the bounds file and the conflict scan command.
 - 12 October 2026: the compiler writes what shapes F02 to F04, F06, F08 and F14 read. A mapping node gains `sourceAnchor`, `targetAnchor` and `ratifiedOn` (ratified only) and the edges `ownedBy`, `proposedBy` and `approvedBy` (the last for a ratified mapping only) to Person nodes of the stated provenance, with the evidence `mappings/<scope>.json#<id>`. A Run node gains `promptHash`, a decision node gains a `statesRationale` edge to the last stated rationale before it (a rationale serves one decision), and the transparency stage writes a `ledger:<seq>` LedgerEntry node (`seq`, `recordHash`, `prevHash`, `entryHash`) with an `entryOf` edge to its run for each ledger entry that names a run. Check P08 also accepts `instructions/<agent>.json` and `instructions/<agent>.json#<version id>`, resolved in the profile folder and checked for the version, and resolves a bare vocabulary file name in `<profile>/vocab`.
 - 13 October 2026: the views answer the review of three second-line roles. `ChainLink` gains `clause_ref` and `policy` on a link to a policy clause, `DecisionTrace.model` gains `approver` and `approved_on` from the new `model_approvals` of the instruction store, and an agent of `MonitoringReport` gains `runs` and `runs_recorded`. The demonstrator records the approver and the day of each approved model version.
+
+## Learning and knowledge
+
+This section fixes the files, routes, messages, events and limits of the learning upgrade. Ranviera links sources such as notes, PDF files, Claude memory, Claude Code transcripts, project Markdown and LearnHarness folders, extracts them into propositions and the arguments that join them, and runs learning sessions on top of them. The learning folder follows LearnHarness native format version 1, so that the LearnHarness application can read it. Ranviera reimplements the behaviour of LearnHarness in a clean room under Apache 2.0 and is not affiliated with LearnHarness or Anthropic. TypeScript names are exported from `shared/learn/`, and the Python reader in `kg/cortex_kg/harvest/knowledge.py` and the skill `skills/cortex-knowledge/` use the same field names.
+
+### Conventions
+
+- An identifier uses letters, digits, underscore and hyphen only (`^[A-Za-z0-9_-]+$`), and a store that receives another identifier refuses it.
+- The prefixes are `chat_` for a session, `msg_` for a message, `job_` for a job, `n_<12 hex>` for a proposition, `arg_<12 hex>` for an argument, `src_<12 hex>` for a source file, `root_<8 hex>` for a linked root, `out_<12 hex>` for an outcome and `claim:<12 hex>` for a claim.
+- Times are ISO 8601 in UTC. The fields `startedAt` of a usage record and `timestamp` of a message stay in milliseconds since 1970, as LearnHarness stores them.
+- A JSON file is written with tab indentation through a temporary file in the same folder and a rename. A JSON Lines file is appended with one object per line, in UTF-8 with LF.
+- An absent field is not read as zero. An absent price, context window or token count stays absent.
+- The learning data is private to the person. It is not copied into `harness/`, `ontology/` or the public export.
+
+### The learning folder
+
+The learning folder is `<learn_dir>`, which defaults to `<data_dir>/learn/`. The keys file `<data_dir>/auth.json` sits one level above it, as in LearnHarness.
+
+| Path | Format | Shared with LearnHarness |
+|---|---|---|
+| `<data_dir>/auth.json` | flat JSON map, mode 0600 | yes |
+| `<learn_dir>/settings.json` | delta settings record that holds no secret | yes |
+| `<learn_dir>/prompts/<segment>.md` | one Markdown file for each overridden prompt fragment | yes |
+| `<learn_dir>/chats/<id>.json` | session record | yes |
+| `<learn_dir>/jobs/<id>.json` | job record | yes |
+| `<learn_dir>/graph/format.json` | `{"version": 1}` | yes |
+| `<learn_dir>/graph/nodes.jsonl` | proposition ledger | yes |
+| `<learn_dir>/graph/chains.jsonl` | argument ledger | yes |
+| `<learn_dir>/graph/sources.json` | source records keyed by id | yes |
+| `<learn_dir>/graph/sessions.jsonl` | extraction checkpoints of sources | yes |
+| `<learn_dir>/graph/coverage.jsonl` | extraction fingerprints of messages | yes |
+| `<learn_dir>/graph/positions.json` | resting layout of the canvas | yes |
+| `<learn_dir>/graph/render-settings.json` | presentation settings | yes |
+| `<learn_dir>/graph/source-organization.json` | folders and display names of sources | yes |
+| `<learn_dir>/cortex/sources.json` | registry of linked roots | no |
+| `<learn_dir>/cortex/files.jsonl` | state of each file under a root | no |
+| `<learn_dir>/cortex/locators.jsonl` | passage of each proposition in each source | no |
+| `<learn_dir>/cortex/outcomes.jsonl` | graded answers for each proposition | no |
+| `<learn_dir>/cortex/writer.lock` | process lock | no |
+| `<learn_dir>/archive/<date>/` | lines removed by a deletion, as JSON Lines | no |
+
+The files in `cortex/` are the Ranviera extension files, and a LearnHarness reader does not meet them or `archive/`. The file `positions.json` can be rebuilt and carries no format stamp. The folder `<learn_dir>/debug/` is reserved for opt-in captures.
+
+The file `graph/format.json` holds `{"version": 1}`, and an absent file means version 1. The first write of a graph file creates it, and a read does not write it. When the stamp is newer than the build, a read of a graph file is refused with the code `format_newer` and the route answers 503. A read of a ledger skips a line with bad JSON or the wrong shape and does not repair it, so that a torn append cannot take the graph down. A session record carries `version` (absent means 1), and a record stamped newer than the build is refused on read and is not rewritten.
+
+### Ledgers
+
+```ts
+// shared/learn/knowledge.ts
+interface ProvenancePoint { chatId: string; messageId: string }  // chatId is a chat_ or src_ id, messageId is "" for source level attribution
+interface NodeLine {            // graph/nodes.jsonl, an id may repeat
+  id: string; name: string; statement: string; aliases: string[]; createdAt: string; provenance: ProvenancePoint[]
+}
+interface ChainLine {           // graph/chains.jsonl
+  id: string; premises: string[]; conclusion: string; createdAt: string; provenance: ProvenancePoint[]
+}
+```
+
+Readers merge the ledgers in the same way. Node lines merge by `id`, and the first line fixes `name`, `statement` and `createdAt`. A later line adds its statement and aliases as aliases, skipping empty strings, a string equal to the fixed statement and an exact duplicate. Provenance is the union of the exact pairs in first seen order. Chain lines merge by the key of the sorted premise identifiers joined by `+`, then `>` and the conclusion identifier. A cluster is a birth source with at least 3 propositions.
+
+The locator file records the passage of each claim in its source.
+
+```ts
+// shared/learn/sources.ts
+interface LocatorLine {           // cortex/locators.jsonl
+  nodeId: string; sourceId: string; fileSha256: string
+  startLine: number | null; endLine: number | null   // 1 based and inclusive, null when the quote was not found
+  page: number | null; heading: string | null
+  quote: string                   // at most 280 characters
+  found: boolean                  // true when the quote occurs word for word in the chunk
+  at: string
+}
+```
+
+### The keys file
+
+`<data_dir>/auth.json` is one flat JSON object that maps an environment variable name to a string value, such as `OPENROUTER_API_KEY`. It is written with mode 0600 through a temporary file and a rename, and it is read again on each access and a hand edit applies at once. A missing or corrupt file reads as no keys. A file that exists and cannot be read or parsed as a JSON object refuses each write with 409 `keys_file_unreadable` and is left as it is. Before each replacement the previous file is copied to `auth.json.bak` with mode 0600.
+
+- The writable names are the key variables of the providers of the `@earendil-works/pi-ai` library, `CUSTOM_OPENAI_API_KEY`, `TAVILY_API_KEY` and `BRAVE_API_KEY`. Any other name answers 404.
+- A real environment variable wins over the file, and the status row then says `shadowedByEnv`. The server copies a file key into `process.env` only when the name is unset. It does not copy `PATH`, `PATHEXT`, `HOME`, `USERPROFILE`, `COMSPEC`, `SYSTEMROOT`, a name that starts `NODE_`, `NPM_`, `LD_`, `DYLD_` or `PYTHON`, or a name that does not match `^[A-Za-z_][A-Za-z0-9_]*$`.
+- Validation is by shape only, with no network call. A provider key has at least 12 characters, a Tavily key starts with `tvly-` and has at least 20 characters, and a Brave key has at least 20 characters. A bad value answers 400 and is not stored.
+- A key does not appear in the graph, the public export, a log or a response. A response carries the last four characters and the length only.
+- The child process of the Claude Code provider receives the launch environment without the names that only this store injected, and without a `CORTEX_` variable whose name holds `TOKEN`, `SECRET`, `KEY`, `PASSWORD`, `PASSWD`, `CREDENTIAL` or `AUTH`.
+
+### Configuration keys
+
+The configuration file gains four keys. An environment variable overrides the key, and the key overrides the default. `server/src/config.ts` reads all four, and `kg/cortex_kg/config.py` reads only `learn_dir`.
+
+| Key | Default | Meaning |
+|---|---|---|
+| `learn_dir` | `<data_dir>/learn` | the learning folder (`CORTEX_LEARN_DIR`). Pointing it at a LearnHarness data folder shares that folder, and one application writes at a time |
+| `auth_file` | `<data_dir>/auth.json` | the keys file (`CORTEX_AUTH_FILE`) |
+| `learn_enabled` | `true` | `false` hides the Learn and Sources windows and registers no `/api/learn/` route (`CORTEX_LEARN_ENABLED`) |
+| `claude_cmd` | `null` | an explicit path of the `claude` executable, used before the search path (`CORTEX_CLAUDE_CMD`) |
+
+The scan interval, the files for each pass, the chunk budget and the compaction threshold are in `settings.json` and not in the configuration file, because the person changes them in the window.
+
+### Sources
+
+A linked root is a record of `cortex/sources.json`.
+
+```ts
+// shared/learn/sources.ts
+type Sensitivity = "public" | "internal" | "client-confidential"
+type SourceKind = "notes" | "pdf" | "claude-memory" | "claude-transcripts" | "claude-instructions" | "projects-md" | "learnharness"
+interface SourceRoot {
+  id: string; kind: SourceKind
+  path: string                    // a folder, or one file for the kind pdf
+  label: string
+  include: string[]; exclude: string[]   // globs relative to the root, added to the defaults of the kind
+  sensitivity: Sensitivity
+  mode: "manual" | "scan"
+  enabled: boolean                // false keeps the root and its knowledge and stops scans and extraction
+  hostedConsentAt: string | null  // set when the person agrees that a hosted provider may receive this root
+  createdAt: string; lastScanAt: string | null
+}
+```
+
+| Kind | What the root is | Default sensitivity |
+|---|---|---|
+| `notes` | a folder of Markdown and text files, such as a vault of notes | `internal` |
+| `pdf` | a folder of PDF files, or one PDF file | `internal` |
+| `claude-memory` | a Claude memory folder | `client-confidential` |
+| `claude-transcripts` | one folder of Claude Code transcripts under `<claude_home>/projects/`. Creating the root is the opt-in for that folder | `client-confidential` |
+| `claude-instructions` | the `claude_home` folder, off until the person adds it | `internal` |
+| `projects-md` | the Markdown files under `projects_root` | `client-confidential` |
+| `learnharness` | a LearnHarness data folder, read only | `internal` |
+
+A scan reads the root, does not follow a symbolic link and appends one `FileRecord` line to `cortex/files.jsonl` for each file whose state changed. A file is `pending` when its hash differs from the hash at its last extraction. The kind `learnharness` is imported without a model call.
+
+### The sensitivity gate and model classes
+
+Each linked root carries a sensitivity, and each model that receives text has a provider class.
+
+| Provider class | Models |
+|---|---|
+| `claude-code` | the three aliases `opus`, `sonnet` and `haiku` of the Claude Code provider |
+| `local` | the custom endpoint when its host is a loopback address or when `localConfirmedAt` is set |
+| `hosted` | all key based providers and all other custom endpoints |
+
+| Sensitivity of the text | `claude-code` | `local` | `hosted` |
+|---|---|---|---|
+| `public` | allowed | allowed | allowed |
+| `internal` | allowed | allowed | allowed |
+| `client-confidential` | allowed | allowed | refused unless the root has `hostedConsentAt` |
+
+- The gate applies to extraction, to a learning session, to a job and to a change of the model of a session. A refusal is the envelope `sensitivity_refused`.
+- A proposition takes the highest sensitivity of its sources. A session takes the highest sensitivity of the propositions that it read and of the roots that its file tools reached, and the value is derived from the record and is not stored.
+- For a `hosted` model, the listing and reading of propositions, the candidates of the auditor, the graph context and the file tools leave out any proposition or root of `client-confidential` sensitivity that has no consent.
+- Consent is recorded for one root at a time, with the time. The request `PATCH /api/learn/sources/:rootId` with `{ "hostedConsent": false }` revokes it.
+- A stage of the extraction that would use Claude Code needs `claudeCode.allowBackground`. While it is off, the request answers `consent_required` with `consent` set to `claude-code-background`.
+
+### The writer lock
+
+`cortex/writer.lock` holds `{ "pid": number, "host": string, "since": string }`. The runtime takes the lock when it starts and removes it when it stops, and a lock whose process no longer exists is replaced. A second process, whether Ranviera or the LearnHarness application, that finds a lock whose process is still alive must not write the folder.
+
+A Ranviera process that finds a live lock of another process still starts. It logs that the learning graph is read only, and it keeps running. In that state `server/src/learn/http.ts` answers each request other than GET with 409 `busy`, and the runtime starts no source scan, job recovery or automatic extraction. The knowledge core tests the lock before each write to a graph file, which includes the ledgers, the checkpoints, the coverage, the positions, the render settings, the organisation file, `cortex/locators.jsonl` and a deletion. A read does not test the lock.
+
+### File tools
+
+The tools `read`, `ls`, `find` and `grep` are read only. They do not start a process and use no write call.
+
+- **Scope.** When the model of the session has the provider class `claude-code` or `local`, a path resolves against the home folder and the tools reach it. When the class is `hosted`, the tools reach only the linked roots that the gate allows, and the real path must lie inside the real path of that root, so that a link cannot lead out of it. The tool `list_sources` returns the allowed roots in both scopes.
+- **Deny list.** In each scope the tools refuse a path that names or lies inside `.ssh`, `.aws`, `.gnupg`, `.docker`, `.kube`, a file named `.env` or starting `.env.`, `auth.json`, `.credentials.json`, `.netrc`, `.git-credentials`, `.npmrc`, `.pypirc`, `.azure`, `.config/gh`, `.claude.json`, the shell history files `.bash_history`, `.zsh_history` and `consolehost_history.txt`, a browser profile folder, or a key store (`*.pem`, `*.key`, `*.p12`, `*.pfx`, `*.kdbx`, `id_rsa*`, `id_ed25519*`). The tools also refuse a path segment that ends in a tilde and digits, with or without an extension, because it is a Windows short name that can reach a protected place under another text. The list is tested on the path as given and on its real path. The linking of a root, the scan and the passage route apply the same list. The answer is a tool result that says the path is not available and does not say which rule applied.
+- **Walks.** A walk is depth first. It does not enter a directory named `node_modules`, `.git`, `Library` or `.Trash`, does not follow a symbolic link, skips an unreadable directory and stops at the walk deadline with partial results.
+- **Untrusted text.** The text that `read` returns and the output of `grep` sit between the delimiter lines `<<<UNTRUSTED FILE CONTENT` and `<<<END UNTRUSTED FILE CONTENT`. The statement and aliases that `get_proposition` returns and the text of the graph context marker sit between `<<<UNTRUSTED EXTRACTED TEXT` and `<<<END UNTRUSTED EXTRACTED TEXT`. Each pair carries the same random mark of 12 hex characters, any `<<<` inside the text is rewritten as `<< <`, and the prompts tell the agents to follow no instruction inside a block.
+- **Limits.** Output is cut on whole lines at 50 KB. `read` returns at most 2,000 lines and 50 KB and refuses a text file over 10 MiB. `ls` stops at 500 entries and `find` at 1,000. `grep` skips files above 2 MB and files with a NUL byte in the first 8,192 bytes, cuts a line at 500 characters, stops at 100 matches and shares one deadline of 10 seconds with the walk. An image is resized to at most 2,000 by 2,000 pixels and 4.5 MiB of base64 text, and a file over 25 MiB or a picture that declares more than 40 million pixels is refused before it is decoded.
+- A tool does not throw into the loop. It returns an error string that names the valid values.
+
+### Routes
+
+All routes are under `/api/learn/` and need the token that `/api/` needs. A method other than those listed answers 405, and a body that is not JSON answers 415. A change to the custom endpoint (routes 7 to 9) answers 403 `forbidden_origin` when the `Sec-Fetch-Site` header says `cross-site` or the `Origin` header does not name the host that was asked. It answers 400 when `If-Match` is missing and 409 `etag_mismatch` when the tag is stale.
+
+| # | Method and path | Answer |
+|---|---|---|
+| 1 | `GET /api/learn/models` | `ModelCatalogResponse`, with `Cache-Control: no-store` |
+| 2 | `GET /api/learn/keys` | `{ keys: AuthKeyStatus[], providers }` |
+| 3 | `PUT /api/learn/keys/:id` | body `{ value }`, saves a key and returns the `AuthKeyStatus` |
+| 4 | `DELETE /api/learn/keys/:id` | removes a key, idempotent, and returns the `AuthKeyStatus` |
+| 5 | `GET /api/learn/claude-code` | `ClaudeCodeStatus`. While `claudeCode.enabled` is off no probe is made and the state is `version-unchecked` |
+| 6 | `GET /api/learn/custom-provider` | `CustomProviderState`, with an `ETag` |
+| 7 | `POST /api/learn/custom-provider` | connects a custom endpoint, body `CustomProviderConnect`, needs `If-Match` |
+| 8 | `PATCH /api/learn/custom-provider` | saves the pins, body `{ overrides }`, needs `If-Match` |
+| 9 | `DELETE /api/learn/custom-provider` | disconnects the endpoint, needs `If-Match` |
+| 10 | `GET /api/learn/settings` | the `LearnSettings` after the sanitiser |
+| 11 | `PUT /api/learn/settings` | replaces the record after the sanitiser and returns it. The stored `customProvider` is kept, and the server sets `claudeCode.enabledAt` and `allowBackgroundAt` itself |
+| 12 | `PUT /api/learn/settings/models` | replaces the `models` section, validated against the catalogue and clamped |
+| 13 | `GET /api/learn/prompts` | `PromptList` |
+| 14 | `PUT /api/learn/prompts/<key>` | body `{ text }`, writes `prompts/<key>.md` and answers `{ ok: true, key, text }`, or `{ ok: true, ignored: true }` for a key that names no current fragment |
+| 15 | `DELETE /api/learn/prompts/<key>` | clears the switch and removes the override file, and answers `{ ok: true, deleted: true, switchCleared }` |
+| 16 | `GET /api/learn/sessions` | `{ sessions: SessionSummary[] }`, newest first |
+| 17 | `POST /api/learn/sessions` | body `CreateSession`, returns 200 and `{ session }` |
+| 18 | `GET /api/learn/sessions/:id` | `SessionDetail` |
+| 19 | `PUT /api/learn/sessions/:id` | body `{ title }`, renames without bumping `updatedAt` |
+| 20 | `DELETE /api/learn/sessions/:id?mode=<mode>` | answers `{ deleted: true, stats }`, where `mode` is `preserve-graph` or `delete-nodes` and has no default |
+| 21 | `POST /api/learn/sessions/:id/input` | body `{ input: InputEvent }`, answers `{ ok: true, started }` |
+| 22 | `GET /api/learn/sessions/:id/stream` | the turn stream, or the settled terminal |
+| 23 | `POST /api/learn/sessions/:id/steer` | body `{ id, text }`, steers a running turn and answers `{ ok: true }`, or answers 409 with no `code` when no turn is running |
+| 24 | `POST /api/learn/sessions/:id/dismiss` | body `{ toolCallId }` or `{ problemCallId }`, answers 200 and `{ ok: true, parked: false }`, or 202 and `{ ok: true, parked: true }` while a turn runs |
+| 25 | `PUT /api/learn/sessions/:id/settings` | body `{ model?, thinkingLevel? }`, replaces the settings of the session |
+| 26 | `GET /api/learn/sessions/:id/markdown` | the session as one Markdown attachment |
+| 27 | `GET /api/learn/jobs?sessionId=<id>` | `{ jobs: JobRecord[], turnInFlight }` |
+| 28 | `GET /api/learn/activity` | `{ items: ActivityItem[] }` for each running turn, job and extraction |
+| 29 | `POST /api/learn/activity/abort` | body `{ kind, id }`, aborts a turn, a job or an extraction |
+| 30 | `GET /api/learn/graph?max=<sensitivity>` | `GraphSnapshot`, filtered to the sensitivity given and below |
+| 31 | `GET /api/learn/graph/status` | `{ runs: ExtractionRun[] }` |
+| 32 | `GET /api/learn/graph/costs` | `GraphCosts` |
+| 33 | `POST /api/learn/graph/extract` | body `{ sessionId }`, starts an extraction of the uncovered text of a session |
+| 34 | `PUT /api/learn/graph/positions` | body `{ positions }`, commits a drag |
+| 35 | `GET /api/learn/graph/render-settings` | `RenderSettings` or `null` |
+| 36 | `PUT /api/learn/graph/render-settings` | replaces the settings after the sanitiser and returns them |
+| 37 | `DELETE /api/learn/graph/nodes/:id` | deletes a proposition or, for an `arg_` id, one argument |
+| 38 | `GET /api/learn/passage?source=<id>&from=<n>&to=<n>` | `Passage`, at most 200 lines. `from` defaults to 1 and `to` to `from` plus 199, and a `from` beyond the last line answers 404 |
+| 39 | `GET /api/learn/outcomes?node=<id>` | `{ outcomes: OutcomeLine[], metrics: KnowledgeMetrics }`, or 404 `not_found` for a proposition that the graph does not hold and that has no outcome |
+| 40 | `GET /api/learn/sources` | `{ roots: RootSummary[] }` |
+| 41 | `POST /api/learn/sources` | body `AddRoot`, returns 201 and `{ root }`, and answers 400 `bad_request` for a path that is already linked with the same kind |
+| 42 | `PATCH /api/learn/sources/:rootId` | body `RootChange`, returns `{ root }` |
+| 43 | `DELETE /api/learn/sources/:rootId?mode=<mode>` | unlinks a root and deletes its knowledge by `mode`, and does not touch the files. Answers `{ mode, files, stats? }` |
+| 44 | `POST /api/learn/sources/:rootId/scan` | reads the root and returns a `ScanResult` for each file the scan saw, with no model call |
+| 45 | `POST /api/learn/sources/:rootId/extract` | body `{ paths?, force?, confirm? }`, queues extraction and returns 202 and `{ started, queued }`, or 409 `confirm_required` |
+| 46 | `GET /api/learn/sources/:rootId/files` | `{ files: FileRecord[] }` |
+| 47 | `GET /api/learn/source-organization` | `SourceDirectory` |
+| 48 | `POST /api/learn/source-organization` | body `OrganizationAction`, returns `{ directory, createdFolderId? }` |
+| 49 | `DELETE /api/learn/source-organization` | body `{ sourceIds, folderIds, deleteSessions }`, deletes sources and returns `{ directory, graphRevision }` |
+| 50 | `POST /api/learn/graph/ratify` | body `{ claim, status, reason? }`, writes the assertions of one claim, rebuilds the graph and returns `{ assertions, graphRevision }` |
+| 51 | `GET /api/learn/locators?node=<id>` | `{ locators: LocatorLine[] }`, the newest line for each source of the node, an empty list for an unknown node and 400 for a missing or malformed `node` |
+
+A route that starts a model call (routes 21, 33 and 45, and the wake of a job) checks the model slots, the keys, the opt-in of the Claude Code provider and the sensitivity gate, in that order, before anything durable changes, and answers with the envelope of the first check that fails.
+
+A request to extract without `paths` that would run more files than `scan.maxFilesPerPass` (50 by default) answers 409 `confirm_required` with `files` and `tokens`, and it runs only when the body holds `confirm` set to true. The value of `tokens` is the bytes of the files divided by four, rounded up.
+
+### Error codes
+
+Each error is JSON `{ "error": string, "code"?: string, ... }`. The text is a plain sentence that names the problem and, where one exists, the next step.
+
+| Status | Code | Extra fields | When |
+|---|---|---|---|
+| 400 | `bad_request` | none | the body or a parameter is invalid, or a path fails the path rule |
+| 403 | `sensitivity_refused` | `sensitivity`, `providerClass`, `roots` | the gate refuses the model for the text |
+| 403 | `consent_required` | `consent` (`claude-code` or `claude-code-background`) | the opt-in of the Claude Code provider, or of its background use, is off |
+| 403 | `forbidden_path` | none | a root or a file tool path lies on the deny list |
+| 403 | `forbidden_origin` | none | a change to the custom endpoint comes from another origin |
+| 404 | `not_found` | none | an unknown session, node, root, key or passage |
+| 409 | `turn_running` | none | a turn is running for the session, or a deletion finds a live turn |
+| 409 | `confirm_required` | `files`, `tokens` | an extraction would run more files than `scan.maxFilesPerPass` and `confirm` is not true |
+| 409 | `extraction_running` | none | an extraction is registered and the request would change the graph |
+| 409 | `job_running` | `jobs` | a deletion finds a job that is computing |
+| 409 | `busy` | none | the same source or session is already in flight, or a write meets the writer lock of another live process |
+| 409 | `etag_mismatch` | none | `If-Match` does not match the state of the custom endpoint |
+| 409 | `keys_file_unreadable` | none | the keys file exists but cannot be read, parsed or copied and the write refuses |
+| 413 | `too_large` | none | a body, a file or a page count is over its limit |
+| 415 | `unsupported_media_type` | none | the body is not JSON |
+| 503 | `models_not_configured` | `missing` | a slot that the task needs has no model |
+| 503 | `provider_key_missing` | `provider`, `slots` | a slot has a model whose provider has no key |
+| 503 | `claude_code_unavailable` | `state`, `minimumVersion` | the Claude Code tool is not found, is too old or cannot be checked |
+| 503 | `extraction_busy` | none | an extraction did not stop within 10 seconds of a deletion, and the request may be retried |
+| 503 | `format_newer` | `found`, `supported` | a graph file or session record has a newer format than the build |
+| 500 | none | none | any other failure |
+
+The codes `models_not_configured`, `provider_key_missing` and `claude_code_unavailable` are informational. The window shows them with a neutral tone and a link to Settings, and background work that meets one records it in the run and does not retry.
+
+### The turn stream
+
+`GET /api/learn/sessions/:id/stream` is a Server-Sent Events response. Each frame is `data: <JSON>` followed by a blank line, with no `event:` line, and the frames end with a `done` frame.
+
+```ts
+// shared/learn/events.ts
+type TurnFrame =
+  | AgentEvent                                         // the events of @earendil-works/pi-agent-core 1.4.0, from agent_start to agent_end
+  | { type: "error"; errorText: string }               // a failure of the loop or of the save of the turn, sent before turn-settled
+  | { type: "turn-settled" }                           // the record is saved and the turn is over
+  | { type: "done" }                                   // the last frame
+```
+
+- A `message_update` frame carries the full partial message, and the view replaces its streaming slot with it.
+- The `agent_end` frame carries the messages that the turn produced, in order, each with its identifier, and not the whole history.
+- The log of a turn keeps settled events as they are and keeps only the newest snapshot of each slot in flight. Live frames are coalesced to at most one in each 100 milliseconds, and a subscriber that attaches after settlement still receives the history and the terminal frames. Closing the connection detaches the view and does not abort the turn.
+- When no turn is running, the route answers with a short stream that holds any retained failure notice, a `turn-settled` frame and `done`.
+
+### The stream message learn
+
+`LearnStreamMessage` is a new member of `StreamMessage` on `GET /api/stream`. An event carries the fact and not the data, and the window then fetches the data. A client that reconnects refetches.
+
+```ts
+// shared/learn/events.ts
+type LearnEventName =
+  | "turn-started" | "turn-settled" | "record-changed" | "compaction-changed" | "sessions-changed" | "jobs-changed"
+  | "activity-changed" | "sources-changed" | "graph-changed" | "settings-changed" | "models-changed"
+type LearnStreamMessage = { type: "learn"; event: LearnEventName; session?: string; root?: string; running?: boolean; revision?: number }
+```
+
+The events `turn-started` and `turn-settled` carry `session`, `compaction-changed` carries `session` and `running`, `sources-changed` may carry `root`, and `graph-changed` carries `revision`.
+
+### Event kinds
+
+`EventKind` gains `learn.turn`, `learn.answer` and `learn.extract`.
+
+| Kind | Session | Weight | Fires | Key | `meta` |
+|---|---|---|---|---|---|
+| `learn.turn` | `learn:<session id>` | 0.3 | the node `learnsession:<slug>` and the claims of the graph context marker | `turn:<session id>:<number of usage records>:<number of messages>` | `{ turns, messages }` |
+| `learn.answer` | `learn:<session id>` | 0.6 | the claims in `target` | the tool call identifier | `{ tool, correct }` |
+| `learn.extract` | `learn:<source id or session id>` | 0.2 | at most 20 of the claims that a merge added or linked | the run identifier | `{ sourceId }` |
+
+The event hub drops an event whose session and key repeat. The `meta` does not hold the text of a learner.
+
+### Derived metrics
+
+The compiler computes the metrics when it builds the graph, and the server computes them when it reads the snapshot. A parity test on `kg/tests/fixtures/knowledge/` requires equal results.
+
+- `support` is the number of distinct `chatId` values in the merged provenance of a proposition.
+- `held` is `unknown` when the proposition has no outcome. It is `held` when there are at least 2 outcomes, the newest 2 are correct, the rung of each is null, `R0` or `R1`, and none of the newest 3 has the miss class `structural`. Otherwise it is `shaky`.
+- `calibration` is null while fewer than 5 outcomes of source `choice` carry a confidence. Otherwise `gap` is the mean confidence divided by 100 minus the share of correct answers, and `band` is `calibrated` when the absolute gap is at most 0.15, `overconfident` above 0.15 and `underconfident` below minus 0.15.
+- The metrics are not written to the ledgers and do not count as graph truth.
+
+### Limits
+
+| Item | Limit |
+|---|---|
+| File size of a note or a PDF file | 25 MiB |
+| Prose of one transcript | 25 MiB, after tool output and thinking are removed |
+| PDF pages | 1,000, checked from the page count before a page is read |
+| Files in one root | 20,000, and a scan stops with `too_large` beyond it |
+| Files queued by one scan pass of a root in `scan` mode | 50 (`scan.maxFilesPerPass`, clamped to 1 to 1,000), at an interval of 300 seconds (`scan.intervalSeconds`, clamped to 30 to 86,400) |
+| Path length and rule | at most 1,024 characters, no backslash, colon or control character, and no empty, `.` or `..` segment |
+| Body of an organisation or custom endpoint request | 64 KiB |
+| Chunk budget of the extractor | 4,096 estimated tokens (characters divided by 4, rounded up), floor 500, and a line is not split |
+| Quote of a locator | 280 characters |
+| Extractor retry turns, auditor turns | 4 and 16 |
+| Candidates for each page of the auditor | 5 |
+| Background model work at once | 3 permits, 3 files in flight, and one audit and merge at a time |
+| Graph context picks | 64 |
+| Compaction | threshold 150,000 tokens (floor 32,000) or the model window less 16,384, whichever is smaller, and a kept tail of about 20,000 tokens |
+| Tool guard, abort grace | 30 seconds, 250 milliseconds |
+| File tool walk, output | 10 seconds, 50 KB |
+| Text file that `read` returns | 10 MiB |
+| Image file, declared pixels | 25 MiB, 40 million |
+| Turn liveness guard | 30 minutes |
+| Researcher turns, PDF reader calls | 12 and 14 |
+| `web_fetch` | 30 seconds, 5 MiB declared length, 40,000 characters of output, at most 5 redirects |
+| `web_search` | `count` default 5 and at most 10, 30 seconds |
+| `web_fetch_pdf` | 60 seconds, 25 MiB |
+| Claude Code version check | minimum version 2.1.316, 5 seconds, 4,096 bytes of standard output |
+| Claude Code tool admission | 60 seconds for the tool to call each streamed tool through the bridge |
+| Custom endpoint discovery | 15 seconds, 8 MiB, 10,000 models |
+| Positions | coordinates clamped to plus or minus 1,000,000 |
+| Key shapes | provider key 12 characters or more, Tavily `tvly-` and 20 or more, Brave 20 or more |
+
+A request over a byte limit is measured on the bytes read and not on a declared length, and the stream is cancelled when the running total passes the limit.
 
 ## Non-affiliation
 

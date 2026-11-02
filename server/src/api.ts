@@ -9,6 +9,8 @@ import { ontologyDir, productOf, versionOf, type Config } from "./config.ts";
 import { makeEvent, type EventHub } from "./events.ts";
 import { NOT_BUILT, REBUILD_HINT, parseSensitivity, type GraphStore } from "./graph.ts";
 import { claudeStatus, findClaude, type MissionManager } from "./missions.ts";
+import { handleLearn } from "./learn/http.ts";
+import type { LearnRuntime } from "./learn/index.ts";
 import { handleOversight } from "./oversight.ts";
 import { plan as makePlan } from "./plan.ts";
 import { lastLine, runPython } from "./python.ts";
@@ -30,6 +32,8 @@ export interface Context {
   /** the runner of the claude command, and the launcher of its sign-in window, so that tests can replace them */
   claude?: ClaudeRunner;
   login?: LoginLauncher;
+  /** the services of the learning upgrade, absent when learn_enabled is false (docs/CONTRACTS.md, 1 November 2026) */
+  learn?: LearnRuntime;
 }
 
 /** ServerStatus with the field that shared/types.ts does not hold yet (see the change request for ServerStatus.brain_domains). */
@@ -131,7 +135,7 @@ export function checkPlanShape(p: Plan, ctx?: Context): void {
   // a step names an agent that Cortex knows, so that a caller cannot pass an option to the claude command
   const known = ctx.graph.index?.agents;
   for (const s of p.steps) {
-    if (s.agent !== "main" && (!/^[a-z][a-z0-9-]*$/.test(s.agent) || (known && !(s.agent in known)))) bad(`${JSON.stringify(s.agent).slice(0, 40)} is not an agent that Cortex knows`);
+    if (s.agent !== "main" && (!/^[a-z][a-z0-9-]*$/.test(s.agent) || (known && !(s.agent in known)))) bad(`${JSON.stringify(s.agent).slice(0, 40)} is not an agent that this app knows`);
   }
   for (const l of p.load) {
     if (!l || !isStr(l.path) || !(ctx.cfg.projects_root && isUnder(l.path, ctx.cfg.projects_root)) && !isUnder(l.path, ctx.cfg.claude_home)) bad("each file to load must be under the projects folder or the Claude home folder");
@@ -210,6 +214,10 @@ export async function handleApi(ctx: Context, req: IncomingMessage, res: ServerR
       const exe = findClaude();
       if (!exe && !ctx.login) throw new HttpError(409, "The claude command is not installed. Install Claude Code, then try again.");
       return sendJson(res, 200, (ctx.login ?? defaultLoginLauncher)(exe ?? "claude"));
+    }
+    if (p === "/api/learn" || p.startsWith("/api/learn/")) {
+      await handleLearn(ctx, req, res, p, q);
+      return;
     }
     if (p.startsWith("/api/oversight/")) {
       return sendJson(res, 200, await handleOversight(ctx, req, p, q));
@@ -311,7 +319,7 @@ export async function handleApi(ctx: Context, req: IncomingMessage, res: ServerR
       if (![ctx.cfg.projects_root, ctx.cfg.claude_home].some((r) => r && isUnder(real, r))) {
         throw new HttpError(403, "Only files under the projects folder or the Claude home folder can be opened.");
       }
-      if (!OPEN_EXT.has(path.extname(real).toLowerCase())) throw new HttpError(403, "Only documents, text files and images can be opened from Cortex.");
+      if (!OPEN_EXT.has(path.extname(real).toLowerCase())) throw new HttpError(403, "Only documents, text files and images can be opened from this app.");
       openFile(real);
       return sendJson(res, 200, { ok: true });
     }

@@ -1,0 +1,20 @@
+{
+	"version": 1,
+	"roots": {
+		"root_11111111": {
+			"id": "root_11111111",
+			"kind": "notes",
+			"path": "C:/Users/example/Vault",
+			"label": "Vault",
+			"include": [],
+			"exclude": [],
+			"sensitivity": "internal",
+			"mode": "manual",
+			"enabled": true,
+			"hostedConsentAt": null,
+			"createdAt": "2026-10-01T07:00:00.000Z",
+			"lastScanAt": "2026-10-01T08:00:00.000Z"
+		},
+		"root_broken": "not an object"
+	}
+}

@@ -1,0 +1,4 @@
+{"id":"n_100000000001","name":"Shared","statement":"A fact that two sources state.","aliases":[],"createdAt":"2026-10-01T10:00:00.000Z","provenance":[]}
+{"id":"n_100000000003","name":"Only B","statement":"A fact that only the notes state.","aliases":[],"createdAt":"2026-10-02T10:00:00.000Z","provenance":[{"chatId":"src_b00000000001","messageId":""}]}
+{"id":"n_100000000001","name":"Shared again","statement":"The same fact in other words.","aliases":["Second wording"],"createdAt":"2026-10-03T10:00:00.000Z","provenance":[{"chatId":"src_b00000000001","messageId":""}]}
+{"id":"n_100000000004","name":"Legacy","statement":"A line that never had provenance.","aliases":[],"createdAt":"2026-10-01T10:00:00.000Z","provenance":[]}

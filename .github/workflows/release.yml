@@ -2,11 +2,13 @@ name: release
 
 # The workflow runs when a tag of the form v* is pushed. It builds the installers on Windows, macOS and Linux, writes
 # SHA256SUMS.txt, creates a build attestation for each installer and creates a draft release that the maintainer
-# publishes by hand.
+# publishes by hand. A manual run from the Actions tab runs the checks and builds the installers as workflow artifacts,
+# with no attestation and no release, so a build can be tried on every system before a tag is pushed.
 on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -79,6 +81,8 @@ jobs:
 
   publish:
     needs: build
+    # a manual run stops after the build
+    if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-latest
     permissions:
       contents: write

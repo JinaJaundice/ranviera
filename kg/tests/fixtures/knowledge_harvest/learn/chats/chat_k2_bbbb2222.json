@@ -1,0 +1,10 @@
+{
+	"id": "chat_k2_bbbb2222",
+	"title": "Practice on impulse",
+	"createdAt": "2026-10-03T10:00:00Z",
+	"updatedAt": "2026-10-03T11:00:00Z",
+	"kind": "practice",
+	"messages": [
+		{"role": "user", "id": "msg_9", "content": "Set me a problem."}
+	]
+}

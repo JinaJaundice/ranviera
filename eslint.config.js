@@ -6,7 +6,7 @@ import tseslint from "typescript-eslint";
 
 // Flat config, matching the sibling apps. Type-aware checks come from tsc -b.
 export default tseslint.config(
-  { ignores: ["dist", "node_modules", "_work", "harness", "kg", "shots"] },
+  { ignores: ["dist", "build", "release", "node_modules", "_work", "harness", "kg", "shots"] },
   {
     files: ["**/*.{ts,tsx}"],
     extends: [js.configs.recommended, ...tseslint.configs.recommended],

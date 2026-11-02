@@ -1,0 +1,5 @@
+{"id":"n_300000000001","name":"First","statement":"The first proposition.","aliases":[],"createdAt":"2026-10-01T10:00:00.000Z","provenance":[{"chatId":"chat_a0000001","messageId":"msg_01"}]}
+{"id": "n_300000000009", "name": 
+{"id":"n_300000000003","name":"No statement","aliases":[],"createdAt":"2026-10-03T10:00:00.000Z","provenance":[]}
+{"id":"n_300000000002","name":"Second","statement":"The second proposition.","aliases":["Another wording"],"createdAt":"2026-10-02T10:00:00.000Z","provenance":[{"chatId":"chat_a0000001","messageId":"msg_02"}]}
+{"id":"n_300000000004","name":"Torn","statement":"A line cut in the middle of a write.","aliases":[],"createdAt":"2026-10-04T10:00:

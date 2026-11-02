@@ -11,6 +11,8 @@ import { MISSIONS_STATEMENT, nonAffiliation, useProductName } from "../setup/cop
 import { HooksPanel } from "../setup/HooksPanel";
 import { missionsAllowed } from "../setup/model";
 import { ReadPanel } from "../setup/ReadPanel";
+import { LearningSection } from "./learning/LearningSection";
+import { ModelsSection } from "./models/ModelsSection";
 import { applySetup, openFirstRun, refreshSetup, useSetupStore } from "../setup/state";
 
 const when = (iso: string | null | undefined) => (iso && !Number.isNaN(Date.parse(iso)) ? new Date(iso).toLocaleString("en-GB") : null);
@@ -104,6 +106,8 @@ export function SettingsApp() {
         <ClaudeConnect />
       </Section>
       <AgentRuns />
+      <ModelsSection />
+      <LearningSection />
     </div>
   );
 }

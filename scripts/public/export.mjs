@@ -14,7 +14,7 @@ import { cpSync, existsSync, mkdirSync, readFileSync, readdirSync, renameSync, s
 import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { checkTree, denylistPath, formatHit, loadDenylist, resolveDataDir } from "./check.mjs";
-import { generate } from "./notices.mjs";
+import { generate, loadDecisions, mergeDecisions } from "./notices.mjs";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(here, "..", "..");
@@ -58,6 +58,9 @@ export const ALLOW = [
   "scripts/build",
   "scripts/demo",
   "scripts/public",
+  // the learning upgrade of 1 November 2026: the Claude Code skill and the extraction evaluation script
+  "skills/cortex-knowledge",
+  "scripts/learn",
   "scripts/smoke.mjs",
   "scripts/desktop-smoke.mjs",
 ];
@@ -177,7 +180,8 @@ export function exportTree({ repo = REPO, out, denylist = [], allow = ALLOW, acc
 
   let notices = { skipped: true, failures: [] };
   if (!skipNotices) {
-    const r = generate({ root: repo, accepted });
+    // the committed licence decisions apply to the export as they do to the --check of CI, and a flag wins over the file
+    const r = generate({ root: repo, accepted: mergeDecisions(loadDecisions(join(repo, "scripts", "public", "licence-decisions.json")), accepted) });
     writeFileSync(join(out, "THIRD_PARTY_NOTICES.md"), r.markdown.replace(/\r?\n/g, "\n") + "\n", "utf8");
     notices = { skipped: false, failures: r.failures, counts: r.counts };
   }

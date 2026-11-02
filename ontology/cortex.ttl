@@ -5,7 +5,7 @@
 @prefix skos: <http://www.w3.org/2004/02/skos/core#> .
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 
-# The Cortex ontology (OWL 2 DL, version 0.3.0 of 7 October 2026). The classes and relations follow docs/ONTOLOGY.md, which is
+# The Cortex ontology (OWL 2 DL, version 0.4.0 of 1 November 2026). The classes and relations follow docs/ONTOLOGY.md, which is
 # changed first. The change log is in docs/ONTOLOGY.md. kg/tests/test_ontology.py checks the file against the OWL 2 DL
 # restrictions that apply to it.
 # Instances are written as cxi:<prefix>/<slug> and are built by the compiler, so none is declared here.
@@ -13,8 +13,8 @@
 <https://cortex.local/ont> a owl:Ontology ;
     rdfs:label "Cortex ontology" ;
     rdfs:comment "The classes, relations and properties of the Cortex knowledge graph of the Claude Code set-up." ;
-    owl:versionIRI <https://cortex.local/ont/0.3.0> ;
-    owl:versionInfo "0.3.0" .
+    owl:versionIRI <https://cortex.local/ont/0.4.0> ;
+    owl:versionInfo "0.4.0" .
 
 cx:inverseLabel a owl:AnnotationProperty ;
     rdfs:label "inverse label" ;
@@ -230,7 +230,7 @@ cx:Concept a owl:Class ;
 # members, and Client is left out because it is a subclass of Organisation.
 
 [] a owl:AllDisjointClasses ;
-    owl:members ( cx:MapFile cx:RuleFile cx:OutputStyle cx:Skill cx:ReferenceFile cx:GuideFile cx:Section cx:Rule cx:Route cx:TaskType cx:PathScope cx:Agent cx:Hook cx:Tool cx:Gate cx:FaultCheck cx:ScheduledTask cx:BuiltinTool cx:LaunchConfig cx:RecordStore cx:MemoryFile cx:BacklogSection cx:OpenItem cx:HistoryFile cx:Decision cx:Project cx:App cx:Deliverable cx:Template cx:Folder cx:Organisation cx:Person cx:Instrument cx:ConceptScheme cx:Concept cx:Finding cx:DeployedAgent cx:InstructionVersion cx:ModelVersion cx:KnowledgeSource cx:PolicyClause cx:Mapping cx:Run cx:Step cx:ToolCall cx:Evidence cx:StatedRationale cx:AgentDecision cx:Review cx:Sample cx:BackTest cx:LedgerEntry cx:TestScript cx:TestStep cx:Requirement cx:LegislativeProvision cx:Obligation cx:PolicyException cx:Control cx:ControlFramework cx:Policy cx:OrganisationalRole cx:Typology cx:RiskIndicator ) .
+    owl:members ( cx:MapFile cx:RuleFile cx:OutputStyle cx:Skill cx:ReferenceFile cx:GuideFile cx:Section cx:Rule cx:Route cx:TaskType cx:PathScope cx:Agent cx:Hook cx:Tool cx:Gate cx:FaultCheck cx:ScheduledTask cx:BuiltinTool cx:LaunchConfig cx:RecordStore cx:MemoryFile cx:BacklogSection cx:OpenItem cx:HistoryFile cx:Decision cx:Project cx:App cx:Deliverable cx:Template cx:Folder cx:Organisation cx:Person cx:Instrument cx:ConceptScheme cx:Concept cx:Finding cx:DeployedAgent cx:InstructionVersion cx:ModelVersion cx:KnowledgeSource cx:PolicyClause cx:Mapping cx:Run cx:Step cx:ToolCall cx:Evidence cx:StatedRationale cx:AgentDecision cx:Review cx:Sample cx:BackTest cx:LedgerEntry cx:TestScript cx:TestStep cx:Requirement cx:LegislativeProvision cx:Obligation cx:PolicyException cx:Control cx:ControlFramework cx:Policy cx:OrganisationalRole cx:Typology cx:RiskIndicator cx:Claim cx:Argument cx:Source cx:LearnSession ) .
 
 # ---- Relations ----
 # Domains and ranges are inference axioms in OWL, not checks: a reasoner that meets an edge outside them concludes that the
@@ -296,7 +296,7 @@ cx:enforces a owl:ObjectProperty ;
 cx:restates a owl:ObjectProperty ;
     rdfs:label "restates" ;
     cx:inverseLabel "is restated by" ;
-    rdfs:domain cx:Rule ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:Claim ) ] ;
     rdfs:range cx:Rule .
 
 cx:supersedes a owl:ObjectProperty , owl:AsymmetricProperty ;
@@ -328,8 +328,8 @@ cx:mentions a owl:ObjectProperty ;
 cx:documentedIn a owl:ObjectProperty ;
     rdfs:label "is documented in" ;
     cx:inverseLabel "documents" ;
-    rdfs:domain cx:Project ;
-    rdfs:range [ a owl:Class ; owl:unionOf ( cx:MemoryFile cx:BacklogSection cx:HistoryFile ) ] .
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Project cx:Claim ) ] ;
+    rdfs:range [ a owl:Class ; owl:unionOf ( cx:MemoryFile cx:BacklogSection cx:HistoryFile cx:Source cx:InstructionFile cx:Deliverable ) ] .
 
 cx:belongsTo a owl:ObjectProperty ;
     rdfs:label "belongs to" ;
@@ -435,7 +435,7 @@ cx:sensitivity a owl:DatatypeProperty , owl:FunctionalProperty ;
 cx:family a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "family" ;
     rdfs:comment "The family of a class, which sets the colour of its nodes in the graph. A class declaration carries it, and so does each node of the class." ;
-    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "instruction" "machinery" "record" "work" "world" "language" "agent" "obligation" ) ] .
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "instruction" "machinery" "record" "work" "world" "language" "agent" "obligation" "knowledge" ) ] .
 
 cx:evidence a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "evidence" ;
@@ -445,7 +445,7 @@ cx:evidence a owl:DatatypeProperty , owl:FunctionalProperty ;
 cx:text a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "text" ;
     rdfs:comment "The text of a rule, of an open item, of a policy clause, of a provision, of a typology or of a risk indicator." ;
-    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:OpenItem cx:PolicyClause cx:LegislativeProvision cx:Typology cx:RiskIndicator ) ] ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Rule cx:OpenItem cx:PolicyClause cx:LegislativeProvision cx:Typology cx:RiskIndicator cx:Argument ) ] ;
     rdfs:range xsd:string .
 
 cx:modal a owl:DatatypeProperty , owl:FunctionalProperty ;
@@ -1159,3 +1159,96 @@ cx:ratifiedOn a owl:DatatypeProperty , owl:FunctionalProperty ;
     rdfs:label "ratifiedOn" ;
     rdfs:comment "The date on which a mapping was ratified." ;
     rdfs:range <http://www.w3.org/2001/XMLSchema#date> .
+
+# ---- The knowledge family (1 November 2026, docs/ONTOLOGY.md "Knowledge family") ----
+# The nodes of this family come from the learning folder through kg/cortex_kg/harvest/knowledge.py and live in the named graph
+# https://cortex.local/graph/extracted. Their edges carry the provenance extracted until a person ratifies them.
+
+cx:Claim a owl:Class ;
+    rdfs:label "Claim" ;
+    rdfs:comment "One short, true and self contained proposition from the proposition ledger of the learning folder. Its id starts claim:." ;
+    cx:family "knowledge" .
+
+cx:Argument a owl:Class ;
+    rdfs:label "Argument" ;
+    rdfs:comment "One set of premises that jointly support one conclusion, from the argument ledger. Its id starts argument:." ;
+    cx:family "knowledge" .
+
+cx:Source a owl:Class ;
+    rdfs:label "Source" ;
+    rdfs:comment "One file under a linked root that has no node of its own in the harness graph. Its id starts source:." ;
+    cx:family "knowledge" .
+
+cx:LearnSession a owl:Class ;
+    rdfs:label "LearnSession" ;
+    rdfs:comment "One learning session, a teaching session or a practice session. Its id starts learnsession:." ;
+    cx:family "knowledge" .
+
+cx:premiseOf a owl:ObjectProperty ;
+    rdfs:label "premise of" ;
+    cx:inverseLabel "has the premise" ;
+    rdfs:comment "A claim is one of the premises that jointly support the conclusion of an argument." ;
+    rdfs:domain cx:Claim ;
+    rdfs:range cx:Argument .
+
+cx:concludes a owl:ObjectProperty ;
+    rdfs:label "concludes" ;
+    cx:inverseLabel "is concluded by" ;
+    rdfs:comment "An argument supports one claim as its conclusion." ;
+    rdfs:domain cx:Argument ;
+    rdfs:range cx:Claim .
+
+cx:discussedIn a owl:ObjectProperty ;
+    rdfs:label "discussed in" ;
+    cx:inverseLabel "discusses" ;
+    rdfs:comment "A claim appears in the provenance of a learning session." ;
+    rdfs:domain cx:Claim ;
+    rdfs:range cx:LearnSession .
+
+cx:statement a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "statement" ;
+    rdfs:comment "The proposition that a claim states." ;
+    rdfs:domain cx:Claim ;
+    rdfs:range xsd:string .
+
+cx:alias a owl:DatatypeProperty ;
+    rdfs:label "alias" ;
+    rdfs:comment "An alternative wording of a claim that a later line of the ledger added." ;
+    rdfs:domain cx:Claim ;
+    rdfs:range xsd:string .
+
+cx:learnId a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "learnId" ;
+    rdfs:comment "The identifier of a claim (n_) or of an argument (arg_) in the ledgers of the learning folder." ;
+    rdfs:domain [ a owl:Class ; owl:unionOf ( cx:Claim cx:Argument ) ] ;
+    rdfs:range xsd:string .
+
+cx:unlocated a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "unlocated" ;
+    rdfs:comment "True when no source of the claim has a locator whose quote was found word for word." ;
+    rdfs:domain cx:Claim ;
+    rdfs:range xsd:boolean .
+
+cx:sourceKind a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "sourceKind" ;
+    rdfs:comment "The kind of the linked root of a source: notes, pdf, claude-memory, claude-transcripts, claude-instructions, projects-md or learnharness." ;
+    rdfs:domain cx:Source ;
+    rdfs:range xsd:string .
+
+cx:rootId a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "rootId" ;
+    rdfs:comment "The identifier of the linked root that a source belongs to." ;
+    rdfs:domain cx:Source ;
+    rdfs:range xsd:string .
+
+cx:sessionKind a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "sessionKind" ;
+    rdfs:comment "Whether a learning session teaches or practises." ;
+    rdfs:domain cx:LearnSession ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "teach" "practice" ) ] .
+
+cx:phase a owl:DatatypeProperty , owl:FunctionalProperty ;
+    rdfs:label "phase" ;
+    rdfs:comment "The phase of a learning session, derived from its record: probe, plan or teach." ;
+    rdfs:domain cx:LearnSession ;
+    rdfs:range [ a rdfs:Datatype ; owl:oneOf ( "probe" "plan" "teach" ) ] .

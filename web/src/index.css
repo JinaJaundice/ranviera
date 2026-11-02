@@ -63,6 +63,8 @@
   --color-fam-work: #8be9b0;
   --color-fam-world: #ffb38a;
   --color-fam-language: #f2f5fa;
+  /* the knowledge family of the learning upgrade (1 November 2026): the hue farthest from every other family and status colour under deuteranopia and protanopia */
+  --color-fam-knowledge: #f59ad0;
   /* brain regions: data encoding inside the brain view and its legend only, distinct under deuteranopia and protanopia (palette.test.ts) */
   --color-region-prefrontal: #0a82ff;
   --color-region-language: #fedcd0;
@@ -113,6 +115,7 @@
   --color-fam-work: #1f8a52;
   --color-fam-world: #c4581f;
   --color-fam-language: #1a2233;
+  --color-fam-knowledge: #a3216b;
   /* brain regions: data encoding inside the brain view and its legend only */
   --color-region-prefrontal: #3481fe;
   --color-region-language: #c9a9a0;

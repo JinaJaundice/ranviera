@@ -1,0 +1,4 @@
+{"nodeId":"n_a00000000001","sourceId":"src_111111111111","fileSha256":"aa","startLine":3,"endLine":3,"page":null,"heading":"Forces","quote":"Force equals mass times acceleration","found":true,"at":"2026-10-01T09:30:00Z"}
+{"nodeId":"n_b00000000002","sourceId":"src_222222222222","fileSha256":"bb","startLine":2,"endLine":2,"page":null,"heading":null,"quote":"Momentum is mass times velocity","found":true,"at":"2026-10-02T09:30:00Z"}
+{"nodeId":"n_c00000000003","sourceId":"src_111111111111","fileSha256":"aa","startLine":null,"endLine":null,"page":null,"heading":null,"quote":"a quote that was not found","found":false,"at":"2026-10-03T09:30:00Z"}
+{"nodeId":"n_d00000000004","sourceId":"src_333333333333","fileSha256":"cc","startLine":1,"endLine":1,"page":null,"heading":null,"quote":"quoted a figure","found":true,"at":"2026-10-04T09:30:00Z"}

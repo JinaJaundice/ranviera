@@ -1,0 +1,40 @@
+{
+	"version": 1,
+	"notClaims": ["this note", "the note", "the author", "the document", "the file"],
+	"files": {
+		"sensitivity-gate.md": {
+			"claims": [
+				{ "id": "sg1", "text": "A linked source is public, internal or client-confidential.", "mustInclude": ["client-confidential", "internal"] },
+				{ "id": "sg2", "text": "A client-confidential source may be read only by the Claude Code command line tool or by a local model.", "mustInclude": ["client-confidential", "claude code"] },
+				{ "id": "sg3", "text": "A hosted model receives client-confidential text only when consent is recorded for the source.", "mustInclude": ["hosted", "consent"] },
+				{ "id": "sg4", "text": "A claim takes the highest sensitivity of its sources.", "mustInclude": ["highest sensitivity"] },
+				{ "id": "sg5", "text": "Transcripts and memory files default to client-confidential.", "mustInclude": ["transcript", "default"] }
+			]
+		},
+		"chunking.md": {
+			"claims": [
+				{ "id": "ch1", "text": "A chunk holds at most 4,096 estimated tokens.", "mustInclude": ["4,096", "token"] },
+				{ "id": "ch2", "text": "The token estimate is the number of characters divided by four, rounded up.", "mustInclude": ["divided by four"] },
+				{ "id": "ch3", "text": "The chunk budget cannot be set below 500 tokens.", "mustInclude": ["500"] },
+				{ "id": "ch4", "text": "A line is never split, and a line longer than the budget forms its own chunk.", "mustInclude": ["line", "never split"] },
+				{ "id": "ch5", "text": "The extractor of a later chunk receives a digest of what the earlier chunks produced.", "mustInclude": ["digest"] }
+			]
+		},
+		"audit-lock.md": {
+			"claims": [
+				{ "id": "al1", "text": "Three extractors share three permits with all other background model work.", "mustInclude": ["three", "permit"] },
+				{ "id": "al2", "text": "The audit and the merge run one at a time in first in first out order.", "mustInclude": ["one at a time"] },
+				{ "id": "al3", "text": "The auditor must see the graph after every earlier merge, or two audits could add copies of one proposition.", "mustInclude": ["audit", "earlier merge"] },
+				{ "id": "al4", "text": "The auditor never sees the source text and returns identity links only.", "mustInclude": ["never sees", "link"] }
+			]
+		},
+		"coverage.md": {
+			"claims": [
+				{ "id": "co1", "text": "A message fingerprint is the SHA-256 hash of its role and its text.", "mustInclude": ["sha-256", "fingerprint"] },
+				{ "id": "co2", "text": "A message is covered when its fingerprint is in the coverage file of the source.", "mustInclude": ["covered", "fingerprint"] },
+				{ "id": "co3", "text": "Editing a message makes only that message uncovered again.", "mustInclude": ["edit", "only"] },
+				{ "id": "co4", "text": "Coverage lines are written last in a merge, so a run that stops early leaves its batch uncovered.", "mustInclude": ["last", "uncovered"] }
+			]
+		}
+	}
+}

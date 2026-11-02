@@ -1,0 +1,15 @@
+{
+	"id": "chat_k1_aaaa1111",
+	"title": "Newton session",
+	"createdAt": "2026-10-01T10:00:00Z",
+	"updatedAt": "2026-10-01T11:00:00Z",
+	"kind": "teach",
+	"version": 1,
+	"messages": [
+		{"role": "custom", "id": "msg_ctx", "customType": "graph-context", "content": "context", "details": {"propositions": [{"id": "n_d00000000004", "name": "private figure", "statement": "x"}], "chains": []}},
+		{"role": "assistant", "id": "msg_1", "content": [
+			{"type": "toolCall", "id": "tc1", "name": "quiz", "arguments": {"node": "force-law", "question": "q"}},
+			{"type": "toolCall", "id": "tc2", "name": "read", "arguments": {"path": "@MEMORY@/a.md"}}
+		]}
+	]
+}

@@ -30,13 +30,19 @@ SKILLS_DIR = "skills"
 # each machine, so they are not part of the person's own set-up. They hold third-party text, and since 8 October 2026
 # an example header in one of them stopped every sync at the secret scan.
 APP_SKILL_DIRS = {"synced"}
+# Skills that a package installer writes and rewrites, which are third-party code and are reinstalled from their
+# source in place of the mirror. Impeccable (`npx impeccable install`, Apache 2.0, installed on 13 October 2026) ships
+# an engine binary and a browser script whose line `const TOKEN = window.__IMPECCABLE_TOKEN__;` the secret scan reads
+# as a key, which stopped every sync from 13 October 2026.
+VENDOR_SKILL_DIRS = {"impeccable"}
 
 
 def skill_names(root: Path) -> list[str]:
     """The skill folders under <root>/skills, so that any person's set-up is mirrored, not a fixed list."""
     d = root / SKILLS_DIR
     return sorted(p.name for p in d.iterdir()
-                  if p.is_dir() and p.name not in SKIP_DIRS and p.name not in APP_SKILL_DIRS) if d.is_dir() else []
+                  if p.is_dir() and p.name not in SKIP_DIRS and p.name not in APP_SKILL_DIRS
+                  and p.name not in VENDOR_SKILL_DIRS) if d.is_dir() else []
 LINK_DIRS = ["rules", "agents", "output-styles"]
 SETTINGS_KEEP = ["outputStyle", "env", "hooks", "autoMemoryDirectory", "extraKnownMarketplaces",
                  "skipWorkflowUsageWarning", "agentPushNotifEnabled"]
@@ -490,6 +496,56 @@ NEXT_STEPS = [
 ]
 
 
+OWN_SKILL = "cortex-knowledge"
+
+
+def own_skill_files(cfg: Config) -> list[Path]:
+    """The files of the skill that this repository ships, as paths under its source folder, without bytecode."""
+    src = cfg.repo_root / SKILLS_DIR / OWN_SKILL
+    if not src.is_dir():
+        return []
+    return [f for f in sorted(src.rglob("*"))
+            if f.is_file() and not any(part in SKIP_DIRS for part in f.relative_to(src).parts)
+            and f.suffix not in SKIP_SUFFIXES]
+
+
+def install_own_skill(cfg: Config, home: Path, backup_root: Path, plan: list[str], dry_run: bool) -> int:
+    """Place skills/cortex-knowledge/ of the repository in <home>/skills/cortex-knowledge/.
+
+    A file that exists in the target is first copied to the backup folder of this install, as the other managed
+    files are. A target that is a link to the mirror is left alone, because writing through it would change the mirror.
+    The skill needs no machine values, so the files are copied byte for byte. Nothing in the target is deleted.
+    """
+    files = own_skill_files(cfg)
+    if not files:
+        return 0
+    src = cfg.repo_root / SKILLS_DIR / OWN_SKILL
+    dst = home / SKILLS_DIR / OWN_SKILL
+    if dst.is_symlink():
+        plan.append(f"skip skills/{OWN_SKILL} (the target is a link)")
+        return 0
+    placed = 0
+    for f in files:
+        rel = f.relative_to(src).as_posix()
+        target = dst / rel
+        data = f.read_bytes()
+        if target.is_file() and target.read_bytes() == data:
+            continue
+        if target.is_file():
+            plan.append(f"backup skills/{OWN_SKILL}/{rel}")
+            if not dry_run:
+                saved = backup_root / SKILLS_DIR / OWN_SKILL / rel
+                if not saved.exists():
+                    saved.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(target, saved)
+        plan.append(f"copy skills/{OWN_SKILL}/{rel}")
+        placed += 1
+        if not dry_run:
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(data)
+    return placed
+
+
 def install(cfg: Config, target_home: str | os.PathLike | None = None, projects_root: str | os.PathLike | None = None,
             mode: str = "copy", dry_run: bool = False) -> dict:
     if mode not in ("copy", "link"):
@@ -569,6 +625,9 @@ def install(cfg: Config, target_home: str | os.PathLike | None = None, projects_
             out = merged["bytes"]
         dst.write_bytes(out)
 
+    # 4. the skill of this repository, placed last so that it is the version in the target
+    skill_placed = install_own_skill(cfg, home, backup_root, plan, dry_run)
+
     if dry_run:
         for line in plan:
             print(line)
@@ -576,7 +635,7 @@ def install(cfg: Config, target_home: str | os.PathLike | None = None, projects_
     for i, s in enumerate(NEXT_STEPS, 1):
         print(f"  {i}. {s}")
     return {"target_home": str(home).replace("\\", "/"), "mode": mode, "dry_run": dry_run, "backed_up": backed,
-            "copied": copied, "linked": sorted(linked), "plan": plan, "next_steps": NEXT_STEPS}
+            "copied": copied, "skill_files": skill_placed, "linked": sorted(linked), "plan": plan, "next_steps": NEXT_STEPS}
 
 
 # ---------------------------------------------------------------- command line

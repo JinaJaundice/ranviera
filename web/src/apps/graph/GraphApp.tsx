@@ -13,6 +13,8 @@ import { Empty } from "../../components/Empty";
 import { NodeChip } from "../../components/NodeChip";
 import { Section } from "../../components/Section";
 import { Segmented } from "../../components/Segmented";
+import { KnowledgeLayer } from "../../graph/knowledge/KnowledgeLayer";
+import { LayerSwitch } from "../../graph/knowledge/LayerSwitch";
 import { Inspector } from "./Inspector";
 import { RegionHot, RegionLegend } from "./RegionLegend";
 import { Replay } from "./Replay";
@@ -143,9 +145,14 @@ export function GraphApp({ params }: AppProps) {
     };
   }, [run, loaded]);
 
+  if (view.layer === "knowledge") return <KnowledgeLayer />;
+
   return (
     <div className="grid h-full min-h-0 grid-cols-[minmax(0,300px)_minmax(0,1fr)] bg-surface text-ink">
       <div className="min-h-0 min-w-0 overflow-y-auto border-r border-rule">
+        <div className="border-b border-rule px-4 py-3">
+          <LayerSwitch />
+        </div>
         <Section title="Find a node">
           <Search_ />
         </Section>

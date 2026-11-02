@@ -1,0 +1,8 @@
+{"id":"n_a00000000001","name":"force law","statement":"Force equals mass times acceleration.","aliases":[],"createdAt":"2026-10-01T10:00:00Z","provenance":[{"chatId":"src_111111111111","messageId":""},{"chatId":"chat_k1_aaaa1111","messageId":"msg_1"}]}
+{"id":"n_b00000000002","name":"momentum","statement":"Momentum is mass times velocity.","aliases":["Linear momentum is the product of mass and velocity."],"createdAt":"2026-10-02T09:00:00Z","provenance":[{"chatId":"src_222222222222","messageId":""}]}
+{"id":"n_c00000000003","name":"impulse","statement":"Impulse equals the change in momentum.","aliases":[],"createdAt":"2026-10-03T09:00:00Z","provenance":[{"chatId":"src_111111111111","messageId":""},{"chatId":"chat_k2_bbbb2222","messageId":"msg_9"}]}
+{"id":"n_d00000000004","name":"private figure","statement":"The client quoted a figure in the call.","aliases":[],"createdAt":"2026-10-04T09:00:00Z","provenance":[{"chatId":"src_333333333333","messageId":"u1"}]}
+{"id":"n_e00000000005","name":"orphan","statement":"A claim whose sources have no record.","aliases":[],"createdAt":"2026-10-05T09:00:00Z","provenance":[{"chatId":"src_444444444444","messageId":""},{"chatId":"chat_gone_00000000","messageId":"m"}]}
+{"id":"n_a00000000001","name":"ignored later name","statement":"F = ma","aliases":["Newton second law",""],"createdAt":"2026-10-09T10:00:00Z","provenance":[{"chatId":"src_111111111111","messageId":""},{"chatId":"chat_k1_aaaa1111","messageId":"msg_2"}]}
+this line is not json
+{"id":"n_f00000000006","name":"no statement","aliases":[],"createdAt":"2026-10-06T09:00:00Z","provenance":[]}

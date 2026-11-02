@@ -1,0 +1,13 @@
+% Rule proposals for the knowledge family (docs/ONTOLOGY.md, "Knowledge family (1 November 2026)").
+%
+% This file is a proposal and is not loaded. reason.py reads only the files directly in ontology/rules, so a rule moves to
+% that folder through a dated entry in docs/ONTOLOGY.md and a test. The edge facts of the first program hold the edges of
+% provenance stated, computed and ratified, and never an extracted edge, so no rule below can read a claim, an argument or a
+% link that nobody has reviewed. A claim is read only after a person has ratified its documentedIn, premiseOf and concludes
+% edges (POST /api/learn/graph/ratify).
+%
+% The proposal needs one fact that the program does not export yet, ratified(S, R, T), because the restates edge from a claim
+% to a rule is a computed edge until a person ratifies it, and R10 asks for the ratified edge only. Phase 3 does not add it.
+
+%% R10 | warning | A rule that a ratified claim restates is older than the source of that claim, so the rule may be out of date.
+warning("R10", ?R) :- ratified(?C, "restates", ?R), node(?C, "Claim"), edge(?C, "documentedIn", ?S), day(?R, ?DR), day(?S, ?DS), ?DR < ?DS .

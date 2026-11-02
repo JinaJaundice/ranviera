@@ -67,11 +67,21 @@ def _write_status(cfg: Config, status: dict) -> None:
     _status_path(cfg).write_text(json.dumps(status, indent=2) + "\n", encoding="utf-8")
 
 
+def _windows_start_failure(code: int) -> bool:
+    """Whether an exit code is a Windows NTSTATUS failure, such as 0xC0000142 when git could not start at all. On
+    1 November 2026 the sync at session end met 0xC0000142 on every git call, as Windows suspended or resumed."""
+    return code >= 0xC0000000 or code <= -0x40000000
+
+
 def _git(cfg: Config, *args: str, timeout: int = 60) -> subprocess.CompletedProcess:
     # A background git call must never wait for a password or a credential prompt that nobody can see.
     env = {**os.environ, "GIT_TERMINAL_PROMPT": "0", "GCM_INTERACTIVE": "never"}
-    return subprocess.run(["git", "-C", str(cfg.repo_root), *args], capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL,
-                          env=env)
+    cmd = ["git", "-C", str(cfg.repo_root), *args]
+    r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, env=env)
+    if _windows_start_failure(r.returncode):
+        time.sleep(2)
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout, stdin=subprocess.DEVNULL, env=env)
+    return r
 
 
 def _lock_is_fresh(cfg: Config) -> bool:
@@ -143,8 +153,19 @@ def run_sync(cfg: Config, push: bool | None = None) -> dict:
         if not (cfg.repo_root / ".git").exists():
             result.update(ok=True, committed=False, pushed=False, note="The repository has no git folder.")
             return result
-        _git(cfg, "add", "--", *paths)
-        if _git(cfg, "diff", "--cached", "--quiet", "--", *paths).returncode == 0:
+        added = _git(cfg, "add", "--", *paths)
+        if added.returncode != 0:
+            detail = (added.stderr or added.stdout).strip()[:300] or "git gave no message"
+            result["error"] = f"Staging the synced paths failed (git exit {added.returncode}): {detail}"
+            return result
+        # git diff --quiet exits 0 for no change and 1 for a change. Any other code means git itself failed, which
+        # must not be read as a change to commit.
+        staged = _git(cfg, "diff", "--cached", "--quiet", "--", *paths)
+        if staged.returncode not in (0, 1):
+            detail = (staged.stderr or staged.stdout).strip()[:300] or "git gave no message"
+            result["error"] = f"git could not check the staged changes (git exit {staged.returncode}): {detail}"
+            return result
+        if staged.returncode == 0:
             result["committed"] = False
         else:
             msg = (f"Sync the harness mirror from {platform.node()} on {_today_words()}\n\n"
@@ -153,7 +174,8 @@ def run_sync(cfg: Config, push: bool | None = None) -> dict:
             c = _git(cfg, "commit", "-q", "-m", msg, "--", *paths)
             result["committed"] = c.returncode == 0
             if c.returncode != 0:
-                result["error"] = "The commit failed: " + (c.stderr or c.stdout).strip()[:300]
+                detail = (c.stderr or c.stdout).strip()[:300] or "git gave no message"
+                result["error"] = f"The commit failed (git exit {c.returncode}): {detail}"
                 return result
         result["pushed"] = False
         if push:

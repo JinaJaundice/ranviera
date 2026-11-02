@@ -11,8 +11,11 @@ export interface Vec3 {
 export const ANCHOR_RADIUS = 260;
 
 /**
- * One anchor for each family, on the 6 vertices of an octahedron, so that no two anchors are closer than
- * radius times the square root of 2 and the families form separate lobes.
+ * One anchor for each family. The six families of the set-up take the 6 vertices of an octahedron of the given
+ * radius. The knowledge family of the learning upgrade (1 November 2026) takes the corner point (r, r, r), at radius
+ * times the square root of 3, which lies exactly radius times the square root of 2 from its three nearest vertices and
+ * farther from the others. No two anchors are therefore closer than radius times the square root of 2, and the
+ * families form separate lobes, with the knowledge lobe outside the sphere of the set-up.
  */
 export function familyAnchors(radius = ANCHOR_RADIUS): Record<Family, Vec3> {
   const dirs: Vec3[] = [
@@ -22,6 +25,7 @@ export function familyAnchors(radius = ANCHOR_RADIUS): Record<Family, Vec3> {
     { x: 0, y: -1, z: 0 },
     { x: 0, y: 0, z: 1 },
     { x: 0, y: 0, z: -1 },
+    { x: 1, y: 1, z: 1 },
   ];
   const out = {} as Record<Family, Vec3>;
   FAMILIES.forEach((f, i) => {

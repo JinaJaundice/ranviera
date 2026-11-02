@@ -118,3 +118,26 @@ test("placeholder user names, reserved e-mail domains and marked test secrets pa
   const hits = checkTree(base, { denylist: DENY });
   assert.deepEqual(hits.map((h) => `${h.kind} ${h.file}:${h.line}`), ["secret src/c.ts:2"]);
 });
+
+test("in code a key assignment counts only as a quoted literal, and other files keep the full pattern", () => {
+  const base = join(tmp, "assignments");
+  const fake = "AbCdEf" + "1234567890XyZw";
+  put(base, "src/a.ts", "const r = { totalTokens: usage.inputTokens, getApiKey: resolved.getApiKey };\nexport function f(keepTokens = KEEP_RECENT_TOKENS) {}\n");
+  put(base, "src/b.ts", `const apiKey = "${fake}";\n`);
+  put(base, "conf/c.yml", `api_key: ${fake}\n`);
+  put(base, "src/d.ts", "const token = `" + fake + "`;\n");
+  const hits = checkTree(base, { denylist: DENY });
+  assert.deepEqual(hits.map((h) => `${h.kind} ${h.file}:${h.line}`).sort(), ["secret conf/c.yml:1", "secret src/b.ts:1", "secret src/d.ts:1"]);
+});
+
+test("a keys file, a writer lock and learning data fail, and synthetic learning data in test fixtures passes", () => {
+  const dir = join(tmp, "learning");
+  put(dir, "auth.json", "{}\n");
+  put(dir, "learn/graph/nodes.jsonl", "{}\n");
+  put(dir, "data/learn/cortex/outcomes.jsonl", "{}\n");
+  put(dir, "data/learn/cortex/writer.lock", "{}\n");
+  put(dir, "kg/tests/fixtures/skill_knowledge/learn/cortex/outcomes.jsonl", "{}\n");
+  put(dir, "server/src/learn/models/claude-code/__fixtures__/files.jsonl", "{}\n");
+  const files = checkTree(dir).filter((h) => h.kind === "private-file").map((h) => h.file).sort();
+  assert.deepEqual(files, ["auth.json", "data/learn/cortex/outcomes.jsonl", "data/learn/cortex/writer.lock", "learn/graph/nodes.jsonl"]);
+});

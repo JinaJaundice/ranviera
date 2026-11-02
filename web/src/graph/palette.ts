@@ -5,7 +5,7 @@ import { REGION_IDS, type RegionId } from "@shared/brain";
 
 export type Rgb = [number, number, number];
 
-export const FAMILIES: Family[] = ["instruction", "machinery", "record", "work", "world", "language"];
+export const FAMILIES: Family[] = ["instruction", "machinery", "record", "work", "world", "language", "knowledge"];
 
 export const FAMILY_TOKEN: Record<Family, string> = {
   instruction: "--color-fam-instruction",
@@ -14,6 +14,7 @@ export const FAMILY_TOKEN: Record<Family, string> = {
   work: "--color-fam-work",
   world: "--color-fam-world",
   language: "--color-fam-language",
+  knowledge: "--color-fam-knowledge",
 };
 
 export const REGION_TOKEN = Object.fromEntries(REGION_IDS.map((id) => [id, `--color-region-${id}`])) as Record<RegionId, string>;
@@ -27,6 +28,7 @@ export const FAMILY_WORDS: Record<Family, { name: string; hint: string }> = {
   work: { name: "Work", hint: "projects, apps and deliverables" },
   world: { name: "World", hint: "clients, people and instruments" },
   language: { name: "Language", hint: "vocabulary schemes and terms" },
+  knowledge: { name: "Knowledge", hint: "claims, arguments, linked sources and learning sessions" },
 };
 
 export interface Palette {

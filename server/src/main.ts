@@ -9,8 +9,9 @@ import { loadConfig, productOf, staticDir, type Config } from "./config.ts";
 import { handleAuth, tokenOk } from "./setup.ts";
 import { EventHub } from "./events.ts";
 import { GraphStore } from "./graph.ts";
-import { MissionManager } from "./missions.ts";
+import { configureClaudeCommand, MissionManager } from "./missions.ts";
 import { StreamHub } from "./stream.ts";
+import { LearnRuntime } from "./learn/index.ts";
 import { hostAllowed, originAllowed, sendText } from "./util.ts";
 
 const TYPES: Record<string, string> = {
@@ -77,11 +78,14 @@ export async function createApp(cfg: Config, dev: boolean): Promise<App> {
   const graph = new GraphStore(cfg, stream.broadcast);
   const events = new EventHub(cfg, graph, stream.broadcast);
   const missions = new MissionManager(cfg, graph, events, stream.broadcast);
-  const ctx: Context = { cfg, graph, events, missions, stream };
+  configureClaudeCommand(cfg.claude_cmd ?? null);
+  const learn = cfg.learn_enabled === false ? undefined : new LearnRuntime({ cfg, graph, broadcast: stream.broadcast, events });
+  const ctx: Context = { cfg, graph, events, missions, stream, learn };
 
   graph.start();
   missions.recover();
   events.start();
+  learn?.start();
 
   let vite: { middlewares: (req: http.IncomingMessage, res: http.ServerResponse, next: () => void) => void; close(): Promise<void> } | null = null;
   if (dev) {
@@ -117,6 +121,7 @@ export async function createApp(cfg: Config, dev: boolean): Promise<App> {
     async close() {
       graph.stop();
       events.stop();
+      learn?.stop();
       stream.close();
       await vite?.close();
       server.closeAllConnections();
@@ -130,7 +135,7 @@ async function main(): Promise<void> {
   const dev = process.argv.includes("--dev");
   const app = await createApp(cfg, dev);
   app.server.on("error", (e: NodeJS.ErrnoException) => {
-    if (e.code === "EADDRINUSE") console.error(`Port ${cfg.port} is already in use. Stop the other Cortex server, then start this one again.`);
+    if (e.code === "EADDRINUSE") console.error(`Port ${cfg.port} is already in use. Stop the other server, then start this one again.`);
     else console.error(e.message);
     process.exit(1);
   });

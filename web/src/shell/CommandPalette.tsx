@@ -15,7 +15,7 @@ type Row =
   | { kind: "action"; key: string; label: string; icon: typeof Search; run: () => void }
   | { kind: "node"; key: string; node: GraphNode };
 
-const FAMILY_ORDER: Family[] = ["instruction", "machinery", "record", "work", "world", "language"];
+const FAMILY_ORDER: Family[] = ["instruction", "machinery", "record", "work", "world", "language", "knowledge"];
 const FAMILY_LABEL: Record<Family, string> = {
   instruction: "Instructions",
   machinery: "Machinery",
@@ -23,6 +23,7 @@ const FAMILY_LABEL: Record<Family, string> = {
   work: "Work",
   world: "World",
   language: "Language",
+  knowledge: "Knowledge",
 };
 
 export function CommandPalette({ onClose }: { onClose: () => void }) {

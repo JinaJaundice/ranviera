@@ -38,6 +38,11 @@ export interface Config {
   oversight_people?: string | null;
   oversight_actor?: string | null;
   oversight_demo?: boolean;
+  /** the learning folder, the keys file, the switch for the learning windows and an explicit claude executable (docs/CONTRACTS.md, "Configuration keys", 1 November 2026) */
+  learn_dir?: string;
+  auth_file?: string;
+  learn_enabled?: boolean;
+  claude_cmd?: string | null;
   /** the configuration file that was read, or would be written */
   config_file?: string;
 }
@@ -61,6 +66,10 @@ const DEFAULTS = {
   oversight_people: null as string | null,
   oversight_actor: null as string | null,
   oversight_demo: false,
+  learn_dir: "",
+  auth_file: "",
+  learn_enabled: true as boolean | string,
+  claude_cmd: null as string | null,
 };
 
 /** True when the server runs from the packaged app, which names its web and ontology folders. */
@@ -146,6 +155,13 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): Config {
     })(),
     oversight_actor: text(env.RANVIERA_ACTOR) ?? text(c.oversight_actor),
     oversight_demo: env.RANVIERA_DEMO !== undefined && env.RANVIERA_DEMO !== "" ? isTrue(env.RANVIERA_DEMO) : isTrue(c.oversight_demo),
+    learn_dir: norm(text(env.CORTEX_LEARN_DIR) ?? text(c.learn_dir) ?? path.join(dataDir, "learn")),
+    auth_file: norm(text(env.CORTEX_AUTH_FILE) ?? text(c.auth_file) ?? path.join(dataDir, "auth.json")),
+    learn_enabled:
+      env.CORTEX_LEARN_ENABLED !== undefined && env.CORTEX_LEARN_ENABLED !== ""
+        ? isTrue(env.CORTEX_LEARN_ENABLED)
+        : c.learn_enabled === undefined || c.learn_enabled === null || isTrue(c.learn_enabled),
+    claude_cmd: text(env.CORTEX_CLAUDE_CMD) ?? text(c.claude_cmd),
     config_file: file ? file.replace(/\\/g, "/") : undefined,
   };
 }

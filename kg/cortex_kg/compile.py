@@ -17,7 +17,7 @@ from pathlib import Path
 from .config import Config, assertion_folders, norm_path, weights_table
 from .model import CLASSES, RELATIONS, SENSITIVITY, Edge, Finding, Harvest, Node, class_of, prefix_of, slugify
 
-HARVEST_ORDER = ["vocab", "tasktypes", "harness", "skills", "memory", "projects"]
+HARVEST_ORDER = ["vocab", "tasktypes", "harness", "skills", "memory", "projects", "knowledge"]
 ALWAYS = ["claudemd:global"]   # the map file, which Claude Code reads in every session; see always_nodes()
 FOLDER_PREFIXES = ("folder", "app", "skill")
 DEFAULT_WEIGHT = 0.3
@@ -94,6 +94,8 @@ def run_harvesters(cfg: Config, ledger, today: str) -> Harvest:
                 raise RuntimeError(f"the harvest.{name} module is not available yet")
             if name in ("harness", "skills"):
                 h = mod.harvest(cfg, ledger, today)
+            elif name == "knowledge":
+                h = mod.harvest(cfg, merged)   # it links a claim to the node of the file the claim came from
             else:
                 h = mod.harvest(cfg)
             merged.merge(h)
@@ -200,7 +202,12 @@ def add_mentions(h: Harvest, cfg: Config):
             if node_id in denotes or cid == node_id:
                 continue
             if rx.search(text):
-                h.add_edge(node_id, "mentions", cid, None)
+                if prefix_of(node_id) == "claim":
+                    # read from the learning ledgers, so extracted, and it cites the file of the claim
+                    h.add_edge(node_id, "mentions", cid, h.nodes[node_id].evidence)
+                    h.extracted.add((node_id, "mentions", cid))
+                else:
+                    h.add_edge(node_id, "mentions", cid, None)
     return compiled
 
 
@@ -225,9 +232,12 @@ def apply_assertions(h: Harvest, cfg: Config) -> None:
         h.assertion_by = {}
     proposed_in: dict[str, list[str]] = defaultdict(list)
     for a, fname in load_assertions(cfg):
-        if a.get("status") == "rejected":  # kept in its file as the record of a review, and never applied
-            continue
         s, r, t = a.get("s"), a.get("r"), a.get("t")
+        if a.get("status") == "rejected":  # kept in its file as the record of a review, and never applied
+            if (s, r, t) in h.extracted:   # a rejected claim edge is removed, so that it is never drawn again
+                h.extracted.discard((s, r, t))
+                h.edges.pop((s, r, t), None)
+            continue
         ev = a.get("evidence")
         bad = None
         for end in (s, t):
@@ -247,6 +257,11 @@ def apply_assertions(h: Harvest, cfg: Config) -> None:
         h.add_edge(s, r, t, ev or f"assertion {a.get('status', 'proposed')} by {a.get('by', 'unknown')} on {a.get('date', '')}".strip())
         if is_new:
             h.assertion_status[(s, r, t)] = "ratified" if a.get("status") == "ratified" else "proposed"
+            h.assertion_by[(s, r, t)] = str(a.get("by") or "unknown")
+        elif (s, r, t) in h.extracted and a.get("status") == "ratified":
+            # a person has reviewed an extracted edge: from now on it is ratified and the rules may read it
+            h.extracted.discard((s, r, t))
+            h.assertion_status[(s, r, t)] = "ratified"
             h.assertion_by[(s, r, t)] = str(a.get("by") or "unknown")
     for fname, rels in sorted(proposed_in.items()):
         kinds = ", ".join(f"{n} {r}" for r, n in sorted(Counter(rels).items()))
@@ -646,9 +661,11 @@ class OutputWriteError(RuntimeError):
     """An output file could not be written, so the command must exit with a non-zero code."""
 
 
-def provenance_of(key: tuple, computed: set, assertion_status: dict) -> str:
-    """stated for an edge a harvester parsed, computed for one that Cortex code derived from file text, and ratified
-    or proposed for one that only a curated assertion supplied."""
+def provenance_of(key: tuple, computed: set, assertion_status: dict, extracted: set | frozenset = frozenset()) -> str:
+    """stated for an edge a harvester parsed, computed for one that Cortex code derived from file text, extracted for
+    one read from the learning ledgers, and ratified or proposed for one that only a curated assertion supplied."""
+    if key in extracted:
+        return "extracted"
     if key in computed:
         return "computed"
     return assertion_status.get(key, "stated")
@@ -663,6 +680,9 @@ def render_rdf(cfg: Config, nodes, stated_rows, edge_rows, inferred_edges, findi
     from .rdf import serialize_trig
     from .rdf import split_private
     public_nodes, public_rows, _pn, _pe = split_private(nodes, stated_rows)   # a node of origin local-pack never reaches graph.ttl
+    from .rdf import is_knowledge
+    public_nodes = [n for n in public_nodes if not is_knowledge(n.id)]   # nor does a node of the family knowledge
+    public_rows = [e for e in public_rows if not (is_knowledge(e["s"]) or is_knowledge(e["t"]))]
     ttl = to_rdf(public_nodes, public_rows, metrics, today).serialize(format="turtle")
     ds = to_dataset(nodes, edge_rows, inferred_edges, findings, cfg.ontology_dir / "cortex.ttl", metrics, today, generated,
                     include_private=cfg.include_private_graphs)
@@ -765,6 +785,9 @@ def build(cfg: Config, today: str | None = None) -> dict:
     from .restate import add_edges as add_restatements
     before = set(h.edges)
     add_restatements(h)
+    know = load_module("harvest.knowledge")
+    if know is not None and hasattr(know, "add_claim_restatements"):
+        know.add_claim_restatements(h)   # a claim that restates a rule, computed from the text like the rule restatements
     computed = set(h.edges) - before
     transparency_stage(h, cfg)
     apply_assertions(h, cfg)
@@ -797,6 +820,8 @@ def build(cfg: Config, today: str | None = None) -> dict:
         d["props"] = {**n.props, **({"evidence": n.evidence} if n.evidence else {})}
         uses, last, base = metrics.get(n.id, (0, None, None))
         d["metrics"] = {"uses": uses, "last_used": last, "base_level": base, "degree": degree.get(n.id, 0)}
+        if n.id in h.knowledge:
+            d["metrics"]["knowledge"] = h.knowledge[n.id]
         node_json.append(d)
     # Heat is the rank of a node's base level among the nodes that have one, from 0.15 to 1, and 0 for a node never
     # used. Base levels run from about 1 to 10 once months of chats are replayed, so a sigmoid of the raw value would
@@ -809,12 +834,12 @@ def build(cfg: Config, today: str | None = None) -> dict:
         d["metrics"]["heat"] = 0.0 if i is None else round(0.15 + 0.85 * i / span, 4)
     edge_json = []
     for e in sorted(edges, key=lambda x: x.key()):
-        prov = provenance_of(e.key(), computed, assertion_status)
+        prov = provenance_of(e.key(), computed, assertion_status, h.extracted)
         row = {"s": e.s, "r": e.r, "t": e.t, "w": weight.get(e.r, DEFAULT_WEIGHT), "evidence": e.evidence, "provenance": prov}
         if prov in ("ratified", "proposed"):
             row["by"] = assertion_by.get(e.key(), "unknown")  # who made the assertion, as its file records it
-        if prov == "proposed":
-            row["w"] = round(row["w"] * PROPOSED_FACTOR, 4)  # an unreviewed assertion pulls less activation than a stated link
+        if prov in ("proposed", "extracted"):
+            row["w"] = round(row["w"] * PROPOSED_FACTOR, 4)  # an unreviewed edge pulls less activation than a stated link
         edge_json.append(row)
 
     by_class = dict(sorted(Counter(n["type"] for n in node_json).items()))

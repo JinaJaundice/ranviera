@@ -1,0 +1,23 @@
+{
+	"nodeSize": 7,
+	"edgeWidth": 0.7,
+	"arrowLength": 9,
+	"labelZoom": 0.3,
+	"labelSize": 5,
+	"clusterLabels": false,
+	"clusterLabelSize": 15,
+	"regions": {
+		"dilation": 33,
+		"blur": 44,
+		"bitmap": 300,
+		"edgeAlpha": 0.21,
+		"enabled": false
+	},
+	"physics": {
+		"chargeStrength": -900,
+		"linkStrength": 9,
+		"clusterPull": 0,
+		"depthMode": "diagonal",
+		"gravity": "heavy"
+	}
+}

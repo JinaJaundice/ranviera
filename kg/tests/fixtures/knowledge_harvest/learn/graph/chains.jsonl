@@ -1,0 +1,5 @@
+{"id":"arg_a00000000001","premises":["n_a00000000001","n_b00000000002"],"conclusion":"n_c00000000003","createdAt":"2026-10-03T09:30:00Z","provenance":[{"chatId":"src_111111111111","messageId":""}]}
+{"id":"arg_a00000000002","premises":["n_a00000000001","n_ghost0000000"],"conclusion":"n_c00000000003","createdAt":"2026-10-03T09:40:00Z","provenance":[{"chatId":"src_111111111111","messageId":""}]}
+{"id":"arg_a00000000003","premises":["n_a00000000001"],"conclusion":"n_ghost1111111","createdAt":"2026-10-03T09:50:00Z","provenance":[]}
+{"id":"arg_a00000000004","premises":["n_a00000000001","n_d00000000004"],"conclusion":"n_d00000000004","createdAt":"2026-10-04T09:50:00Z","provenance":[]}
+{"id":"arg_a00000000001","premises":["n_b00000000002","n_a00000000001"],"conclusion":"n_c00000000003","createdAt":"2026-10-09T09:30:00Z","provenance":[{"chatId":"chat_k2_bbbb2222","messageId":"msg_9"}]}

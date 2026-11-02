@@ -1,0 +1,29 @@
+{
+	"sizeUnits": "world",
+	"nodeSize": 2,
+	"edgeWidth": 0.7,
+	"arrowLength": 2,
+	"labelZoom": 0.28,
+	"labelSize": 3,
+	"clusterLabels": false,
+	"clusterLabelSize": 14,
+	"regions": {
+		"dilation": 20,
+		"blur": 40,
+		"bitmap": 256,
+		"edgeAlpha": 0.2,
+		"enabled": false
+	},
+	"physics": {
+		"chargeStrength": -480,
+		"linkStrength": 4,
+		"linkDistance": 40,
+		"gravity": 0.12,
+		"clusterPull": 0,
+		"velocityDecay": 0.4,
+		"depthMode": "off",
+		"depthStrength": 0.8,
+		"depthSpacing": 60,
+		"depthBaseRadius": 220
+	}
+}

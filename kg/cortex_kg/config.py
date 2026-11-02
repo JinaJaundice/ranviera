@@ -40,11 +40,13 @@ DEFAULTS = {
     "include_private_graphs": False,  # CORTEX_INCLUDE_PRIVATE_GRAPHS, true writes the private graph into graph.trig
     "monitoring_bounds": None,  # CORTEX_MONITORING_BOUNDS, the bounds file of the bank (rule O13)
     "ledger_key": None,         # CORTEX_LEDGER_KEY, the key that signs the ledger head
+    "learn_dir": None,          # CORTEX_LEARN_DIR, the learning folder; null reads <data_dir>/learn
 }
 
 PACK_ENV = {"pack_dir": "CORTEX_PACK_DIR", "pack_register": "CORTEX_PACK_REGISTER", "hub_dir": "CORTEX_HUB_DIR",
             "pack_profile": "CORTEX_PACK_PROFILE", "include_private_graphs": "CORTEX_INCLUDE_PRIVATE_GRAPHS",
-            "monitoring_bounds": "CORTEX_MONITORING_BOUNDS", "ledger_key": "CORTEX_LEDGER_KEY"}
+            "monitoring_bounds": "CORTEX_MONITORING_BOUNDS", "ledger_key": "CORTEX_LEDGER_KEY",
+            "learn_dir": "CORTEX_LEARN_DIR"}
 
 SIZE_LIMIT_KEYS = ("claude_md_lines", "memory_index_bytes", "memory_index_lines", "rule_file_chars")
 
@@ -157,6 +159,13 @@ class Config:
     @property
     def ledger_key(self) -> Path | None:
         return self._pack_path("ledger_key")
+
+    @property
+    def learn_dir(self) -> Path:
+        """The learning folder (docs/CONTRACTS.md, "Folder layout"): the environment variable, then the key, then
+        <data_dir>/learn. The harvester reads it and never writes to it."""
+        p = self._pack_path("learn_dir")
+        return p if p is not None else self.data_dir / "learn"
 
     @property
     def include_private_graphs(self) -> bool:

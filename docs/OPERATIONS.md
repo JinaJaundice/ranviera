@@ -4,11 +4,22 @@ This guide covers the installation, running, checking and removal of Ranviera, a
 
 ## Installing the application
 
-The installers are published on the Releases page of the repository. The installer for Windows is an NSIS installer for one user, which needs no administrator rights. The installer for macOS is a DMG for Apple silicon and one for Intel, and the installer for Linux is an AppImage. Each installer carries everything that the product needs, so that no Python, Node or Git is required.
+The installers are published on the Releases page of the repository. The installer for Windows is an NSIS installer for one user, which needs no administrator rights. The installers for macOS are a DMG for Apple silicon and a DMG for Intel, and the installer for Linux is an AppImage. Each installer carries everything that the product needs, so that no Python, Node or Git is required.
 
 The first releases are not code-signed. Windows SmartScreen and macOS Gatekeeper may therefore ask for confirmation on the first run. Before running an installer, a person should verify it as the README describes, with the checksum in `SHA256SUMS.txt` and with `gh attestation verify <file> --repo JinaJaundice/ranviera`.
 
-The application does not check for updates unless the person turns the check on in Settings, and the check then reads only the public list of releases on GitHub.
+The application does not check for updates. A new version is a new download from the Releases page.
+
+### Opening the app on a Mac
+
+The macOS builds are not signed or notarised by Apple, so macOS blocks the first start of a copy that was downloaded. The steps below follow the route that Apple documents for an app from a developer it has not identified. The maintainers have not yet tried them on every version of macOS, and the guide `docs/guides/install.md` describes what to do when a step looks different.
+
+1. Download the DMG for the processor, `Ranviera-<version>-arm64.dmg` for Apple silicon or `Ranviera-<version>-x64.dmg` for Intel. The menu Apple, About This Mac names the chip.
+2. Check the file against `SHA256SUMS.txt` with `shasum -a 256 <file>` and against the attestation, as the README describes.
+3. Open the DMG and drag Ranviera to the Applications folder.
+4. Open Ranviera from the Applications folder. macOS then says that it cannot verify the app. Choose Done, open System Settings, then Privacy and Security, scroll to the Security section, choose Open Anyway next to the message about Ranviera, and confirm with the login password.
+5. Where Open Anyway does not appear, run `xattr -dr com.apple.quarantine /Applications/Ranviera.app` in Terminal and open the app again.
+6. The first sign-in with Claude Code opens Terminal, and macOS may ask whether Ranviera may control Terminal. Choose OK.
 
 ## The first run
 
@@ -29,6 +40,61 @@ Ranviera does not include, download or modify Claude Code. It finds the copy tha
 Where Claude Code is installed and the person is not signed in, the button Sign in with Claude Code opens a new terminal window that runs `claude auth login`, so that the whole sign-in, including any code that the person pastes, takes place inside Claude Code. The server then checks `claude auth status` every 3 seconds for up to 5 minutes. On Windows the terminal is Windows Terminal or, where it is missing, a console window. On macOS it is Terminal, and on Linux it is the first of `x-terminal-emulator`, `gnome-terminal`, `konsole` and `xterm` that exists.
 
 Agent runs, which are called missions, stay off until Claude Code is signed in and the person has agreed, once, to a statement that each run uses Claude Code under their own plan and its limits. Anthropic may change how `claude -p` and third-party applications draw on a subscription, and Ranviera says so before the first run. Each run still shows its plan and needs a click to start.
+
+## Learning
+
+The learning upgrade adds the Learn and Sources windows, a Knowledge layer in the Graph window and 2 sections of Settings, which are Models and keys and Learning. `ARCHITECTURE.md` sets out the design and `LEARNING.md` the method. This section covers what a user or maintainer needs to run it.
+
+### Where the learning data is kept
+
+| Item | Default location | Configuration key and variable |
+|---|---|---|
+| Learning folder | `~/.claude/ranviera/learn/` | `learn_dir`, `CORTEX_LEARN_DIR` |
+| Keys file | `~/.claude/ranviera/auth.json` | `auth_file`, `CORTEX_AUTH_FILE` |
+| Claude Code program | the first `claude` on the search path | `claude_cmd`, `CORTEX_CLAUDE_CMD` |
+| Learning switch | on | `learn_enabled`, `CORTEX_LEARN_ENABLED` |
+
+An environment variable overrides the key in `cortex.config.json`, and the key overrides the default. Setting `learn_enabled` to false hides the Learn and Sources windows and registers no learning route. The keys file is written with permission 0600, and each change copies the earlier file to `auth.json.bak` beside it. A key does not appear in a response or a log, and the Settings window shows only its last four characters.
+
+The learning folder holds the sessions in `chats/`, the background jobs in `jobs/`, the graph in `graph/` and Ranviera's own files in `cortex/`. The lock file `cortex/writer.lock` shows that a process is writing. A second Ranviera process, or the LearnHarness application, that starts while the lock is live opens the folder read only, and each change it attempts answers with the status 409 until the first process stops.
+
+### Switching on Claude Code and background use
+
+Claude Code is off as a model until the person switches it on. Open Settings, then Models and keys, then Claude Code. The switch Use Claude Code as a model allows lessons to use the installed program, which must be version 2.1.316 or later. The window reports where the program is not found or needs an update. A second switch, Allow background use, such as reading sources and research, lets extraction and research use Claude Code as well. While it is off, a request that would use Claude Code for background work answers with the refusal `consent_required`. Each switch records the time at which it was turned on, and both are off by default even where Claude Code is installed. The Missions window keeps its own path to Claude Code and is not changed by these switches.
+
+### Adding a provider key
+
+Open Settings, then Models and keys, then Provider keys. Each row is named by its environment variable, for example `OPENROUTER_API_KEY`, and a key may be pasted into the row or set in the environment before Ranviera starts. A real environment variable always wins over a saved key, and the row then says that the environment shadows it. The check is by shape only and makes no network call. A provider key needs at least 12 characters, a `TAVILY_API_KEY` starts with `tvly-` and has at least 20 characters, and a `BRAVE_API_KEY` has at least 20 characters. Tavily and Brave keys serve the web search of the research job. A key saved in the window applies at once without a restart.
+
+Under Models, choose a model for each of the 3 slots. The Main model measures what the person knows, plans the route and teaches. The Helper model reads sources for the graph, checks links and runs research. The Image model reads PDF pages and images, and lists only models that accept images. Only providers that have a key, and Claude Code where it is switched on, offer models. A level of thinking and a prompt cache choice can be set for each slot.
+
+### Adding a local or custom endpoint
+
+Open Settings, then Models and keys, then Custom endpoint. Enter the base URL of a server that speaks the OpenAI chat completions interface, for example `http://localhost:11434/v1`, and choose whether it needs a key. Ranviera asks the server for its list of models, and a model name may also be typed by hand where the server does not list it. An address on `localhost`, `127.0.0.1` or `[::1]` counts as local. Any other address counts as hosted unless the person turns on the switch that states that the endpoint runs on their own machine or network. A key is sent over plain `http` only to a local endpoint, and a connection that would do otherwise is refused.
+
+### Linking sources and running extraction
+
+Open Sources and choose to link a root. Choose its kind, which is notes, PDF files, Claude memory, Claude Code transcripts, Claude instructions, project Markdown or a LearnHarness folder, then its folder, its sensitivity and its mode. The default sensitivity is internal for notes, PDF files, Claude instructions and LearnHarness folders, and client-confidential for Claude memory, Claude Code transcripts and project Markdown. Include and exclude patterns may be changed for each root. A root may hold up to 20,000 selected files, and a scan of a larger root stops before it writes anything.
+
+In manual mode a root is read when the person starts an extraction. In scan mode the server checks the root every 300 seconds and queues at most 50 changed files in each pass, and both figures can be changed under Settings, then Learning. A file that failed, was partial or was stopped waits for a manual run, so that a failing file does not spend money at every pass. Extraction uses the Helper model, and the Sensitivity gate in `ARCHITECTURE.md` decides which models may read each root. A hosted model may read a client-confidential root only after the person turns on Allow hosted providers to read that root, and the same control withdraws the consent.
+
+Where a request to extract a whole root would read more files than one scan pass queues, the server answers 409 with the code `confirm_required`. The answer gives the number of files and the estimated tokens, which are the bytes divided by 4. The Sources window shows these figures and asks the person to confirm before it starts, and a repeat of the request with `confirm: true` starts the run. The window then reports how many files started and how many wait. Extraction runs on up to 3 files at once, and an extraction of a file or a session is recorded with its model and token use. A scanned PDF page with no text is counted and not read, because there is no optical character recognition.
+
+### Installing the cortex-knowledge skill
+
+The skill is the folder `skills/cortex-knowledge/` in the repository. To install it by hand, copy that whole folder to `~/.claude/skills/cortex-knowledge/`, where Claude Code finds its skills, and keep the file names unchanged. The readers need Python 3.10 or later and no other package. Claude Code can then run them, or a person can run them from a terminal, for example `python ~/.claude/skills/cortex-knowledge/scripts/graph.py find "<topic>"`. A reader looks for the learning folder with the option `--learn-dir`, then the variable `CORTEX_LEARN_DIR`, then the default folder, and it names the folder it used at the start of its output. A reader does not change the folder and does not read the keys file.
+
+### Backing up and removing learning data
+
+To back up the learning data, stop Ranviera so that the writer lock is released and copy the learning folder. Copy the keys file separately and store it more carefully, because it holds secrets. The folder format is plain JSON and JSON Lines, so that the copy can be read with the skill and the option `--learn-dir`.
+
+To remove a linked root, use Unlink in the Sources window. The dialog asks for a mode and neither is chosen at first. Keep the knowledge unlinks the root and leaves each claim and argument in the graph. Delete the knowledge unlinks the root and deletes the claims that only these files support. Both modes move the removed lines to `learn/archive/<date>/` first and leave the files under the root untouched. A session can be deleted in the same two modes.
+
+To remove all learning data, stop Ranviera and delete the learning folder. To remove saved keys, delete a key in the Settings window or delete the keys file. Deleting the data folder removes both, together with the graph build output, as the section on uninstalling describes.
+
+### Running the learning upgrade from source on a Mac
+
+Running from source on a Mac uses the steps of `README.md`. Nothing in the learning upgrade needs another step, because the learning folder and the keys file are kept in the data folder with the rest of the data. The steps for the packaged app on a Mac are in the section on opening the app, and they have not yet been tried on a Mac.
 
 ## Hooks
 
@@ -75,7 +141,7 @@ A build is worth running after any change to a rule, an agent, a skill, a hook, 
 
 ## Uninstalling and removing data
 
-To remove the hooks, open Settings and choose Remove hooks, or run `hooks uninstall`, or restore the dated backup of `settings.json`. To uninstall the application, use Apps in the Windows settings, drag the application out of Applications on macOS, or delete the AppImage file on Linux. To remove all data, delete the data folder, which is `~/.claude/ranviera` by default. Uninstalling does not change the person's Claude Code files, apart from the hook entries.
+To remove the hooks, open Settings and choose Remove the hooks, or run `hooks uninstall`, or restore the dated backup of `settings.json`. To uninstall the application, use Apps in the Windows settings, drag the application out of Applications on macOS, or delete the AppImage file on Linux. To remove all data, delete the data folder, which is `~/.claude/ranviera` by default and which holds the learning folder and the keys file. Uninstalling does not change the person's Claude Code files, and the uninstaller does not remove the hook entries, so the person removes them in Settings first.
 
 ## What is never committed
 
@@ -83,6 +149,8 @@ To remove the hooks, open Settings and choose Remove hooks, or run `hooks uninst
 |---|---|
 | The data folder (`data_dir`, by default `~/.claude/ranviera/`) | it holds events, missions and build output that belong to one computer |
 | The profile of the person (`<data_dir>/profile/`) | it holds the person's own vocabulary, assertions and rule ledger |
+| The learning folder (`<data_dir>/learn/`) | it holds the person's sessions, answers, claims and linked sources |
+| The keys file (`<data_dir>/auth.json`) and its copy `auth.json.bak` | they hold secrets |
 | `cortex.config.json` | it holds the paths of one computer |
 | `shots/`, `node_modules/`, `build/` and `release/` | they are generated |
 
@@ -98,13 +166,13 @@ The script `scripts/public/notices.mjs` generates `THIRD_PARTY_NOTICES.md` from 
 
 ## Building the installers
 
-`npm run build:app` assembles `build/app` from the web app, the server bundle and the compiler executable, and `npm run dist:win`, `npm run dist:mac` and `npm run dist:linux` package it with electron-builder as `electron-builder.yml` defines. The files are `Ranviera-Setup-<version>.exe` for Windows, `Ranviera-<version>-<arch>.dmg` for macOS and `Ranviera-<version>-<arch>.AppImage` for Linux, where `<arch>` is the architecture name that electron-builder writes. Each build runs on the operating system that it targets, because PyInstaller does not build for another system.
+`npm run build:app` assembles `build/app` from the web app, the server bundle and the compiler executable, and `npm run dist:win`, `npm run dist:mac` and `npm run dist:linux` package it with electron-builder as `electron-builder.yml` defines. The files are `Ranviera-Setup-<version>.exe` for Windows, `Ranviera-<version>-<arch>.dmg` and `Ranviera-<version>-<arch>-mac.zip` for macOS and `Ranviera-<version>-<arch>.AppImage` for Linux, where `<arch>` is the architecture name that electron-builder writes. Each build runs on the operating system that it targets, because PyInstaller does not build for another system.
 
 ## CI and releases
 
 CI in `.github/workflows/ci.yml` runs on every push and pull request. The python job runs the tests and builds a graph on an empty Claude folder. The web job runs the type check, lint, tests and build. The public job runs the content check, the tests of the scripts and the licence check.
 
-The workflow `.github/workflows/release.yml` runs when a tag of the form `v*` is pushed. It runs the tests and the public content check, then runs `npm run build:app` and the `dist` script of each operating system on Windows, macOS (Apple silicon and Intel) and Linux, collects the installers, writes `SHA256SUMS.txt`, creates build attestations with `actions/attest-build-provenance`, and creates a draft release that the maintainer publishes by hand.
+The workflow `.github/workflows/release.yml` runs when a tag of the form `v*` is pushed. It runs the tests and the public content check, then runs `npm run build:app` and the `dist` script of each operating system on Windows, macOS (Apple silicon and Intel) and Linux, collects the installers, writes `SHA256SUMS.txt`, creates build attestations with `actions/attest-build-provenance`, and creates a draft release that the maintainer publishes by hand. A manual run from the Actions tab runs the same checks and builds. It keeps the installers as workflow artifacts with no attestation and no release, which lets a build be tried on each system before a tag is pushed.
 
 The blocking checks of the graph in CI are S01, S02, S03, S04, S06, S09, S12, S23, P03, P05, P06, P07, B01 and B03, as `ONTOLOGY.md` lists. Checks S03 and P02 run only where the configuration sets `agent_model` and `size_limits`.
 

@@ -67,3 +67,15 @@ def test_agents_agree_with_the_routing_table():
             continue
         named = {f"agent:{a}" for a in re.findall(r"\b(writer|checker|builder|scout|researcher|librarian)\b", row[3])}
         assert set(t["agents"]) == named, tid
+
+
+@needs_profile
+def test_every_harness_route_triggers_a_task_type():
+    """Shape S04 blocks CI when a route of the mirrored routes.json is named by no task type, as happened when the
+    Design and UI route arrived with the design-kit skill."""
+    routes = PROFILE.parent / "harness" / "tools" / "register" / "routes.json"
+    if not routes.is_file():
+        pytest.skip("the harness mirror is not in this tree")
+    named = {r for t in _types().values() for r in t.get("routes", [])}
+    missing = [r["name"] for r in json.loads(routes.read_text(encoding="utf-8")) if r["name"] not in named]
+    assert not missing, f"add each of these routes to a task type in profile/tasktypes.json: {missing}"

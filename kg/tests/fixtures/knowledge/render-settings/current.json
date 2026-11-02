@@ -1,0 +1,19 @@
+{
+	"sizeUnits": "world",
+	"nodeSize": 7,
+	"edgeWidth": 0.7,
+	"arrowLength": 9,
+	"labelZoom": 0.3,
+	"labelSize": 5,
+	"regions": {
+		"dilation": 33,
+		"blur": 44,
+		"bitmap": 300,
+		"edgeAlpha": 0.21
+	},
+	"physics": {
+		"chargeStrength": -100,
+		"clusterPull": 0.001,
+		"depthMode": "radial"
+	}
+}

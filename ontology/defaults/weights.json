@@ -113,6 +113,27 @@
       "reverse_weight": 0.7
     },
     {
+      "id": "premiseOf",
+      "label": "is a premise of",
+      "inverse_label": "has the premise",
+      "weight": 0.7,
+      "reverse_weight": 0.5
+    },
+    {
+      "id": "concludes",
+      "label": "concludes",
+      "inverse_label": "is concluded by",
+      "weight": 0.8,
+      "reverse_weight": 0.55
+    },
+    {
+      "id": "discussedIn",
+      "label": "is discussed in",
+      "inverse_label": "discusses",
+      "weight": 0.4,
+      "reverse_weight": 0.5
+    },
+    {
       "id": "belongsTo",
       "label": "belongs to",
       "inverse_label": "has",

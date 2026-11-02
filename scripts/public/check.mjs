@@ -23,6 +23,11 @@ export const MAX_BYTES = 5 * 1024 * 1024;
 // Build output and installed packages are ignored by git and never published, so the check skips them.
 export const SKIP_DIRS = new Set([".git", "node_modules", "__pycache__", "dist", "build", "release", ".pytest_cache"]);
 const BRAIN_MODEL = /(^|\/)brain\/(brain\.glb|brain-points\.bin)$/;
+// The learning data and the keys file never belong in the public tree (docs/CONTRACTS.md, "Shared files and
+// registrations", 1 November 2026). Test fixtures hold synthetic learning data and are allowed.
+export const PRIVATE_FILES = /(^|\/)(auth\.json|writer\.lock)$/;
+const LEARN_DATA = /(^|\/)(locators|outcomes|files)\.jsonl$|^learn\//;
+const FIXTURE = /^kg\/tests\/fixtures\/|\/__fixtures__\//;
 
 // The patterns of SECRET_PATTERNS in kg/cortex_kg/sync.py, written for JavaScript.
 const PLACEHOLDER = String.raw`(?!(?:\{\{|\$|<|%|os\.|process\.|env\.|your|example|xxxx|\.\.\.|changeme|placeholder|none\b|null\b))`;
@@ -70,6 +75,14 @@ const PATH_PLACEHOLDER =
 // A test file that must hold fake keys, such as the tests of the secret scanner, says so in its first 15 lines with this
 // marker. The marker lifts only the secret rule, and only in a test file. The deny list and the other rules still apply.
 const SYNTHETIC_SECRETS = /public-check: synthetic-secrets/;
+// In source code a secret is a quoted literal. An assignment from a property, a variable or a constant, such as
+// "totalTokens: usage.inputTokens", is not a secret, so in code files the assignment pattern counts only a quoted
+// value. Other files, such as YAML, keep the pattern as the sync uses it (2 November 2026).
+const CODE_FILE = /\.(?:[cm]?[jt]sx?|py)$/;
+const QUOTED_ASSIGNMENT = new RegExp(
+  String.raw`(?<![A-Za-z])[a-z0-9_.-]*(?:api[_\- ]?key|apikey|secret|token|passwd|credential|auth[_-]?key)[a-z0-9_-]*["']?\s*[:=]\s*["'\x60]${PLACEHOLDER}[A-Za-z0-9_\-+/=.]{16,}["'\x60]`,
+  "i",
+);
 const TEST_FILE = /(?:^|\/)(?:tests?|__fixtures__|fixtures)\/|\.test\.[cm]?[jt]sx?$|(?:^|\/)test_[^/]*\.py$/;
 
 export function isBinary(buf) {
@@ -132,6 +145,9 @@ export function checkTree(root, options = {}) {
     if (size > maxBytes && !BRAIN_MODEL.test(rel)) {
       hits.push({ file: rel, line: 0, kind: "size", detail: `${(size / 1048576).toFixed(1)} MB is over the limit of ${(maxBytes / 1048576).toFixed(0)} MB` });
     }
+    if (PRIVATE_FILES.test(rel) || (LEARN_DATA.test(rel) && !FIXTURE.test(rel))) {
+      hits.push({ file: rel, line: 0, kind: "private-file", detail: "a keys file, a writer lock or learning data, which never leave this machine" });
+    }
     // A file name is part of the public tree, so it is checked against the deny list too.
     for (const { term, re } of terms) {
       if (re.test(rel)) hits.push({ file: rel, line: 0, kind: "denylist", detail: `file name holds the private term '${term}'` });
@@ -146,7 +162,9 @@ export function checkTree(root, options = {}) {
       for (const { term, re } of terms) {
         if (re.test(text)) hits.push({ file: rel, line, kind: "denylist", detail: `private term '${term}'` });
       }
-      const found = SECRET_PATTERNS.find(([, re]) => re.test(text)); // one hit for each line, whatever the patterns
+      const code = CODE_FILE.test(rel);
+      // one hit for each line, whatever the patterns
+      const found = SECRET_PATTERNS.find(([name, re]) => (code && name === "key or secret assignment" ? QUOTED_ASSIGNMENT : re).test(text));
       if (found && !syntheticSecrets) hits.push({ file: rel, line, kind: "secret", detail: found[0] });
       for (const m of text.matchAll(USER_PATH)) {
         const user = (m[1] ?? m[2] ?? "").trim();

@@ -1,4 +1,5 @@
 import { loadConfig } from "./config.ts";
+import { findClaudeExecutable } from "./learn/models/claude-code/binary.ts";
 // Missions: each step runs the claude command and its stream is parsed into lines.
 import { execFile, spawn, type ChildProcess } from "node:child_process";
 import { randomBytes, randomUUID } from "node:crypto";
@@ -58,17 +59,19 @@ const MAX_LINES = 3000;
 
 // ---------------------------------------------------------------- the claude command
 
+let claudeCommand: string | null = null;
+
+/** Records the claude_cmd key of the configuration, which the search below tries first (1 November 2026). */
+export function configureClaudeCommand(cmd: string | null): void {
+  claudeCommand = cmd;
+}
+
+/**
+ * Finds the claude executable: the configured path, then PATH, then the usual folders of each platform, including
+ * the Homebrew and npm folders that a Finder-launched app on a Mac does not have on its PATH (docs/learning/claude-code.md).
+ */
 export function findClaude(): string | null {
-  const win = process.platform === "win32";
-  const name = win ? "claude.exe" : "claude";
-  for (const dir of (process.env.PATH ?? "").split(path.delimiter)) {
-    if (!dir) continue;
-    const p = path.join(dir, name);
-    if (fs.existsSync(p)) return p;
-  }
-  const home = process.env.USERPROFILE ?? os.homedir();
-  const fallback = path.join(home, ".local", "bin", name);
-  return fs.existsSync(fallback) ? fallback : null;
+  return findClaudeExecutable({ claudeCmd: claudeCommand });
 }
 
 /**
@@ -211,7 +214,7 @@ export function parseStreamLine(raw: string, now: () => string = () => new Date(
 // ---------------------------------------------------------------- the context pack
 
 export function contextPack(plan: Plan): string {
-  const parts = ["Cortex prepared this context from the knowledge graph."];
+  const parts = ["This context was prepared from the knowledge graph of the Claude Code set-up."];
   if (plan.load.length) {
     parts.push("Read these files first:");
     for (const l of plan.load) parts.push(`- ${l.path} (${l.reason})`);

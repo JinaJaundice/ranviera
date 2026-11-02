@@ -312,3 +312,38 @@ def test_a_sync_pushes_only_where_the_configuration_turns_auto_push_on(tmp_path,
     calls.clear()
     autosync.run_sync(cfg)
     assert "remote" in calls
+
+
+def test_a_git_call_that_windows_could_not_start_is_tried_once_more(tmp_path, monkeypatch):
+    """Regression for the sync of 1 November 2026, where git exited 0xC0000142 (it could not start) and the sync
+    stopped with no message. The helper now waits and tries the same call once more."""
+    cfg = repo_with_sync(tmp_path)
+    real_run = autosync.subprocess.run
+    failed = []
+
+    def flaky(cmd, **kw):
+        if "commit" in cmd and not failed:
+            failed.append(cmd)
+            return subprocess.CompletedProcess(cmd, 3221225794, "", "")
+        return real_run(cmd, **kw)
+    monkeypatch.setattr(autosync.subprocess, "run", flaky)
+    monkeypatch.setattr(autosync.time, "sleep", lambda s: None)
+    r = autosync.run_sync(cfg, push=False)
+    assert failed and r["ok"] and r["committed"], r
+    assert commits(cfg.repo_root) == 1
+
+
+def test_a_staged_change_check_that_git_cannot_run_is_an_error_and_not_a_commit(tmp_path, monkeypatch):
+    cfg = repo_with_sync(tmp_path)
+    real_git = autosync._git
+    seen = []
+
+    def no_diff(c, *args, timeout=60):
+        seen.append(args[0])
+        if args[0] == "diff":
+            return subprocess.CompletedProcess(["git", *args], 3221225794, "", "")
+        return real_git(c, *args, timeout=timeout)
+    monkeypatch.setattr(autosync, "_git", no_diff)
+    r = autosync.run_sync(cfg, push=False)
+    assert r["ok"] is False and "could not check the staged changes" in r["error"] and "commit" not in seen, r
+    assert autosync._windows_start_failure(3221225794) and not autosync._windows_start_failure(1)

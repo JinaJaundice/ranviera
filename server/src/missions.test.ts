@@ -56,7 +56,7 @@ describe("step arguments", () => {
       load: [{ path: "C:/r/decks.md", node: "rulefile:decks", reason: "Read first for Deck or slide" }],
       steps: [], gates: [{ node: "gate:x", command: "npm test" }], cautions: ["Be careful."],
     });
-    expect(pack.startsWith("Cortex prepared this context from the knowledge graph.")).toBe(true);
+    expect(pack.startsWith("This context was prepared from the knowledge graph of the Claude Code set-up.")).toBe(true);
     expect(pack).toContain("C:/r/decks.md (Read first for Deck or slide)");
     expect(pack).toContain("npm test");
   });

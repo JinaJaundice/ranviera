@@ -2,8 +2,11 @@
 // is made there first.
 
 import type { BrainDomains } from "./brain.ts";
+import type { LearnStreamMessage } from "./learn/events.ts";
+import type { KnowledgeMetrics } from "./learn/knowledge.ts";
 
-export type Family = "instruction" | "machinery" | "record" | "work" | "world" | "language";
+/** knowledge holds the claims, arguments, sources and learning sessions of the learning upgrade (docs/ONTOLOGY.md, 1 November 2026) */
+export type Family = "instruction" | "machinery" | "record" | "work" | "world" | "language" | "knowledge";
 export type Sensitivity = "public" | "internal" | "client-confidential";
 
 export interface ClassDef {
@@ -29,6 +32,8 @@ export interface NodeMetrics {
   degree: number;
   /** rank of the base level among used nodes, 0.15 to 1, and 0 for a node never used (added 6 October 2026) */
   heat?: number;
+  /** support, the held band and calibration of a claim, derived at build time (docs/CONTRACTS.md, "Derived metrics", 1 November 2026) */
+  knowledge?: KnowledgeMetrics;
 }
 
 export interface GraphNode {
@@ -45,7 +50,8 @@ export interface GraphNode {
   metrics: NodeMetrics;
 }
 
-export type Provenance = "stated" | "computed" | "ratified" | "proposed" | "inferred";
+/** extracted marks an edge of the knowledge family that a model proposed from a linked source and a person has not ratified (1 November 2026) */
+export type Provenance = "stated" | "computed" | "ratified" | "proposed" | "inferred" | "extracted";
 
 export interface GraphEdge {
   s: string;
@@ -111,7 +117,10 @@ export type EventKind =
   | "compile"
   | "mission.start"
   | "mission.step"
-  | "mission.end";
+  | "mission.end"
+  | "learn.turn"
+  | "learn.answer"
+  | "learn.extract";
 
 export interface CortexEvent {
   v: 1;
@@ -352,7 +361,8 @@ export type StreamMessage =
   | { type: "fire"; event: CortexEvent; activation: Activation[] }
   | { type: "graph"; built: string }
   | { type: "mission"; id: string; state: MissionState; step?: number; line?: MissionLine }
-  | { type: "heartbeat"; ts: string };
+  | { type: "heartbeat"; ts: string }
+  | LearnStreamMessage;
 
 // Agent transparency: the oversight views (docs/CONTRACTS.md, "View shapes", 7 October 2026)
 
@@ -590,3 +600,7 @@ export interface PackResult {
   path: string;
   manifest: { v: 1; created: string; files: { path: string; sha256: string; bytes: number }[] };
 }
+
+// The learning upgrade (docs/CONTRACTS.md, "Learning and knowledge", 1 November 2026). The web app may also import
+// from @shared/learn directly.
+export * from "./learn/index.ts";

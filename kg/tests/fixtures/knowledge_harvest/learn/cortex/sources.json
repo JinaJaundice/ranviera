@@ -1,0 +1,8 @@
+{
+	"version": 1,
+	"roots": {
+		"root_aaaa0001": {"id": "root_aaaa0001", "kind": "notes", "path": "@ROOT@/vault", "label": "Vault", "include": [], "exclude": [], "sensitivity": "internal", "mode": "manual", "enabled": true, "hostedConsentAt": null, "createdAt": "2026-10-01T09:00:00Z", "lastScanAt": null},
+		"root_bbbb0002": {"id": "root_bbbb0002", "kind": "claude-memory", "path": "@MEMORY@", "label": "Memory", "include": [], "exclude": [], "sensitivity": "client-confidential", "mode": "manual", "enabled": true, "hostedConsentAt": null, "createdAt": "2026-10-01T09:00:00Z", "lastScanAt": null},
+		"root_cccc0003": {"id": "root_cccc0003", "kind": "claude-transcripts", "path": "@ROOT@/transcripts", "label": "Transcripts", "include": [], "exclude": [], "sensitivity": "client-confidential", "mode": "manual", "enabled": true, "hostedConsentAt": null, "createdAt": "2026-10-01T09:00:00Z", "lastScanAt": null}
+	}
+}

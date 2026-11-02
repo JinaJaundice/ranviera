@@ -1,0 +1,10 @@
+{"id":"n_aaaaaaaaaaaa","name":"Settlement finality","statement":"Settlement is final when it cannot be reversed.","aliases":["finality"],"createdAt":"2026-10-01T09:00:00.000Z","provenance":[{"chatId":"chat_one","messageId":"msg_a1"}]}
+{"id":"n_bbbbbbbbbbbb","name":"Custody","statement":"Custody is the safekeeping of an asset for another person.","aliases":[],"createdAt":"2026-10-01T09:01:00.000Z","provenance":[{"chatId":"src_111111111111","messageId":""}]}
+this line is not json
+{"id":"n_aaaaaaaaaaaa","name":"Finality again","statement":"Final settlement cannot be undone.","aliases":["finality","irreversibility",""],"createdAt":"2026-10-02T09:00:00.000Z","provenance":[{"chatId":"chat_one","messageId":"msg_a1"},{"chatId":"src_111111111111","messageId":""}]}
+{"id":"n_cccccccccccc","name":"Chain of title","statement":"A chain of title records each transfer of ownership.","aliases":["Straße title"],"createdAt":"2026-10-02T09:02:00.000Z","provenance":[]}
+{"id":"n_dddddddddddd","name":"Ledger","statement":"A ledger lists entries.\nIt can span lines.","aliases":[],"createdAt":"2026-10-02T09:03:00.000Z","provenance":[{"chatId":"src_111111111111","messageId":""}]}
+{"id":"n_eeeeeeeeeeee","name":"Missing fields","aliases":[]}
+{"id":"n_ffffffffffff","name":"Bad alias","statement":"Alias list holds a number.","aliases":[3],"createdAt":"2026-10-02T09:04:00.000Z","provenance":[]}
+{"id":"n_gggggggggggg","name":"NaN","statement":NaN,"aliases":[],"createdAt":"x","provenance":[]}
+{"id":"n_hhhhhhhhhhhh","name":"Escrow","statement":"Escrow holds funds with a third party.","aliases":[],"createdAt":"2026-10-03T09:00:00.000Z","provenance":[{"chatId":"src_111111111111","messageId":""}]}

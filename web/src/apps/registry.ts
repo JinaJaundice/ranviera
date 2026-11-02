@@ -1,6 +1,6 @@
 // The windows the dock can open. Each module must exist at the path given and export the named component.
 import { lazy, type ComponentType, type LazyExoticComponent } from "react";
-import { Activity, BookA, Bot, DatabaseZap, FolderKanban, Info, Network, Scale, ScrollText, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
+import { Activity, BookA, Bot, DatabaseZap, FolderKanban, FolderTree, GraduationCap, Info, Network, Scale, ScrollText, Settings, ShieldCheck, type LucideIcon } from "lucide-react";
 
 export interface AppProps {
   params?: Record<string, string>;
@@ -88,6 +88,20 @@ export const APPS: AppDef[] = [
     icon: Scale,
     size: { w: 1120, h: 740 },
     component: lazy(() => import("./oversight/OversightApp").then((m) => ({ default: m.OversightApp }))),
+  },
+  {
+    id: "learn",
+    title: "Learn",
+    icon: GraduationCap,
+    size: { w: 1040, h: 720 },
+    component: lazy(() => import("./learn/LearnApp").then((m) => ({ default: m.LearnApp }))),
+  },
+  {
+    id: "sources",
+    title: "Sources",
+    icon: FolderTree,
+    size: { w: 980, h: 660 },
+    component: lazy(() => import("./sources/SourcesApp").then((m) => ({ default: m.SourcesApp }))),
   },
   {
     id: "settings",

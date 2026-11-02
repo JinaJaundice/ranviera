@@ -3,7 +3,7 @@
 //
 // Usage: node scripts/public/notices.mjs [--out <file>] [--root <repository>] [--check] [--accept <package>=<licence>]...
 //   --check   reports the licences and writes nothing
-//   --accept  records a decision about one package whose licence is outside the list, for example one that the
+//   --accept  adds to the decisions of scripts/public/licence-decisions.json (a flag wins over the file) and records a decision about one package whose licence is outside the list, for example one that the
 //             owner of the repository has reviewed. The accepted package is named in the output with the words 'accepted by decision'.
 // npm packages come from license-checker-rseidelsohn (production dependencies of the root package). Python packages
 // come from pip-licenses, for the packages that the compiler bundles and everything they require.
@@ -14,6 +14,7 @@ import { fileURLToPath } from "node:url";
 
 const here = dirname(fileURLToPath(import.meta.url));
 const REPO = resolve(here, "..", "..");
+export const DECISIONS_FILE = join(here, "licence-decisions.json");
 
 // The packages that the PyInstaller spec of the compiler collects. Their requirements are added at run time.
 export const COMPILER_PACKAGES = ["rdflib", "pyshacl", "owlrl", "nemo_python", "pyrage", "prettytable", "packaging"];
@@ -88,7 +89,7 @@ export function collectNpm(root) {
     .map(([key, v]) => {
       const at = key.lastIndexOf("@");
       const text = v.licenseFile && existsSync(v.licenseFile) ? readFileSync(v.licenseFile, "utf8") : "";
-      return { ecosystem: "npm", name: key.slice(0, at), version: key.slice(at + 1), license: Array.isArray(v.licenses) ? v.licenses.join(" AND ") : String(v.licenses ?? "UNKNOWN"), url: v.repository ?? "", text: isLicenceText(v.licenseFile, text) ? text : "" };
+      return { ecosystem: "npm", name: key.slice(0, at), version: key.slice(at + 1), license: Array.isArray(v.licenses) ? v.licenses.join(" AND ") : String(v.licenses ?? "UNKNOWN"), url: cleanUrl(v.repository), text: isLicenceText(v.licenseFile, text) ? text : "" };
     })
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -137,11 +138,35 @@ export function collectPython(packages = COMPILER_PACKAGES, python = process.pla
 
 // ---------------------------------------------------------------- output
 
+/** Reads the committed decisions (package, licence, who decided, date, scope, optional source) into a map by package name. */
+export function loadDecisions(file = DECISIONS_FILE) {
+  if (!existsSync(file)) return {};
+  const list = JSON.parse(readFileSync(file, "utf8"));
+  return Object.fromEntries(list.map((d) => [d.package, d]));
+}
+
+/** Merges the decisions of the file with the flags. A flag is a licence string and replaces the licence of the entry of the file, which keeps its source. */
+export function mergeDecisions(fromFile, flags = {}) {
+  const merged = { ...fromFile };
+  for (const [name, licence] of Object.entries(flags)) merged[name] = fromFile[name] ? { ...fromFile[name], licence } : licence;
+  return merged;
+}
+
+/** A repository address as a plain https address: no git+ prefix, no git:// scheme and no user before the host. */
+export function cleanUrl(url) {
+  return String(url ?? "")
+    .replace(/^git\+/, "")
+    .replace(/^git:\/\//, "https://")
+    .replace(/^(https?:\/\/)[^@/\s]+@/, "$1")
+    .replace(/\.git$/, "");
+}
+
 export function evaluate(packages, accepted = {}) {
   const rows = packages.map((p) => {
     const c = classify(p.name, p.license);
-    const decision = accepted[p.name];
-    return { ...p, ok: c.ok || Boolean(decision), shown: c.ok ? c.name : decision ? `${decision} (accepted by decision)` : p.license, reason: c.reason };
+    const entry = accepted[p.name];
+    const decision = typeof entry === "string" ? entry : entry?.licence;
+    return { ...p, ok: c.ok || Boolean(decision), shown: c.ok ? c.name : decision ? `${decision} (accepted by decision)` : p.license, reason: c.reason, sourceUrl: !c.ok && entry?.source ? entry.source : "" };
   });
   return { rows, failures: rows.filter((r) => !r.ok) };
 }
@@ -170,6 +195,17 @@ export function render(npmRows, pipRows, generated) {
   ];
   const declared = pipRows.filter((r) => r.declared);
   if (declared.length) lines.push(...declared.map((r) => `The wheel of ${r.name} carries no licence metadata, so its licence is taken from ${r.declared}.`), "");
+  const withSource = [...npmRows, ...pipRows].filter((r) => r.sourceUrl);
+  if (withSource.length) {
+    lines.push(
+      "## Source code of packages under the Eclipse Public Licence",
+      "",
+      "The packages below are shipped unmodified with their licence text. The Eclipse Public Licence 2.0 requires that the source code can be obtained, and it is available at the address given for each package.",
+      "",
+      ...withSource.map((r) => `- ${r.name} ${r.version}: ${r.sourceUrl}`),
+      "",
+    );
+  }
   lines.push("## Tools that are bundled or used to build", "", ELECTRON_NOTE, "", PYINSTALLER_NOTE, "");
   lines.push("## Brain model and fonts", "", "The brain model and the fonts have their own notices in the file `NOTICE`.", "", "## Licence texts", "");
   // An e-mail address in a copyright line is masked, because the public content check rejects any address.
@@ -186,7 +222,7 @@ export function generate({ root = REPO, accepted = {}, python } = {}) {
 }
 
 export function main(argv) {
-  const accepted = {};
+  const flags = {};
   let out = null;
   let root = REPO;
   let check = false;
@@ -196,9 +232,10 @@ export function main(argv) {
     else if (argv[i] === "--check") check = true;
     else if (argv[i] === "--accept") {
       const [k, ...v] = argv[++i].split("=");
-      accepted[k] = v.join("=");
+      flags[k] = v.join("=");
     }
   }
+  const accepted = mergeDecisions(loadDecisions(), flags);
   const r = generate({ root, accepted });
   // Without --out nothing is written, so a run cannot overwrite a file of the repository by accident.
   if (!check && out) writeFileSync(out, r.markdown.replace(/\r?\n/g, "\n") + "\n", "utf8");

@@ -310,8 +310,107 @@ The shapes are in `ontology/shapes.ttl` and read the union of the stated and rat
 
 F10 blocks in CI with P06. The other F shapes do not block until the tests of the feature pass and the maintainer agrees.
 
+## Knowledge family
+
+This section adds the family `knowledge` for the claims, arguments, sources and learning sessions that the learning upgrade reads from the learning folder. The machine-readable files are ontology version 0.4.0 and shapes version 0.5.0, and `kg/cortex_kg/model.py` holds the classes and relations of this section. Nothing above this section changes, except that the ranges and domains named below gain the new classes, and that the provenance of an edge gains the value `extracted`. No language model runs inside the build. The harvester `kg/cortex_kg/harvest/knowledge.py` reads the ledgers deterministically, so 2 builds of the same files and the same ledgers give the same graph.
+
+### Knowledge classes
+
+The family `knowledge` has its own colour in the graph. The identifier of each class derives from the identifier in the ledger, so that a node keeps its identity from one build to the next.
+
+| Prefix | Class | Parent | Family | What it is | Identifier rule |
+|---|---|---|---|---|---|
+| `claim:` | Claim | none | knowledge | one true, self-contained proposition from the proposition ledger | `claim:<12 hex>`, from `n_<12 hex>` |
+| `argument:` | Argument | none | knowledge | one set of premises that jointly support one conclusion, from the argument ledger | `argument:<12 hex>`, from `arg_<12 hex>` |
+| `source:` | Source | none | knowledge | one file under a linked root that has no node of its own in the graph | `source:<12 hex>`, from `src_<12 hex>` |
+| `learnsession:` | LearnSession | none | knowledge | one learning session, either a teaching session or a practice session | `learnsession:<slug>`, the session identifier in lower case with each underscore replaced by a hyphen |
+
+- A claim whose source file is already a node of the graph, such as a memory file, rule file, instruction file, reference, history file, backlog section or deliverable, has a `documentedIn` edge to that node, and no `source:` node is made. The harvester finds the node whose `path` equals the absolute path of the file. A file that has no node, such as a note in a vault, receives a `source:` node.
+- A source of the kind `claude-transcripts` receives a `source:` node for each transcript file, and the session identifier of the transcript is kept in `props.sessionId`.
+- The node of a class carries the file and line of its `evidence`. A claim takes the file and line of its first located passage in `cortex/locators.jsonl`. A claim with no located passage takes the file of its first source with no line, and carries `cx:unlocated` true. An argument takes the evidence of its conclusion, and a learning session takes the path of its chat file.
+
+### Knowledge properties
+
+The properties of every node (label, family, sensitivity and evidence) apply. The class-specific properties are these:
+
+- Claim: `cx:statement` (exactly 1), `cx:alias` (0 or more), `cx:learnId` (the `n_` identifier, exactly 1) and `cx:unlocated` (true when no source of the claim has a locator that was found).
+- Argument: `cx:learnId` (the `arg_` identifier, exactly 1) and `cx:text`, which joins the premise names with commas, then an arrow and the conclusion name.
+- Source: `cx:sourceKind` (one of the 7 kinds of linked source), `cx:rootId` and `cx:path`.
+- LearnSession: `cx:sessionKind` (teach or practice), `cx:phase` (probe, plan or teach, derived from the record) and `cx:path`.
+
+### Knowledge relations
+
+The weights are in `ontology/defaults/weights.json`. They are lower than the weights of the chain of an agent, because a claim is evidence that the harness relies on and not an instruction.
+
+| Relation | From and to | Forward | Backward |
+|---|---|---|---|
+| `premiseOf` | Claim to Argument | 0.70 | 0.50 |
+| `concludes` | Argument to Claim | 0.80 | 0.55 |
+| `documentedIn` (extended) | Claim to Source, MemoryFile, an InstructionFile class, HistoryFile, BacklogSection or Deliverable | 0.60 | 0.70 |
+| `discussedIn` | Claim to LearnSession, for a session that is in the provenance of the claim | 0.40 | 0.50 |
+| `mentions` (extended) | Claim to Concept | 0.30 | 0.15 |
+| `restates` (extended) | Claim to Rule | 0.60 | 0.60 |
+
+- The weights of `documentedIn`, `mentions` and `restates` are those already in the Relations table. The extension adds the classes at the ends.
+- A claim links to a term through `mentions`, which the vocabulary pass already writes for a file. The relation `denotes` is not used for a claim, because it runs from a Concept to the node that it names and shape S19 enforces that direction.
+- `restates` from a claim to a rule is computed by the existing text similarity step and has the provenance `computed`. An unreviewed restatement is drawn at half weight, as for every computed link of this kind, and it is ratified through the assertions file.
+- A claim has 1 `documentedIn` edge for each source that appears in its provenance with a `src_` identifier, and 1 `discussedIn` edge for each session that appears with a `chat_` identifier. A session is linked through `discussedIn` only, and each fact has 1 `documentedIn` edge for each source.
+
+### The provenance value extracted
+
+The provenance of an edge gains the value `extracted`, beside `stated`, `computed`, `ratified`, `proposed` and `inferred`.
+
+- An `extracted` edge is one that the harvester reads from the learning ledgers. These are the `premiseOf`, `concludes`, `documentedIn` and `discussedIn` edges of a claim or an argument, and the `mentions` edge from a claim to a term.
+- An `extracted` edge draws and pulls at half of its relation weight, as a `proposed` edge does, and no reasoning rule reads it. Rules read `stated`, `computed` and `ratified` edges only, so a statement that a model proposed from a file cannot produce a finding until a person has reviewed it.
+- A person ratifies a claim in the Graph window with `POST /api/learn/graph/ratify`. The server writes 1 assertion for each edge of the claim (its `documentedIn`, `premiseOf` and `concludes` edges) in the format of `ontology/assertions/*.json`, with the status `ratified`, the date and the author. The assertions go into `assertions/knowledge.json` of the profile folder. The build then emits those edges as `ratified`. A claim that the person rejects is recorded with the status `rejected` and the reason, and the build does not apply it.
+- The named graph `https://cortex.local/graph/extracted` holds the `extracted` edges and the nodes of the family, beside the graphs listed in `CONTRACTS.md` under "Provenance and freshness". The shapes of this family read the union of the stated, ratified and extracted graphs, and the shapes S01 to S26 read the same union. Three of them are widened for this family. S01 targets the 4 classes, S12 has a shape for the family `knowledge`, and S17 accepts a claim as the subject of `documentedIn`, with the range Source, an instruction file class, a memory file, a history file, a backlog section or a deliverable.
+- A locator is kept only when the quote occurs word for word in the chunk that the extractor read. A claim whose quote is not found is kept without a line number and with `cx:unlocated` true. This is the rule that applies to every model suggestion in Ranviera.
+
+### Metrics: support, held and calibration
+
+The derived metrics of a claim are held in `metrics.knowledge` of its node in `graph.json`. They are not written to `graph.ttl` or `graph.trig`, because they are measurements about a person and not statements of the graph. The server computes them from the outcome records of the learning folder in `server/src/learn/knowledge/snapshot.ts`.
+
+| Metric | Meaning |
+|---|---|
+| `support` | the number of distinct sources and sessions in the provenance of the claim |
+| `held` | `unknown` where no outcome is recorded, `held` where the 2 newest outcomes are correct at a help level of none, R0 or R1 and none of the 3 newest misses is structural, and `shaky` otherwise |
+| `lastTested` | the time of the newest outcome, or null where there is none |
+| `calibration` | null until 5 or more outcomes of the type `choice` carry a numeric confidence, then the mean confidence as a fraction of 1 (the rating divided by 100), the accuracy, their gap and a band |
+
+The band is `calibrated` where the gap between mean confidence and accuracy is 0.15 or less, `overconfident` where confidence exceeds accuracy by more than that, and `underconfident` where accuracy exceeds confidence by more than that. The thresholds are proposals of the maintainers and may change.
+
+### Sensitivity inheritance
+
+The sensitivity of a node of this family is computed to a fixed point. The values rank `public`, then `internal`, then `client-confidential`, and the highest wins.
+
+- A Source takes the sensitivity of its root. A file that has a node in the graph keeps the sensitivity of that node.
+- A LearnSession takes the highest sensitivity of the claims in its graph context marker and of the roots that its file tool calls reached, derived from the record, with a minimum of `internal`.
+- A Claim takes the highest sensitivity of the sources and sessions in its provenance.
+- An Argument takes the highest sensitivity of its premises and its conclusion.
+- A node of this family has a minimum sensitivity of `internal`, because it comes from a person's own material.
+- The filters `max_sensitivity` and `include_sensitivity` apply as for every node, and a node that is dropped takes its edges with it.
+
+The nodes of the family are private. The built graph is not part of the public export, because `<data_dir>` is outside the repository, and the public content check (`scripts/public/check.mjs`) refuses learning data.
+
+### Shapes K01 to K07
+
+The SHACL file `ontology/shapes.ttl` holds the counts of K01 (a label, a statement and a `cx:learnId`) and K02 (at least 1 premise and exactly 1 conclusion) and the whole of K06. The function `check_knowledge` in `kg/cortex_kg/validate.py` checks the rest of K01 to K05 from `graph.json`. These are the `documentedIn` or `discussedIn` edge of a claim, the conclusion that is also a premise, the sensitivity against the sources (K03), the evidence of an extracted edge and the claim with no located passage. K07 is deferred and no check builds it.
+
+| Id | Check | Severity |
+|---|---|---|
+| K01 | a claim has 1 label, 1 statement, 1 `cx:learnId` and at least 1 `documentedIn` or `discussedIn` edge | violation |
+| K02 | an argument has at least 1 `premiseOf` edge from a claim and exactly 1 `concludes` edge to a claim, and its conclusion is not one of its premises | violation |
+| K03 | the sensitivity of a claim is at least that of each of its sources, and the sensitivity of an argument is at least that of each of its claims | violation |
+| K04 | an `extracted` edge carries evidence that names a file that exists, and a line within it when the locator was found (an extension of P08) | warning |
+| K05 | a claim with `cx:unlocated` true | warning |
+| K06 | a source has a kind, a root and a path, and a learning session has a kind | violation |
+| K07 | no node of the family `knowledge` appears in the public export. Deferred and not built | violation |
+
+Among the K checks, only K03 blocks in CI (`CI_BLOCKING` in `validate.py`, with P06). The other checks do not block until a build reports and the maintainers agree. A test builds the graph from the fixtures in `kg/tests/fixtures/knowledge/` and checks that no reasoning rule reads an `extracted` edge, that a build is deterministic, and that sensitivity inheritance reaches a fixed point. A rule proposal is recorded here and is not built in the first release. It is R10, a rule that reports 'the rule may be out of date' where the file of a rule is older than the source of a claim that a person ratified as restating it.
+
 ## Changes to this document
 
+- 2 November 2026: the knowledge family, with the classes Claim, Argument, Source and LearnSession, the relations `premiseOf`, `concludes` and `discussedIn`, the extended ends of `documentedIn`, `mentions` and `restates`, the provenance value `extracted`, the metrics support, held and calibration, sensitivity inheritance and shapes K01 to K06, with K07 deferred. The machine-readable files move to ontology 0.4.0 and shapes 0.5.0.
 - 7 October 2026: agent transparency extension, with the agent side classes, the obligation side classes, the new relations and shapes F01 to F14.
 - 6 October 2026: first public version, written from the project's internal specification.
 

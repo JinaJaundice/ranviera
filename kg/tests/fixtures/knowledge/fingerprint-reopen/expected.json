@@ -1,0 +1,42 @@
+{
+	"view": [
+		{
+			"messageId": "msg_m1",
+			"fp": "370b28057d4d50ae08920862bb1e4de3aa905cc99b13f2d39e80053fc237b222",
+			"tokens": 10
+		},
+		{
+			"messageId": "msg_m2",
+			"fp": "510a824612d72e768e69106a1de616b74f4ceaf60256f36e4daff07f0a0cac0f",
+			"tokens": 10
+		},
+		{
+			"messageId": "msg_m3",
+			"fp": "5172b9e95831f35b31024a02a6983eee269eff693adfc55e7e8e4846a01f63d0",
+			"tokens": 8
+		},
+		{
+			"messageId": "msg_m4",
+			"fp": "d23ab14c0c0e16ccf6ec8c6193cc495d7803232d03514a8ce946af6f623ab75a",
+			"tokens": 0
+		},
+		{
+			"messageId": "msg_m5",
+			"fp": "d23ab14c0c0e16ccf6ec8c6193cc495d7803232d03514a8ce946af6f623ab75a",
+			"tokens": 0
+		}
+	],
+	"uncovered": [
+		"msg_m2"
+	],
+	"block": {
+		"totalMessages": 3,
+		"coveredCount": 2,
+		"uncoveredCount": 1,
+		"coveredTokens": 18,
+		"uncoveredTokens": 10,
+		"running": false,
+		"lastFoldedAt": "2026-10-09T10:00:00.000Z",
+		"threshold": 4096
+	}
+}
