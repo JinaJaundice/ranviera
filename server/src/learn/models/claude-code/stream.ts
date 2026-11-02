@@ -5,7 +5,6 @@
 import { randomBytes, randomUUID } from "node:crypto";
 import type { ChildProcess } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import {
   createAssistantMessageEventStream,
@@ -21,6 +20,7 @@ import {
   type TranscriptContext,
 } from "@earendil-works/pi-ai";
 import { BRIDGE_PREFIX, ToolBridge, type BridgeResult } from "./bridge.ts";
+import { tempRoot } from "../../temp.ts";
 import { claudeChildEnv } from "./env.ts";
 import { LiveProcesses, type HoldKey } from "./live.ts";
 import { ClaudeProcess, defaultSpawnClaude, type ProcEvent, type Rec, type SpawnClaude } from "./process.ts";
@@ -258,7 +258,7 @@ export function createClaudeStreams(deps: ClaudeStreamDeps): ClaudeStreams {
 
       let bridgeRef: ToolBridge | null = null;
       if (fresh) {
-        const tmp = deps.tmpRoot ?? os.tmpdir();
+        const tmp = deps.tmpRoot ?? tempRoot();
         const workDir = fs.mkdtempSync(path.join(tmp, "cortex-cc-work-"));
         const privDir = fs.mkdtempSync(path.join(tmp, "cortex-cc-priv-"));
         const folders = [workDir, privDir];

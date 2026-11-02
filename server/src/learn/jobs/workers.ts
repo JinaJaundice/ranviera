@@ -2,11 +2,11 @@
 // on the vision slot with the four PDF tools. Each returns the result of a job, and a thrown error means that the
 // worker could not run at all.
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import type { Agent, AgentEvent } from "@earendil-works/pi-agent-core";
 import type { CallUsage, PdfResult, ResearchResult } from "../../../../shared/learn/index.ts";
 import { resolveToolPath } from "../runtime/tools/files.ts";
+import { tempRoot } from "../temp.ts";
 import { runWorkerAgent } from "./agent-run.ts";
 import { PDF_READER_TURNS, NO_PAGE_NUDGE, RESEARCHER_TURNS, pdfReaderPrompt, pdfTask, researcherPrompt, researcherTask } from "./prompts.ts";
 import { PdfFault, withPdf } from "./pdf/ops.ts";
@@ -26,7 +26,7 @@ export interface WorkerContext {
 
 /** A folder for the downloads of one job, removed when the worker ends. */
 export function makeJobDir(deps: JobsDeps, jobId: string): string {
-  const base = deps.tempDir ?? os.tmpdir();
+  const base = deps.tempDir ?? tempRoot();
   fs.mkdirSync(base, { recursive: true });
   return fs.mkdtempSync(path.join(base, `cortex-${jobId}-`));
 }

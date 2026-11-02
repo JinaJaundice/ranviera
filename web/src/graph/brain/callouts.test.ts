@@ -149,7 +149,8 @@ describe("callout layout over a focus, a trail and a blocked control group", () 
       }
     }
     expect(hits / total).toBeLessThan(0.03);
-  });
+    // 40 layouts take longer than the default 5 seconds on the slower Intel macOS runner of the release workflow
+  }, 30_000);
 
   it("ends each leader on the edge of its region that faces the column, which shortens it", () => {
     const req = withEdges(4);
