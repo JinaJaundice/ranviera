@@ -27,7 +27,8 @@ jobs:
           python-version: "3.14"
           cache: pip
       - run: npm ci
-      - run: pip install -r requirements.txt
+      # pip-licenses gives the licences of the Python packages to the notices test and to notices.mjs --check, as in ci.yml
+      - run: pip install -r requirements.txt pip-licenses
       - run: python -m pytest kg/tests -q
       - run: npx tsc -b --noEmit
       - run: npx eslint .
