@@ -167,11 +167,21 @@ def _second_pass(h: Harvest, cfg: Config, ref, exact: dict, ordered: list) -> No
         h.find("P01", "warning", f"The path {ref.raw} cited in {ref.evidence} has moved to {where}: {rel}.",
                ref.source, ref.evidence)
         return
-    if ref.acknowledged_missing:
+    if ref.acknowledged_missing or _in_default_data_dir(ref.raw):
         sev = "info"
     else:
         sev = "violation" if kind == "anchored" else "warning"
     h.find("P01", sev, f"The path {ref.raw} cited in {ref.evidence} does not exist.", ref.source, ref.evidence)
+
+
+# The default data folders of the owner's build and of the public build. The skill cortex-knowledge names both, and
+# each machine has only one of them, so a missing one is a note (2 November 2026).
+_DEFAULT_DATA_DIRS = ("~/.claude/cortex", "~/.claude/ranviera")
+
+
+def _in_default_data_dir(raw: str) -> bool:
+    r = raw.strip().strip("`").rstrip("/")
+    return any(r == d or r.startswith(d + "/") for d in _DEFAULT_DATA_DIRS)
 
 
 def _compile_regex(rx):

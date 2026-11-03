@@ -156,4 +156,5 @@ def _routing_table(h: Harvest, cfg: Config, types: dict) -> None:
             continue
         ev = md.evidence(cfg, path, line)
         for cp in md.cited_paths(md.parse(files_cell)):
-            h.ref(tid, cp.raw, resolve_cited(cp.raw, path, cfg), ev, cp.acknowledged_missing, "readsFirst")
+            raw, target = md.resolve_cited_path(cp, lambda r: resolve_cited(r, path, cfg))
+            h.ref(tid, raw, target, ev, cp.acknowledged_missing, "readsFirst")

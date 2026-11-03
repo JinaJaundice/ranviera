@@ -1,6 +1,7 @@
 // Launch the Cortex desktop app and check that it loads in its own window with a title that names the product and no
 // other product name. Two modes:
-//   node scripts/desktop-smoke.mjs             the repository mode (desktop/main.cjs, shown as Cortex), driven by Playwright's
+//   node scripts/desktop-smoke.mjs             the repository mode (desktop/main.cjs, shown as the product of the
+//                                              configuration, Ranviera unless it says cortex), driven by Playwright's
 //                                              Electron driver, with shots/desktop-app.png
 //   node scripts/desktop-smoke.mjs --packaged  the packaged mode (shown as Ranviera) through the self-test switch
 //                                              RANVIERA_SELFTEST: the shell photographs its own window, writes selftest.json
@@ -21,30 +22,43 @@ const fail = (message) => {
   process.exit(1);
 };
 
+// The product that the repository mode shows: Cortex where the configuration says "product": "cortex", and Ranviera
+// otherwise, as server/src/config.ts decides (2 November 2026).
+function configuredProduct() {
+  try {
+    const cfg = JSON.parse(fs.readFileSync(process.env.CORTEX_CONFIG || path.join(ROOT, "cortex.config.json"), "utf8"));
+    return cfg.product === "cortex" ? "Cortex" : "Ranviera";
+  } catch {
+    return "Ranviera";
+  }
+}
+
 async function repositoryMode() {
   fs.mkdirSync("shots", { recursive: true });
+  const product = configuredProduct();
+  const other = product === "Cortex" ? "Ranviera" : "Cortex";
   const app = await electron.launch({ args: ["desktop"], cwd: ROOT });
   const errors = [];
   const win = await app.firstWindow();
   win.on("console", (m) => { if (m.type() === "error") errors.push(m.text()); });
   await win.waitForSelector("canvas", { timeout: 60000 });
-  await win.waitForFunction(() => document.title === "Cortex", null, { timeout: 15000 }).catch(() => undefined);
+  await win.waitForFunction((name) => document.title === name, product, { timeout: 15000 }).catch(() => undefined);
   await win.waitForTimeout(2000);
-  const info = await win.evaluate(() => ({
+  const info = await win.evaluate((otherName) => ({
     title: document.title,
     shell: document.documentElement.dataset.shell,
     bridge: typeof window.cortexDesktop,
     topbarDrag: getComputedStyle(document.querySelector(".cx-topbar")).getPropertyValue("-webkit-app-region"),
-    names_other_product: /Ranviera/.test(document.body.innerText),
-  }));
+    names_other_product: new RegExp(otherName).test(document.body.innerText),
+  }), other);
   const windowTitle = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getTitle());
   await win.screenshot({ path: "shots/desktop-app.png" });
   const size = await app.evaluate(({ BrowserWindow }) => BrowserWindow.getAllWindows()[0].getBounds());
   await app.close();
   console.log(JSON.stringify({ ...info, window_title: windowTitle, size, errors }, null, 1));
   if (errors.length) fail("The console held errors.");
-  if (info.title !== "Cortex" || windowTitle !== "Cortex") fail(`The window title is '${windowTitle}' and the page title '${info.title}', not Cortex.`);
-  if (info.names_other_product) fail("The page text names Ranviera in the repository mode.");
+  if (info.title !== product || windowTitle !== product) fail(`The window title is '${windowTitle}' and the page title '${info.title}', not ${product}.`);
+  if (info.names_other_product) fail(`The page text names ${other} in the repository mode.`);
 }
 
 async function packagedMode() {

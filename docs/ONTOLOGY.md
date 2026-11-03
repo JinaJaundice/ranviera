@@ -191,7 +191,7 @@ A hidden label is a form that must not be used. A proposed concept is reported a
 | S24 | every decision states 1 date (violation) and governs at least 1 rule or file (warning) | violation |
 | S25 | every concept is in 1 scheme and has a definition | violation |
 | S26 | every open item belongs to 1 backlog section and has its text | violation |
-| P01 | every cited path exists | violation |
+| P01 | every cited path exists. A backticked path with spaces is read whole, or by its first word where only that exists, and a missing default data folder of the app (`~/.claude/cortex` or `~/.claude/ranviera`) is a note | violation |
 | P02 | the limits of `size_limits` on the map file, the memory index and each rule file, where the configuration sets them | warning |
 | P03 | every route pattern compiles as a regular expression | violation |
 | P04 | no hidden label of a ratified concept appears in an instruction file | warning |

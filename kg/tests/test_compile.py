@@ -378,3 +378,24 @@ def test_a_proposed_edge_carries_its_author_a_lower_weight_and_one_warning_per_f
     assert "by" not in stated
     p10 = [f for f in read(cfg, "findings.json")["findings"] if f["check"] == "P10"]
     assert len(p10) == 1 and p10[0]["severity"] == "warning" and "2 proposed assertions" in p10[0]["message"]
+
+
+def test_a_missing_default_data_folder_of_the_app_is_a_note(tmp_path, monkeypatch):
+    cfg = make_cfg(tmp_path)
+
+    def harvest(cfg, name):
+        h = Harvest(name)
+        if name != "harness":
+            return h
+        h.add_node(Node("skill:knowledge", "Knowledge", path=str(cfg.claude_home / "skills" / "k" / "SKILL.md")))
+        h.ref("skill:knowledge", "~/.claude/ranviera/learn", None, "SKILL.md:41")
+        h.ref("skill:knowledge", "~/.claude/cortex/learn/graph", None, "SKILL.md:42")
+        h.ref("skill:knowledge", "~/.claude/elsewhere/notes.md", None, "SKILL.md:43")
+        return h
+
+    fake_modules(monkeypatch, harvest)
+    comp.build(cfg, today="2026-11-02")
+    p01 = [f for f in read(cfg, "findings.json")["findings"] if f["check"] == "P01"]
+    severity = {f["message"].split(" cited")[0].removeprefix("The path "): f["severity"] for f in p01}
+    assert severity == {"~/.claude/ranviera/learn": "info", "~/.claude/cortex/learn/graph": "info",
+                        "~/.claude/elsewhere/notes.md": "violation"}

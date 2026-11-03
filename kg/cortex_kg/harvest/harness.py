@@ -217,8 +217,8 @@ def harvest_doc(h: Harvest, ledger: Ledger, today: str, cfg: Config, *, file_id:
             if n > len(doc.lines) or not doc.lines[n - 1].strip() or n in item_lines or n in heading_lines:
                 break
     for cp in md.cited_paths(doc):
-        h.ref(line_rule.get(cp.line, file_id), cp.raw, resolve_ref(cp.raw, path, cfg), at(cp.line),
-              cp.acknowledged_missing)
+        raw, target = md.resolve_cited_path(cp, lambda r: resolve_ref(r, path, cfg))
+        h.ref(line_rule.get(cp.line, file_id), raw, target, at(cp.line), cp.acknowledged_missing)
     return rule_ids
 
 
@@ -405,7 +405,8 @@ def _routes(h: Harvest, cfg: Config) -> None:
         h.add_node(Node(rid, name, path=fwd(p), sensitivity="internal", evidence=md.evidence(cfg, p, line),
                         props={"patterns": list(entry.get("match", entry.get("patterns", []))), "load": load}))
         for cp in md.cited_paths(md.parse(load)):
-            h.ref(rid, cp.raw, resolve_ref(cp.raw, p, cfg), md.evidence(cfg, p, line), cp.acknowledged_missing)
+            raw, target = md.resolve_cited_path(cp, lambda r: resolve_ref(r, p, cfg))
+            h.ref(rid, raw, target, md.evidence(cfg, p, line), cp.acknowledged_missing)
 
 
 _SCRIPT = re.compile(r"""([^\s"']+\.py)\b""")

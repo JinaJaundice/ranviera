@@ -40,3 +40,35 @@ def test_an_instruction_is_an_instruction_and_a_ban_heading_makes_a_bare_item_on
     assert kind_of("Every chart has a legend.")[1] == "instruction"
     modal, kind, neg = kind_of("Contractions and exclamation marks", heading="Banned words")
     assert (modal, kind, neg) == ("imperative", "instruction", True)
+
+
+def cited(text):
+    return [c.raw for c in md.cited_paths(md.parse(text))]
+
+
+def test_a_backticked_path_with_spaces_is_read_whole():
+    line = "Use `inputs/ey decks example` and `deliverables/ey-academy/final/DA Academy_W2_DA Fundamentals.pptx` as sources.\n"
+    assert cited(line) == ["inputs/ey decks example", "deliverables/ey-academy/final/DA Academy_W2_DA Fundamentals.pptx"]
+
+
+def test_a_path_with_an_option_or_a_name_pattern_keeps_the_old_reading():
+    assert cited("Run `scripts/install.sh --yes` on a Mac.\n") == ["scripts/install.sh"]
+    assert cited("Save it as `final/DA Academy_W{n}_{Title}.pptx` each week.\n") == []
+    assert cited("Run `python cortex.py export` after a change.\n") == ["cortex.py"]
+
+
+def test_a_root_name_at_the_end_of_a_longer_folder_name_is_not_a_bare_path():
+    assert cited("Memory files are in C:/Users/a/.claude/projects/C--Users-a-Downloads-Projects/memory/ on this machine.\n") == []
+    assert cited("The map is in Projects/README.md for every session.\n") == ["Projects/README.md"]
+
+
+def test_a_reading_with_spaces_falls_back_to_its_first_word_where_only_that_exists():
+    [folder] = md.cited_paths(md.parse("Use `inputs/ey decks example` today.\n"))
+    [script] = md.cited_paths(md.parse("Run `scripts/impeccable live-poll` to watch.\n"))
+    assert (folder.raw, folder.alternative) == ("inputs/ey decks example", "inputs/ey")
+    assert (script.raw, script.alternative) == ("scripts/impeccable live-poll", "scripts/impeccable")
+    exists = {"inputs/ey decks example": "/p/inputs/ey decks example", "scripts/impeccable": "/p/scripts/impeccable"}
+    assert md.resolve_cited_path(folder, exists.get) == ("inputs/ey decks example", "/p/inputs/ey decks example")
+    assert md.resolve_cited_path(script, exists.get) == ("scripts/impeccable", "/p/scripts/impeccable")
+    [gone] = md.cited_paths(md.parse("See `old/place with spaces` once.\n"))
+    assert md.resolve_cited_path(gone, exists.get) == ("old/place", None)

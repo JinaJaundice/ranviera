@@ -397,8 +397,8 @@ def harvest(cfg: Config) -> Harvest:
                             evidence=ev(f, it.line)))
             h.add_edge(rid, "contains", did, ev(f, it.line))
             for cp in md.cited_paths(md.parse(it.text)):
-                h.ref(did, cp.raw, paths.resolve_cited(cp.raw, f, cfg), ev(f, it.line),
-                      cp.acknowledged_missing)
+                raw, target = md.resolve_cited_path(cp, lambda r: paths.resolve_cited(r, f, cfg))
+                h.ref(did, raw, target, ev(f, it.line), cp.acknowledged_missing)
 
     # history
     hist = root / "docs" / "history"

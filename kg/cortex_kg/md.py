@@ -5,6 +5,7 @@ The parsing is deliberately simple and fixed, so that 2 builds of the same files
 from __future__ import annotations
 
 import re
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import date
 
@@ -343,12 +344,16 @@ def classify(text: str, heading: str, path: str, parent_kind: str | None = None)
     return modal, "note", negated
 
 
-# A cited path: a backticked token, or a bare token, that looks like a file or folder path.
+# A cited path: a backticked token, or a bare token, that looks like a file or folder path. A bare token does not start
+# after a hyphen, so the end of a longer folder name such as C--Users-a-Downloads-Projects/memory is not read as a path.
 _BACKTICK = re.compile(r"`([^`\n]{2,200})`")
-_BARE = re.compile(r"(?<![\w/.])((?:~/\.claude|Projects|apps|build|deliverables|docs|inputs|_shared|skills|rules|"
+_BARE = re.compile(r"(?<![\w/.-])((?:~/\.claude|Projects|apps|build|deliverables|docs|inputs|_shared|skills|rules|"
                    r"references|tools|memory|agents)/[\w./{}*<>-]+)")
 _LOOKS_LIKE_PATH = re.compile(r"^(~/|\.{0,2}/)?[\w.{}-]+(/[\w.{}*<>-]+)+/?$|^[\w-]+\.(md|py|mjs|js|ts|tsx|json|"
                               r"pptx|docx|xlsx|pdf|html|css|ps1|cmd|txt|csv|ttl)$")
+# A backticked path whose folder or file names hold spaces, such as `inputs/ey decks example`, is read whole (2 November
+# 2026). A path followed by an option, such as `scripts/install.sh --yes`, keeps only its first word.
+_SPACED_PATH = re.compile(r"^(~/|\.{0,2}/)?[\w.{}-][\w .{}-]*(/[\w.{}-][\w .{}-]*)+/?$")
 
 
 @dataclass
@@ -356,6 +361,19 @@ class CitedPath:
     raw: str
     line: int
     acknowledged_missing: bool   # the text near it says [path not found ...]
+    alternative: str | None = None   # for a reading with spaces, its first word, as a script and its arguments give
+
+
+def resolve_cited_path(cp: CitedPath, resolve: Callable[[str], str | None]) -> tuple[str, str | None]:
+    """The reading of a cited path that exists, with its target: the whole path with spaces, else its first word.
+
+    A backticked `inputs/ey decks example` is a folder, and `scripts/run plan` is a script with an argument, and only the
+    file system can tell them apart. Where neither reading exists, the first word is reported, as before 2 November 2026.
+    """
+    found = resolve(cp.raw)
+    if found is None and cp.alternative:
+        return cp.alternative, resolve(cp.alternative)
+    return cp.raw, found
 
 
 def cited_paths(doc: Doc) -> list[CitedPath]:
@@ -365,11 +383,14 @@ def cited_paths(doc: Doc) -> list[CitedPath]:
     for i, line in enumerate(doc.lines[doc.body_start - 1:], start=doc.body_start):
         ack = "path not found" in line.lower() or "[not found" in line.lower()
         cands = [m.group(1) for m in _BACKTICK.finditer(line)] + [m.group(1) for m in _BARE.finditer(line)]
+        whole: list[str] = []   # the backticked paths with spaces on this line, which come before the bare tokens
         for c in cands:
             c = c.strip().rstrip(".,;:)")
             token = c.split()[0] if " " in c else c
             if (" " in c and not c.startswith(("python ", "node ", "npm "))) and not _LOOKS_LIKE_PATH.match(token):
                 continue
+            spaced = (" " in c and not c.startswith(("python ", "node ", "npm "))
+                      and not any(p.startswith("-") for p in c.split()[1:]) and bool(_SPACED_PATH.match(c)))
             if c.startswith(("python ", "node ", "npm ")):
                 parts = [p for p in c.split() if "/" in p or p.endswith((".py", ".mjs", ".js"))]
                 if not parts:
@@ -379,11 +400,19 @@ def cited_paths(doc: Doc) -> list[CitedPath]:
                 continue
             if not _LOOKS_LIKE_PATH.match(token):
                 continue
+            alternative = None
+            if spaced:
+                if any(ch in c for ch in "*{}<>"):
+                    continue    # a pattern for names, such as `final/DA Academy_W{n}_{Title}.pptx`, cites no file
+                token, alternative = c, token
+                whole.append(c)
+            elif any(w != token and w.startswith(token) for w in whole):
+                continue        # the bare start of a backticked path with spaces, which carries it as its alternative
             key = (token, i)
             if key in seen:
                 continue
             seen.add(key)
-            out.append(CitedPath(token, i, ack))
+            out.append(CitedPath(token, i, ack, alternative))
     return out
 
 
