@@ -37,9 +37,10 @@ nsis:
   deleteAppDataOnUninstall: false
   artifactName: Ranviera-Setup-${version}.${ext}
 mac:
-  target:
-    - target: dmg
-      arch: [arm64, x64]
+  # One architecture for each runner, from --arm64 or --x64 in the release workflow. An architecture list here would
+  # override the flag, and each runner would also pack the other DMG with its own native packages and compiler, which
+  # run only on its own processor (3 November 2026).
+  target: dmg
   category: public.app-category.developer-tools
   icon: desktop/icon.png
   artifactName: Ranviera-${version}-${arch}.${ext}
