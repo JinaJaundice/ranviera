@@ -149,8 +149,9 @@ describe("callout layout over a focus, a trail and a blocked control group", () 
       }
     }
     expect(hits / total).toBeLessThan(0.03);
-    // 40 layouts take longer than the default 5 seconds on the slower Intel macOS runner of the release workflow
-  }, 30_000);
+    // 40 layouts take longer than the default 5 seconds on the slower Intel macOS runner of the release workflow, and the
+    // label placement test beside it took more than 20 seconds there
+  }, 120_000);
 
   it("ends each leader on the edge of its region that faces the column, which shortens it", () => {
     const req = withEdges(4);
